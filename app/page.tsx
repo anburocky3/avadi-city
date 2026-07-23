@@ -91,23 +91,13 @@ export default function LandingPage() {
               AVADI <span className="text-primary font-black">CITY</span>
             </span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-widest uppercase mt-0.5">
-              Municipal Super-App
+              URBAN COMMUNITY PLATFORM
             </span>
           </div>
         </div>
 
         <div className="flex items-center space-x-3">
-          {/* Theme Toggle */}
           <ThemeToggle />
-
-          {/* Login button */}
-          <Link
-            href="/login"
-            className="h-11 px-5 rounded-2xl border border-slate-200 hover:bg-slate-100 dark:border-slate-800 dark:hover:bg-slate-900 text-sm font-extrabold transition-all active:scale-95 cursor-pointer flex items-center space-x-2 shadow-sm"
-          >
-            <LogIn size={15} className="text-primary" />
-            <span>Login</span>
-          </Link>
         </div>
       </header>
 
@@ -143,7 +133,7 @@ export default function LandingPage() {
             <h2 className="text-[11px] uppercase tracking-widest font-black text-slate-400 dark:text-slate-500">
               Our Features
             </h2>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {features.map((feature, idx) => {
                 const Icon = feature.icon;
                 return (
