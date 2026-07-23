@@ -22,7 +22,7 @@ export const BottomTabBar = () => {
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/98 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-3 py-2.5 flex items-center justify-around md:hidden shadow-[0_-3px_12px_rgba(0,0,0,0.06)] h-16">
+    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/98 backdrop-blur-lg border-t border-slate-200 dark:border-slate-800 px-3 py-2.5 flex items-center justify-around  shadow-[0_-3px_12px_rgba(0,0,0,0.06)] h-16">
       {tabs.map((tab) => {
         const Icon = tab.icon;
 
