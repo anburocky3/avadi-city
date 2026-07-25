@@ -1,4 +1,3 @@
-// src/app/api/transport/mtc/stops/route.ts
 import { NextResponse } from "next/server";
 import { getAvadiBusStops } from "@/services/transport/osmTransit";
 

@@ -1,4 +1,3 @@
-// src/services/osmTransit.ts
 export interface OsmBusStop {
   id: number;
   name: string;

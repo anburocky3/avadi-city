@@ -1,6 +1,6 @@
 // src/app/api/transport/mtc/stops/route.ts
 import { NextResponse } from "next/server";
-import { getAvadiBusStops } from "@/services/osmTransit";
+import { getAvadiBusStops } from "@/services/transport/osmTransit";
 
 export async function GET() {
   try {
