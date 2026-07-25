@@ -505,7 +505,7 @@ export const DashboardClient: React.FC = () => {
           {[
             {
               name: "Local Alerts",
-              path: "/alerts",
+              path: "/notifications",
               icon: Bell,
               bg: "bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-455",
             },
@@ -667,7 +667,7 @@ export const DashboardClient: React.FC = () => {
               ].map((b, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-150/60 dark:border-slate-750"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-750"
                 >
                   <div className="flex items-center space-x-2.5 min-w-0 pr-2">
                     <span className="w-11 text-center py-0.5 rounded-md bg-orange-500 text-white font-black text-[10px] tracking-wide shrink-0">
@@ -750,7 +750,7 @@ export const DashboardClient: React.FC = () => {
               ].map((t, i) => (
                 <div
                   key={i}
-                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-150/60 dark:border-slate-750"
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-750"
                 >
                   <div className="flex items-center space-x-2.5 min-w-0 pr-2">
                     <span className="w-11 text-center py-0.5 rounded-md bg-blue-600 text-white font-black text-[10px] tracking-wide shrink-0">
