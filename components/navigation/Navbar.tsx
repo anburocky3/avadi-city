@@ -135,7 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
             {/* 2. Notifications Bell */}
             <button
-              onClick={() => router.push("/alerts")}
+              onClick={() => router.push("/notifications")}
               className="relative w-8 h-8 rounded-full flex items-center justify-center text-slate-650 dark:text-slate-300 hover:bg-white dark:hover:bg-slate-800 transition-all cursor-pointer"
               aria-label="Notifications"
               title="Notifications"

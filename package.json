@@ -10,6 +10,7 @@
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
     "@teispace/next-themes": "^2.0.4",
+    "cheerio": "^1.2.0",
     "framer-motion": "^12.42.2",
     "lucide-react": "^1.26.0",
     "next": "16.2.11",
@@ -21,6 +22,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/cheerio": "^1.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

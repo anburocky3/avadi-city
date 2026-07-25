@@ -93,23 +93,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ).length;
 
   const mainNav: NavItem[] = [
-    { name: t("home"), path: "/", icon: Home },
+    { name: t("home"), path: "/dashboard", icon: Home },
     { name: t("feed"), path: "/feed", icon: MessageSquare },
-    { name: t("explore"), path: "/explore", icon: Compass },
-    { name: t("sos"), path: "/sos", icon: ShieldAlert, isSOS: true },
-    { name: t("profile"), path: "/profile", icon: User },
+    { name: t("complaints"), path: "/complaints", icon: AlertTriangle },
+
+    // { name: t("sos"), path: "/sos", icon: ShieldAlert, isSOS: true },
+    // { name: t("profile"), path: "/profile", icon: User },
   ];
 
   const quickModules: NavItem[] = [
-    { name: t("complaints"), path: "/complaints", icon: AlertTriangle },
-    {
-      name: t("alerts"),
-      path: "/alerts",
-      icon: Bell,
-      badge: unreadAlertsCount > 0 ? unreadAlertsCount : null,
-    },
-    { name: t("healthcare"), path: "/healthcare", icon: HeartPulse },
+    { name: t("explore"), path: "/explore", icon: Compass },
     { name: t("food"), path: "/food", icon: ChefHat },
+    { name: t("healthcare"), path: "/healthcare", icon: HeartPulse },
     { name: t("services"), path: "/services", icon: Wrench },
     { name: t("rentals"), path: "/rentals", icon: Building2 },
     { name: t("jobs"), path: "/jobs", icon: Briefcase },
@@ -156,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 AVADI CITY
               </span>
               <span className="text-[9px] text-slate-400 dark:text-slate-500 font-extrabold tracking-wider mt-1 uppercase">
-                HYPERLOCAL SUPER-APP
+                CONNECTING CITIZENS
               </span>
             </div>
           </div>
