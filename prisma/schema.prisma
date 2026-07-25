@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+
+enum Gender {
+  Male
+  Female
+  Other
+}
+
+enum BloodGroup {
+  A_POS   @map("A+")
+  A_NEG   @map("A-")
+  B_POS   @map("B+")
+  B_NEG   @map("B-")
+  AB_POS  @map("AB+")
+  AB_NEG  @map("AB-")
+  O_POS   @map("O+")
+  O_NEG   @map("O-")
+}
+
+model User {
+  id                  String     @id @default(cuid())
+  name                String
+  gender              Gender
+  dob                 DateTime
+  bloodGroup          BloodGroup
+  phone               String     @unique
+  email               String     @unique
+  wardNumber          Int
+  streetName          String
+  notificationEnabled Boolean    @default(false)
+  isVerified          Boolean    @default(true)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  @@index([wardNumber])
+}
+
+model VerificationToken {
+  id        String   @id @default(cuid())
+  email     String
+  otp       String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([email, otp])
+  @@index([email])
+}
+

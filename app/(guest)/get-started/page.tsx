@@ -18,8 +18,10 @@ import {
   Building2,
   X,
   Search,
+  AlertCircle,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
@@ -78,10 +80,16 @@ type StepWardData = zod.infer<typeof stepWardSchema>;
 type MasterFormData = Partial<StepOneData & StepTwoData & StepWardData>;
 
 export default function GetStartedPage() {
+  const router = useRouter();
   const [step, setStep] = useState("register");
   const [formData, setFormData] = useState<MasterFormData>({});
 
+  // API & Network States
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState("");
+
   // UI & Location Simulation States
+  const [demoOtp, setDemoOtp] = useState("1234");
   const [otpValues, setOtpValues] = useState(["", "", "", ""]);
   const [resendCountdown, setResendCountdown] = useState(30);
   const [isLocating, setIsLocating] = useState(false);
@@ -118,7 +126,7 @@ export default function GetStartedPage() {
     formState: { errors: errorsStep1, isValid: isValidStep1 },
   } = useForm<StepOneData>({
     resolver: zodResolver(stepOneSchema),
-    mode: "onChange", // Validates on every keystroke to toggle button state
+    mode: "onChange",
     defaultValues: {
       name: formData.name || "",
       gender: formData.gender,
@@ -156,7 +164,6 @@ export default function GetStartedPage() {
     register: registerWard,
     handleSubmit: handleSubmitWard,
     setValue: setValueWard,
-    watch: watchWard,
     formState: { errors: errorsWard, isValid: isValidWard },
   } = useForm<StepWardData>({
     resolver: zodResolver(stepWardSchema),
@@ -170,13 +177,42 @@ export default function GetStartedPage() {
   // --- HANDLERS ---
 
   const handleStep1Submit = (data: StepOneData) => {
+    setApiError("");
     setFormData((prev) => ({ ...prev, ...data }));
     setStep("contact");
   };
 
-  const handleStep2Submit = (data: StepTwoData) => {
-    setFormData((prev) => ({ ...prev, ...data }));
-    setStep("otp");
+  // Step 2 Submit: Calls /api/auth/send-otp
+  const handleStep2Submit = async (data: StepTwoData) => {
+    setIsSubmitting(true);
+    setApiError(""); // Clear previous errors
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        // This will catch "email/mobile is already exist" from our 409 response
+        throw new Error(result.error || "Failed to send verification code.");
+      }
+
+      // Save demo OTP if returned by server
+      if (result.demoOtp) {
+        setDemoOtp(result.demoOtp);
+      }
+
+      setFormData((prev) => ({ ...prev, ...data }));
+      setStep("otp");
+      setResendCountdown(30);
+    } catch (err: any) {
+      // Shows the error banner directly on Step 2
+      setApiError(err.message || "An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleOtpChange = (index: number, val: string) => {
@@ -185,11 +221,9 @@ export default function GetStartedPage() {
     newOtp[index] = val;
     setOtpValues(newOtp);
 
-    // Sync combined OTP string with Zod schema
     const combinedOtp = newOtp.join("");
     setValueOtp("otp", combinedOtp, { shouldValidate: true });
 
-    // Auto-focus next input
     if (val && index < 3) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
       nextInput?.focus();
@@ -206,14 +240,55 @@ export default function GetStartedPage() {
     }
   };
 
-  const onVerifyOtpSuccess = () => {
-    setStep("location");
+  // Step 3 Submit: Calls /api/auth/verify-otp
+  const onVerifyOtpSuccess = async (data: StepOtpData) => {
+    setIsSubmitting(true);
+    setApiError("");
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, otp: data.otp }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Invalid verification code.");
+      }
+
+      setStep("location");
+    } catch (err: any) {
+      setApiError(err.message || "Verification failed. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Resend OTP Handler
+  const handleResendOtp = async () => {
+    if (!formData.email || !formData.phone) return;
+    setIsSubmitting(true);
+    setApiError("");
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, phone: formData.phone }),
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error || "Failed to resend code.");
+      setResendCountdown(30);
+    } catch (err: any) {
+      setApiError(err.message || "Failed to resend code.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleStreetSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setStreetQuery(value);
-    setSelectedStreetItem(null); // Reset selection if they edit the query
+    setSelectedStreetItem(null);
 
     if (!value.trim()) {
       setStreetResults([]);
@@ -223,7 +298,7 @@ export default function GetStartedPage() {
     const searchTerm = value.toLowerCase().trim();
     const filtered = ALL_AVADI_STREETS.filter((item) =>
       item.streetName.toLowerCase().includes(searchTerm),
-    ).slice(0, 15); // Show top 15 matches for clean UI performance
+    ).slice(0, 15);
 
     setStreetResults(filtered);
   };
@@ -231,9 +306,8 @@ export default function GetStartedPage() {
   const handleSelectStreetItem = (item: StreetItem) => {
     setSelectedStreetItem(item);
     setStreetQuery(item.streetName);
-    setStreetResults([]); // Hide dropdown after selection
+    setStreetResults([]);
 
-    // Automatically map and bind both values into React Hook Form + Zod
     setValueWard("wardNumber", item.wardNo, { shouldValidate: true });
     setValueWard("streetName", item.streetName, { shouldValidate: true });
   };
@@ -267,7 +341,6 @@ export default function GetStartedPage() {
           const data = await res.json();
           setLocationStatus("Verifying municipal boundaries...");
 
-          // Run our upgraded Geofence & Accuracy Validator
           const result = validateAndMatchAvadiLocation(
             data.address || {},
             accuracy,
@@ -276,12 +349,12 @@ export default function GetStartedPage() {
           if (result.status === "LOW_ACCURACY") {
             setOutOfBoundsMsg({
               title: "Imprecise Location Detected",
-              desc: `We detected your Wi-Fi/ISP signal near "${result.detectedName}", but the accuracy is too low (+${Math.round(accuracy)}m) to pin an exact Avadi ward. Please select your street manually.`,
+              desc: `We detected your signal near "${result.detectedName}", but accuracy is too low (+${Math.round(accuracy)}m) to pin an exact Avadi ward. Please select manually.`,
             });
           } else if (result.status === "OUT_OF_BOUNDS") {
             setOutOfBoundsMsg({
               title: "Outside Avadi Limits Detected",
-              desc: `Your internet routing shows your location as "${result.detectedName}" (outside Avadi Corporation limits). If you are currently in Avadi using Wi-Fi or mobile data, please choose your ward manually.`,
+              desc: `Your routing shows your location as "${result.detectedName}" (outside Avadi Corporation limits). Please choose your ward manually.`,
             });
           } else if (result.status === "EXACT_MATCH" && result.match) {
             const matchedWardObj = {
@@ -324,7 +397,7 @@ export default function GetStartedPage() {
           setLocationStatus("");
         }
       },
-      (error) => {
+      () => {
         setIsLocating(false);
         setLocationStatus("");
         setLocationError(
@@ -334,15 +407,46 @@ export default function GetStartedPage() {
       {
         enableHighAccuracy: true,
         timeout: 12000,
-        maximumAge: 0, // Force fresh GPS ping, do not use cached OS position
+        maximumAge: 0,
       },
     );
   };
 
   const handleWardSelectSubmit = (data: StepWardData) => {
-    const finalData = { ...formData, ...data };
-    console.log("🚀 Final Setup Complete Data:", finalData);
+    setApiError("");
+    setFormData((prev) => ({ ...prev, ...data }));
     setStep("notification");
+  };
+
+  // Step 6 Submit: Calls /api/auth/onboarding to save complete profile
+  const handleCompleteOnboarding = async (notificationsEnabled: boolean) => {
+    setIsSubmitting(true);
+    setApiError("");
+    try {
+      const payload = {
+        ...formData,
+        notification_enabled: notificationsEnabled,
+      };
+
+      const res = await fetch("/api/auth/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const result = await res.json();
+
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to complete registration.");
+      }
+
+      // Redirect citizen to dashboard after database save succeeds
+      router.push("/dashboard");
+    } catch (err: any) {
+      setApiError(err.message || "An unexpected error occurred while saving.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // OTP Countdown Timer
@@ -462,6 +566,14 @@ export default function GetStartedPage() {
                 }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Global API Error Alert Banner */}
+        {apiError && (
+          <div className="mx-6 md:mx-8 mt-4 p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl flex items-center space-x-2 text-rose-500 text-xs font-semibold">
+            <AlertCircle size={16} className="shrink-0" />
+            <span className="flex-1">{apiError}</span>
           </div>
         )}
 
@@ -681,6 +793,7 @@ export default function GetStartedPage() {
                   <div className="flex space-x-3 pt-4">
                     <button
                       type="button"
+                      disabled={isSubmitting}
                       onClick={() => setStep("register")}
                       className="px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-xl font-bold transition text-xs flex items-center justify-center cursor-pointer"
                     >
@@ -688,11 +801,20 @@ export default function GetStartedPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={!isValidStep2}
+                      disabled={!isValidStep2 || isSubmitting}
                       className="flex-1 py-3 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:hover:bg-primary text-white rounded-xl font-bold shadow-md transition flex items-center justify-center space-x-2 text-xs cursor-pointer"
                     >
-                      <span>Next</span>
-                      <ArrowRight size={14} />
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Sending Code...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Next</span>
+                          <ArrowRight size={14} />
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -727,13 +849,23 @@ export default function GetStartedPage() {
                     </p>
                   </div>
 
-                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-center">
-                    <p className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
-                      Demo Code:{" "}
-                      <span className="underline font-black text-sm tracking-wider">
-                        Any 4 digits
-                      </span>
-                    </p>
+                  <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl flex items-center justify-between px-4">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-bold">
+                      Demo Dev Code:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // Auto-fill all 4 input boxes with the demo code (e.g., "1234")
+                        const digits = demoOtp.split("");
+                        setOtpValues(digits);
+                        setValueOtp("otp", demoOtp, { shouldValidate: true });
+                      }}
+                      className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-black tracking-widest transition shadow-sm cursor-pointer"
+                      title="Click to auto-fill OTP"
+                    >
+                      {demoOtp} (Click to Fill)
+                    </button>
                   </div>
 
                   <div className="space-y-4">
@@ -768,10 +900,13 @@ export default function GetStartedPage() {
                       ) : (
                         <button
                           type="button"
-                          onClick={() => setResendCountdown(30)}
-                          className="text-[11px] text-primary hover:underline font-bold cursor-pointer"
+                          disabled={isSubmitting}
+                          onClick={handleResendOtp}
+                          className="text-[11px] text-primary hover:underline font-bold cursor-pointer disabled:opacity-50"
                         >
-                          Resend Verification Code
+                          {isSubmitting
+                            ? "Resending..."
+                            : "Resend Verification Code"}
                         </button>
                       )}
                     </div>
@@ -780,6 +915,7 @@ export default function GetStartedPage() {
                   <div className="flex space-x-3 pt-2">
                     <button
                       type="button"
+                      disabled={isSubmitting}
                       onClick={() => setStep("contact")}
                       className="px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold transition text-xs flex items-center justify-center cursor-pointer"
                     >
@@ -787,11 +923,20 @@ export default function GetStartedPage() {
                     </button>
                     <button
                       type="submit"
-                      disabled={!isValidOtp}
+                      disabled={!isValidOtp || isSubmitting}
                       className="flex-1 py-3 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl font-bold shadow-md transition flex items-center justify-center space-x-2 text-xs cursor-pointer"
                     >
-                      <span>Verify & Proceed</span>
-                      <ArrowRight size={14} />
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={16} className="animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Verify & Proceed</span>
+                          <ArrowRight size={14} />
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
@@ -835,7 +980,6 @@ export default function GetStartedPage() {
                   </p>
                 </div>
 
-                {/* Dynamic Status Feedback during GPS fetch */}
                 {isLocating && locationStatus && (
                   <div className="p-3 bg-primary/5 border border-primary/20 rounded-xl flex items-center justify-center space-x-2 text-primary text-xs font-semibold animate-pulse">
                     <Loader2 size={14} className="animate-spin shrink-0" />
@@ -843,15 +987,12 @@ export default function GetStartedPage() {
                   </div>
                 )}
 
-                {/* Error Feedback */}
                 {locationError && (
                   <div className="p-3 bg-rose-500/10 border border-rose-500/20 rounded-xl text-rose-500 text-[11px] font-medium leading-relaxed">
                     {locationError}
                   </div>
                 )}
 
-                {/* OUTCOME 1: EXACT WARD MATCH FOUND */}
-                {/* OUTCOME: OUT OF BOUNDS OR IMPRECISE ISP IP DETECTED */}
                 {outOfBoundsMsg ? (
                   <div className="space-y-4 pt-1 animate-in fade-in duration-200">
                     <div className="p-4 bg-amber-500/10 dark:bg-amber-950/30 border border-amber-500/30 rounded-2xl text-left space-y-2">
@@ -931,7 +1072,6 @@ export default function GetStartedPage() {
                     </div>
                   </div>
                 ) : unmatchedLocality ? (
-                  /* OUTCOME 2: GPS WORKED, BUT STREET WAS NOT IN JSON */
                   <div className="space-y-4 pt-1">
                     <div className="p-4 bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/20 rounded-2xl text-center space-y-1.5">
                       <p className="text-[10px] uppercase tracking-wider font-extrabold text-amber-600 dark:text-amber-400">
@@ -956,7 +1096,6 @@ export default function GetStartedPage() {
                     </button>
                   </div>
                 ) : (
-                  /* OUTCOME 3: INITIAL STATE / RETRY */
                   <div className="pt-4 space-y-3">
                     <button
                       type="button"
@@ -1021,7 +1160,6 @@ export default function GetStartedPage() {
                   className="space-y-4"
                 >
                   {!showManualFallback ? (
-                    /* PRIMARY MODE: STREET SEARCH FIRST */
                     <div className="space-y-3">
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -1065,7 +1203,6 @@ export default function GetStartedPage() {
                         )}
                       </div>
 
-                      {/* Search Results Dropdown List */}
                       {streetResults.length > 0 && !selectedStreetItem && (
                         <ul className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900 shadow-xl max-h-64 overflow-y-auto animate-in fade-in duration-150 text-left">
                           {streetResults.map((item) => (
@@ -1074,15 +1211,12 @@ export default function GetStartedPage() {
                               onClick={() => handleSelectStreetItem(item)}
                               className="p-3.5 hover:bg-amber-50/70 dark:hover:bg-slate-800/80 cursor-pointer flex items-start gap-3 transition group"
                             >
-                              {/* Left Side: Top-aligned MapPin Icon */}
                               <div className="p-2 rounded-xl bg-amber-100/60 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-white transition shadow-2xs">
                                 <MapPin size={16} />
                               </div>
-
-                              {/* Right Side: Full-width Wrapping Street Name + Bottom Ward Badge */}
                               <div className="flex-1 min-w-0 space-y-1.5">
-                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-150 leading-normal wrap-break-word pr-1">
-                                  {item.streetName}
+                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-150 leading-normal wrap-break-word pr-1 capitalize">
+                                  {item.streetName.toLocaleLowerCase("en-IN")}
                                 </p>
 
                                 <div className="flex items-center">
@@ -1097,7 +1231,6 @@ export default function GetStartedPage() {
                         </ul>
                       )}
 
-                      {/* No Results Message */}
                       {streetQuery.trim() &&
                         streetResults.length === 0 &&
                         !selectedStreetItem && (
@@ -1120,7 +1253,6 @@ export default function GetStartedPage() {
                           </div>
                         )}
 
-                      {/* Selected Confirmation Banner */}
                       {selectedStreetItem && (
                         <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-start justify-between gap-3 animate-in zoom-in-95 duration-200 text-left">
                           <div className="flex items-start space-x-3 min-w-0 flex-1">
@@ -1136,7 +1268,6 @@ export default function GetStartedPage() {
                                   Ward {selectedStreetItem.wardNo}
                                 </span>
                               </div>
-                              {/* Removed truncate and max-w-[200px] -> Added break-words */}
                               <p className="text-xs font-bold text-slate-800 dark:text-white leading-normal wrap-break-word capitalize">
                                 {selectedStreetItem.streetName}
                                 <button
@@ -1161,7 +1292,6 @@ export default function GetStartedPage() {
                         </div>
                       )}
 
-                      {/* Toggle to Manual Mode */}
                       {!selectedStreetItem && (
                         <div className="text-center pt-1">
                           <button
@@ -1175,7 +1305,6 @@ export default function GetStartedPage() {
                       )}
                     </div>
                   ) : (
-                    /* FALLBACK MODE: MANUAL WARD & STREET SELECTION */
                     <div className="space-y-4 animate-in fade-in duration-200">
                       <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-center justify-between text-xs text-amber-800 dark:text-amber-300 font-medium">
                         <span>Manual Ward Selection Mode</span>
@@ -1188,7 +1317,6 @@ export default function GetStartedPage() {
                         </button>
                       </div>
 
-                      {/* Ward Dropdown */}
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                           Select Ward Number *
@@ -1208,7 +1336,7 @@ export default function GetStartedPage() {
                             </option>
                             {wards.map((w) => (
                               <option key={w.id} value={w.id}>
-                                {/* Ward {w.id} - */} {w.name}
+                                {w.name}
                               </option>
                             ))}
                           </select>
@@ -1223,7 +1351,6 @@ export default function GetStartedPage() {
                         )}
                       </div>
 
-                      {/* Manual Street Input */}
                       <div className="space-y-1.5">
                         <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                           Street Name / Landmark *
@@ -1243,7 +1370,6 @@ export default function GetStartedPage() {
                     </div>
                   )}
 
-                  {/* Navigation Buttons */}
                   <div className="flex space-x-3 pt-2">
                     <button
                       type="button"
@@ -1266,7 +1392,7 @@ export default function GetStartedPage() {
               </motion.div>
             )}
 
-            {/* STEP 6: NOTIFICATION PERMISSION */}
+            {/* STEP 6: NOTIFICATION PERMISSION & SAVE DATABASE */}
             {step === "notification" && (
               <motion.div
                 key="notification"
@@ -1290,7 +1416,6 @@ export default function GetStartedPage() {
                   </p>
                 </div>
 
-                {/* Notification Preview Card Mockup */}
                 <div className="p-4 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-left space-y-3.5 shadow-sm max-w-sm mx-auto">
                   <div className="flex items-start space-x-3">
                     <div className="w-8 h-8 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center shrink-0 mt-0.5">
@@ -1319,25 +1444,29 @@ export default function GetStartedPage() {
                 <div className="pt-4 space-y-3">
                   <button
                     type="button"
-                    onClick={() => {
-                      alert(
-                        "Notifications Enabled! Redirecting to dashboard...",
-                      );
-                      window.location.href = "/";
-                    }}
-                    className="w-full py-3.5 bg-primary hover:bg-orange-650 text-white rounded-xl font-bold shadow-md transition flex items-center justify-center space-x-2 text-xs cursor-pointer"
+                    disabled={isSubmitting}
+                    onClick={() => handleCompleteOnboarding(true)}
+                    className="w-full py-3.5 bg-primary hover:bg-orange-650 text-white rounded-xl font-bold shadow-md transition flex items-center justify-center space-x-2 text-xs cursor-pointer disabled:opacity-50"
                   >
-                    <BellRing size={14} className="mr-1.5" />
-                    <span>Enable Notifications</span>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin" />
+                        <span>Saving Citizen Profile...</span>
+                      </>
+                    ) : (
+                      <>
+                        <BellRing size={14} className="mr-1.5" />
+                        <span>Enable Notifications & Save</span>
+                      </>
+                    )}
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      window.location.href = "/";
-                    }}
-                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-350 rounded-xl font-bold transition text-xs flex items-center justify-center cursor-pointer"
+                    disabled={isSubmitting}
+                    onClick={() => handleCompleteOnboarding(false)}
+                    className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-350 rounded-xl font-bold transition text-xs flex items-center justify-center cursor-pointer disabled:opacity-50"
                   >
-                    <span>Skip for Now</span>
+                    {isSubmitting ? "Saving..." : "Skip for Now"}
                   </button>
                 </div>
               </motion.div>
@@ -1348,7 +1477,7 @@ export default function GetStartedPage() {
 
       {/* Municipal Credit Footer */}
       <div className="mt-8 text-center text-[9px] tracking-wider uppercase font-semibold text-slate-400 dark:text-slate-500 flex flex-col items-center space-y-1">
-        <span>© 2026 Avadi City Municipal Corporation</span>
+        <span>© {new Date().getFullYear()} Avadi City</span>
         <span className="opacity-70 text-[8px] font-normal normal-case">
           Citizen Services & Grievance Portal
         </span>

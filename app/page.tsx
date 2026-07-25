@@ -91,7 +91,7 @@ export default function LandingPage() {
               AVADI <span className="text-primary font-black">CITY</span>
             </span>
             <span className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-widest uppercase mt-0.5">
-              URBAN COMMUNITY PLATFORM
+              CONNECTING AVADIANS
             </span>
           </div>
         </div>
