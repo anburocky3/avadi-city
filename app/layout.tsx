@@ -39,17 +39,15 @@ export default async function RootLayout({
     <html lang="en" className={` h-full antialiased`} suppressHydrationWarning>
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        {/* iOS Splash screen image links */}
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash/apple-splash-2048-2732.jpg"
-          media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
+        {/* Enable Web App Standalone Mode on iOS */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
         />
-        <link
-          rel="apple-touch-startup-image"
-          href="/splash/apple-splash-1170-2532.jpg"
-          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
-        />
+
+        {/* iOS Startup Splash Screen referencing your public path */}
+        <link rel="apple-touch-startup-image" href="/img/splash.png" />
       </head>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
