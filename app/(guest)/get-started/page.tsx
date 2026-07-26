@@ -123,6 +123,12 @@ export default function GetStartedPage() {
     useState<StreetItem | null>(null);
   const [showManualFallback, setShowManualFallback] = useState(false);
 
+  const getEighteenYearsAgoDate = () => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - 18);
+    return date.toISOString().split("T")[0];
+  };
+
   // --- FORM HOOKS SETUP ---
 
   const {
@@ -137,7 +143,7 @@ export default function GetStartedPage() {
     defaultValues: {
       name: formData.name || "",
       gender: formData.gender,
-      dob: formData.dob || "",
+      dob: formData.dob || getEighteenYearsAgoDate(),
       bloodGroup: formData.bloodGroup,
     },
   });
@@ -651,7 +657,7 @@ export default function GetStartedPage() {
                       type="date"
                       max={new Date().toISOString().split("T")[0]}
                       {...registerStep1("dob")}
-                      className="mt-2 w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium cursor-pointer transition"
+                      className="mt-2 w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-border"
                     />
                     {errorsStep1.dob && (
                       <p className="text-xs text-rose-500 font-bold pl-1">
