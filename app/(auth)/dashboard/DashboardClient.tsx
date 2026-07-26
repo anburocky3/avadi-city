@@ -39,7 +39,7 @@ import {
   NonVegSymbol,
   IceCreamSymbol,
 } from "@/components/food-icons";
-import { useWard } from "@/context/wardContext";
+import { Feed, useWard } from "@/context/wardContext";
 
 // --- TYPESCRIPT DEFINITIONS ---
 

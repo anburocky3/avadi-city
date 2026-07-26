@@ -21,6 +21,15 @@ export interface AuthUser {
   isVerified: boolean;
 }
 
+export interface Volunteer {
+  id: number | string;
+  name: string;
+  role?: string;
+  phone?: string;
+  ward?: number | string;
+  [key: string]: any;
+}
+
 export interface Comment {
   id: number | string;
   author: string;
@@ -69,16 +78,30 @@ interface WardContextType {
 
   // Complaint State & Actions
   complaints: Complaint[];
+  addComplaint: (newComplaint: Partial<Complaint>) => Promise<boolean>;
   isLoadingComplaints: boolean;
   upvoteComplaint: (complaintId: string | number) => Promise<void>;
 
   // volunteers
   volunteers: Array<{ name: string; [key: string]: any }>;
+  addVolunteer: (
+    newVolunteer: Partial<{ name: string; [key: string]: any }>,
+  ) => Promise<boolean>;
+
+  // Blood Requests
+  bloodGroup: string;
+  addBloodRequest: (
+    newRequest: Partial<{ name: string; bloodGroup: string; contact: string }>,
+  ) => Promise<boolean>;
 
   // Session State
   activeWard: { id: number; name: string };
   userProfile: { name: string; wardNumber: number };
   updateProfile: (updatedData: Partial<AuthUser>) => Promise<void>;
+
+  // ward
+  wards: Array<{ id: number; name: string }>;
+  selectWard: (wardId: number) => void;
 
   // Alerts & Notifications
   alerts: any[];
@@ -360,6 +383,87 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     upvoteMutation.mutate(complaintId);
   };
 
+  const addComplaint = async (
+    newComplaint: Partial<Complaint>,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/complaints", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newComplaint),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to submit complaint");
+      }
+      queryClient.invalidateQueries({ queryKey: ["complaints"] });
+      return true;
+    } catch (error) {
+      console.error("Complaint submission failed:", error);
+      return false;
+    }
+  };
+
+  const addBloodRequest = async (
+    newRequest: Partial<{ name: string; bloodGroup: string; contact: string }>,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/blood-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newRequest),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to submit blood request");
+      }
+      queryClient.invalidateQueries({ queryKey: ["blood-requests"] });
+      return true;
+    } catch (error) {
+      console.error("Blood request submission failed:", error);
+      return false;
+    }
+  };
+
+  const addVolunteer = async (
+    newVolunteer: Partial<{
+      name: string;
+      bloodGroup: string;
+      contact: string;
+    }>,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/volunteers", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newVolunteer),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message || "Failed to submit volunteer request");
+      }
+      queryClient.invalidateQueries({ queryKey: ["volunteers"] });
+      return true;
+    } catch (error) {
+      console.error("Volunteer request submission failed:", error);
+      return false;
+    }
+  };
+
+  const bloodGroup = authUser?.bloodGroup || "Unknown";
+
+  const wards = Array.from({ length: 20 }, (_, i) => ({
+    id: i + 1,
+    name: `Ward ${i + 1}`,
+  }));
+
+  const selectWard = (wardId: number) => {
+    const selectedWard = wards.find((w) => w.id === wardId);
+    if (selectedWard) {
+      router.push(`/wards/${wardId}`);
+    }
+  };
+
   return (
     <WardContext.Provider
       value={{
@@ -374,6 +478,12 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         likeFeed,
         addCommentToFeed,
         upvoteComplaint,
+        addComplaint,
+        bloodGroup,
+        addBloodRequest,
+        addVolunteer,
+        wards,
+        selectWard,
         volunteers: [],
         updateProfile,
         alerts: [],

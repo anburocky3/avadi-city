@@ -95,7 +95,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
       businessName: "",
       salary: "",
       shift: "",
-      contact: userProfile?.phone || "",
+      contact: userProfile?.wardNumber.toString() || "",
       details: "",
     },
   });

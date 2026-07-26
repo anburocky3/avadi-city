@@ -414,7 +414,7 @@ export const Complaints: React.FC = () => {
     };
 
     const created = addComplaint(newComplaint);
-    setSubmittedComplaint(created as Complaint);
+    setSubmittedComplaint(created as unknown as Complaint);
     setReportStep(3);
   };
 

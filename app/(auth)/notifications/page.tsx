@@ -72,7 +72,7 @@ export const Notification: React.FC = () => {
     readAlerts = [],
     dismissAlert = () => {},
     markAlertAsRead = () => {},
-  } = useWard() as WardContextType;
+  } = useWard() as unknown as WardContextType;
 
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [subscribeMyWard, setSubscribeMyWard] = useState<boolean>(false);

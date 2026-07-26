@@ -56,17 +56,18 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
   initialVolunteers,
 }) => {
   const t = useTranslations("volunteers");
-  const { userProfile, activeWard, addVolunteer } = useWard();
+  const { authUser, activeWard, addVolunteer } = useWard();
 
   const [activeTab, setActiveTab] = useState<"donations" | "volunteers">(
     "donations",
   );
   const [volunteersList, setVolunteersList] =
     useState<Volunteer[]>(initialVolunteers);
+  useState<Volunteer[]>(initialVolunteers);
 
   // Volunteer Join Form State
   const [bloodGroup, setBloodGroup] = useState<string>(
-    userProfile?.bloodGroup || "O+",
+    authUser?.bloodGroup || "O+",
   );
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [showJoinForm, setShowJoinForm] = useState<boolean>(true);
@@ -82,7 +83,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
 
   // Check if current user is already registered in volunteers list
   const isAlreadyRegistered = volunteersList.some(
-    (v) => v.name === userProfile?.name,
+    (v) => v.name === authUser?.name,
   );
 
   useEffect(() => {
@@ -104,17 +105,15 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
     e.preventDefault();
     if (selectedInterests.length === 0) return;
 
-    const dobYear = userProfile?.dob
-      ? new Date(userProfile.dob).getFullYear()
-      : 2000;
+    const dobYear = authUser?.dob ? new Date(authUser.dob).getFullYear() : 2000;
     const computedAge = new Date().getFullYear() - dobYear;
 
     const newVolunteer: Volunteer = {
       id: `vol-${Date.now()}`,
-      name: userProfile?.name || "Avadi Resident",
+      name: authUser?.name || "Avadi Resident",
       age: computedAge > 0 ? computedAge : 25,
-      gender: userProfile?.gender || "Male",
-      ward: userProfile?.wardNumber || activeWard?.id || 14,
+      gender: authUser?.gender || "Male",
+      ward: authUser?.wardNumber || activeWard?.id || 14,
       bloodGroup,
       interests: selectedInterests,
     };
@@ -305,25 +304,25 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
                   <div>
                     <span>Name: </span>
                     <span className="text-slate-700 dark:text-slate-350">
-                      {userProfile?.name || "Set in profile"}
+                      {authUser?.name || "Set in profile"}
                     </span>
                   </div>
                   <div>
                     <span>Active Ward: </span>
                     <span className="text-slate-700 dark:text-slate-350">
-                      Ward {userProfile?.wardNumber || activeWard?.id}
+                      Ward {authUser?.wardNumber || activeWard?.id}
                     </span>
                   </div>
                   <div>
                     <span>Date of Birth: </span>
                     <span className="text-slate-700 dark:text-slate-350">
-                      {userProfile?.dob || "Set in profile"}
+                      {authUser?.dob || "Set in profile"}
                     </span>
                   </div>
                   <div>
                     <span>Gender: </span>
                     <span className="text-slate-700 dark:text-slate-350">
-                      {userProfile?.gender || "Set in profile"}
+                      {authUser?.gender || "Set in profile"}
                     </span>
                   </div>
                 </div>

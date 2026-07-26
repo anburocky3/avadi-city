@@ -100,7 +100,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
       type: "Residential",
       rent: "",
       advance: "",
-      contact: userProfile?.phone || "",
+      contact: userProfile?.wardNumber?.toString() || "",
       details: "",
     },
   });

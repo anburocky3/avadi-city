@@ -229,7 +229,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
   const [formData, setFormData] = useState({
     name: "",
     category: "Plumbers",
-    phone: userProfile?.phone || "",
+    phone: userProfile?.wardNumber?.toString() || "",
     ward: activeWard?.id || 14,
     experience: "5 Years",
     hours: "8:00 AM - 8:00 PM",
@@ -320,7 +320,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
     setFormData({
       name: "",
       category: "Plumbers",
-      phone: userProfile?.phone || "",
+      phone: userProfile?.wardNumber?.toString() || "",
       ward: activeWard?.id || 14,
       experience: "5 Years",
       hours: "8:00 AM - 8:00 PM",
