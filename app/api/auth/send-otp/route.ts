@@ -33,8 +33,11 @@ export async function POST(req: Request) {
     }
 
     // 3. Set default demo OTP "1234" in development, otherwise random 4 digits
-    const isDev = process.env.NODE_ENV !== "production";
-    const otp = isDev
+    const isDevMode =
+      process.env.NODE_ENV !== "production" ||
+      process.env.ENABLE_DEV_OTP === "true";
+
+    const otp = isDevMode
       ? "1234"
       : Math.floor(1000 + Math.random() * 9000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
@@ -54,7 +57,7 @@ export async function POST(req: Request) {
         success: true,
         message: "Verification code sent successfully.",
         // Send the demo code back to the frontend in development mode
-        demoOtp: isDev ? otp : undefined,
+        demoOtp: isDevMode ? otp : undefined,
       },
       { status: 200 },
     );
