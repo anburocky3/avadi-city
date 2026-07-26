@@ -9,9 +9,7 @@ import {
   Mail,
   Key,
   MapPin,
-  Bell,
   ShieldAlert,
-  BellRing,
   Loader2,
   LocateFixed,
   CheckCircle2,
@@ -22,78 +20,54 @@ import {
   Check,
 } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import { validateAndMatchAvadiLocation } from "@/lib/location-matcher";
 import { ALL_AVADI_STREETS, StreetItem } from "@/lib/wards";
 import Link from "next/link";
-
-// --- ZOD VALIDATION SCHEMAS ---
-
-const stepOneSchema = zod.object({
-  name: zod
-    .string()
-    .min(3, { message: "Name must be at least 3 characters long" })
-    .max(50, { message: "Name cannot exceed 50 characters" }),
-  gender: zod.enum(["Male", "Female", "Other"], {
-    message: "Please select your gender",
-  }),
-  dob: zod
-    .string()
-    .min(1, { message: "Date of birth is required" })
-    .refine((date) => new Date(date) <= new Date(), {
-      message: "Date of birth cannot be in the future",
-    }),
-  bloodGroup: zod.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
-    message: "Please select your blood group",
-  }),
-});
-
-const stepTwoSchema = zod.object({
-  phone: zod.string().regex(/^[6-9]\d{9}$/, {
-    message: "Enter a valid 10-digit Indian mobile number",
-  }),
-  email: zod.email({ message: "Enter a valid email address" }),
-});
-
-const stepOtpSchema = zod.object({
-  otp: zod
-    .string()
-    .length(4, { message: "Please enter the complete 4-digit code" }),
-});
-
-const stepWardSchema = zod.object({
-  wardNumber: zod.number().min(1, { message: "Please select your Ward" }),
-  streetName: zod
-    .string()
-    .min(3, { message: "Street name must be at least 3 characters" })
-    .max(100, { message: "Street name is too long" }),
-});
+import {
+  stepContactSchema,
+  stepOtpSchema,
+  stepPersonalSchema,
+  stepWardSchema,
+} from "@/lib/validations/onboarding";
 
 // --- TYPES ---
-type StepOneData = zod.infer<typeof stepOneSchema>;
-type StepTwoData = zod.infer<typeof stepTwoSchema>;
+type StepContactData = zod.infer<typeof stepContactSchema>;
 type StepOtpData = zod.infer<typeof stepOtpSchema>;
+type StepPersonalData = zod.infer<typeof stepPersonalSchema>;
 type StepWardData = zod.infer<typeof stepWardSchema>;
 
-type MasterFormData = Partial<StepOneData & StepTwoData & StepWardData>;
+type MasterFormData = Partial<
+  StepContactData & StepPersonalData & StepWardData
+>;
+
+type NotificationPromptStatus =
+  | "granted"
+  | "denied"
+  | "default"
+  | "unsupported";
 
 export default function GetStartedPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const prefilledEmail = searchParams.get("email");
 
-  // 3-Step Navigation State: "register" -> "contact" -> "location"
-  const [step, setStep] = useState<"register" | "contact" | "location">(
-    "register",
+  // 3-Step Flow: "contact" -> "personal" -> "location"
+  const [step, setStep] = useState<"contact" | "personal" | "location">(
+    "contact",
   );
-  const [formData, setFormData] = useState<MasterFormData>({});
+  const [formData, setFormData] = useState<MasterFormData>({
+    email: prefilledEmail || "",
+  });
 
   // API & Network States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
 
-  // Step 2 Inline OTP States
+  // Step 1 Inline OTP States
   const [otpSent, setOtpSent] = useState(false);
   const [demoOtp, setDemoOtp] = useState("1234");
   const [otpValues, setOtpValues] = useState(["", "", "", ""]);
@@ -103,9 +77,6 @@ export default function GetStartedPage() {
   const [isLocating, setIsLocating] = useState(false);
   const [locationStatus, setLocationStatus] = useState("");
   const [locationError, setLocationError] = useState("");
-  const [unmatchedLocality, setUnmatchedLocality] = useState<string | null>(
-    null,
-  );
   const [autoMatchedWard, setAutoMatchedWard] = useState<{
     id: number;
     name: string;
@@ -121,7 +92,8 @@ export default function GetStartedPage() {
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
   const [selectedStreetItem, setSelectedStreetItem] =
     useState<StreetItem | null>(null);
-  const [showManualFallback, setShowManualFallback] = useState(false);
+
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
 
   const getEighteenYearsAgoDate = () => {
     const date = new Date();
@@ -132,56 +104,63 @@ export default function GetStartedPage() {
   // --- FORM HOOKS SETUP ---
 
   const {
-    register: registerStep1,
-    handleSubmit: handleSubmitStep1,
-    setValue: setValueStep1,
-    watch: watchStep1,
-    formState: { errors: errorsStep1, isValid: isValidStep1 },
-  } = useForm<StepOneData>({
-    resolver: zodResolver(stepOneSchema),
+    register: registerContact,
+    handleSubmit: handleSubmitContact,
+    getValues: getValuesContact,
+    setValue: setValueContact,
+    formState: { errors: errorsContact, isValid: isValidContact },
+  } = useForm<StepContactData>({
+    resolver: zodResolver(stepContactSchema),
     mode: "onChange",
     defaultValues: {
-      name: formData.name || "",
-      gender: formData.gender,
-      dob: formData.dob || getEighteenYearsAgoDate(),
-      bloodGroup: formData.bloodGroup,
+      phone: "",
+      email: prefilledEmail || "",
     },
   });
 
-  const {
-    register: registerStep2,
-    handleSubmit: handleSubmitStep2,
-    getValues: getValuesStep2,
-    formState: { errors: errorsStep2, isValid: isValidStep2 },
-  } = useForm<StepTwoData>({
-    resolver: zodResolver(stepTwoSchema),
-    mode: "onChange",
-    defaultValues: {
-      phone: formData.phone || "",
-      email: formData.email || "",
-    },
-  });
+  useEffect(() => {
+    if (prefilledEmail) {
+      setValueContact("email", prefilledEmail, { shouldValidate: true });
+      setFormData((prev) => ({ ...prev, email: prefilledEmail }));
+    }
+  }, [prefilledEmail, setValueContact]);
 
   const {
     setValue: setValueOtp,
-    handleSubmit: handleSubmitOtp,
-    formState: { errors: errorsOtp, isValid: isValidOtp },
+    formState: { errors: errorsOtp },
   } = useForm<StepOtpData>({
     resolver: zodResolver(stepOtpSchema),
     mode: "onChange",
   });
 
   const {
-    register: registerWard,
+    register: registerPersonal,
+    handleSubmit: handleSubmitPersonal,
+    setValue: setValuePersonal,
+    watch: watchPersonal,
+    formState: { errors: errorsPersonal, isValid: isValidPersonal },
+  } = useForm<StepPersonalData>({
+    resolver: zodResolver(stepPersonalSchema),
+    mode: "onChange",
+    defaultValues: {
+      name: "",
+      password: "",
+      gender: "Male",
+      dob: getEighteenYearsAgoDate(),
+      bloodGroup: "O+",
+    },
+  });
+
+  const {
     setValue: setValueWard,
     watch: watchWard,
-    formState: { errors: errorsWard, isValid: isValidWard },
+    formState: { isValid: isValidWard },
   } = useForm<StepWardData>({
     resolver: zodResolver(stepWardSchema),
     mode: "onChange",
     defaultValues: {
-      wardNumber: formData.wardNumber || 0,
-      streetName: formData.streetName || "",
+      wardNumber: 0,
+      streetName: "",
     },
   });
 
@@ -190,18 +169,21 @@ export default function GetStartedPage() {
 
   // --- HANDLERS ---
 
-  // STEP 1 SUBMIT
-  const handleStep1Submit = (data: StepOneData) => {
-    setApiError("");
-    setFormData((prev) => ({ ...prev, ...data }));
-    setStep("contact");
-  };
-
-  // STEP 2: SEND OTP INLINE
-  const handleSendOtpInline = async (data: StepTwoData) => {
+  const handleSendOtp = async (data: StepContactData) => {
     setIsSubmitting(true);
     setApiError("");
     try {
+      const checkRes = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const checkResult = await checkRes.json();
+
+      if (checkRes.ok && checkResult.exists) {
+        throw new Error("Email or mobile number is already registered.");
+      }
+
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -234,7 +216,10 @@ export default function GetStartedPage() {
     setOtpValues(newOtp);
 
     const combinedOtp = newOtp.join("");
-    setValueOtp("otp", combinedOtp, { shouldValidate: true });
+    setValueOtp("otp", combinedOtp, {
+      shouldValidate: true,
+      shouldDirty: true,
+    });
 
     if (val && index < 3) {
       const nextInput = document.getElementById(`otp-${index + 1}`);
@@ -252,34 +237,8 @@ export default function GetStartedPage() {
     }
   };
 
-  // STEP 2: VERIFY OTP INLINE & PROCEED TO STEP 3
-  const onVerifyOtpSuccess = async (data: StepOtpData) => {
-    const contactData = getValuesStep2();
-    setIsSubmitting(true);
-    setApiError("");
-    try {
-      const res = await fetch("/api/auth/verify-otp", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: contactData.email, otp: data.otp }),
-      });
-      const result = await res.json();
-
-      if (!res.ok) {
-        throw new Error(result.error || "Invalid verification code.");
-      }
-
-      setFormData((prev) => ({ ...prev, ...contactData }));
-      setStep("location");
-    } catch (err: any) {
-      setApiError(err.message || "Verification failed. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleResendOtp = async () => {
-    const contactData = getValuesStep2();
+    const contactData = getValuesContact();
     if (!contactData.email || !contactData.phone) return;
     setIsSubmitting(true);
     setApiError("");
@@ -287,10 +246,7 @@ export default function GetStartedPage() {
       const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: contactData.email,
-          phone: contactData.phone,
-        }),
+        body: JSON.stringify(contactData),
       });
       const result = await res.json();
       if (!res.ok) throw new Error(result.error || "Failed to resend code.");
@@ -302,7 +258,12 @@ export default function GetStartedPage() {
     }
   };
 
-  // STEP 3: WARD SEARCH & LOCATION
+  const handlePersonalSubmit = (data: StepPersonalData) => {
+    setApiError("");
+    setFormData((prev) => ({ ...prev, ...data }));
+    setStep("location");
+  };
+
   const handleStreetSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setStreetQuery(value);
@@ -344,7 +305,6 @@ export default function GetStartedPage() {
     setIsLocating(true);
     setLocationError("");
     setOutOfBoundsMsg(null);
-    setUnmatchedLocality(null);
     setAutoMatchedWard(null);
     setLocationStatus("Acquiring satellite / GPS lock...");
 
@@ -369,15 +329,13 @@ export default function GetStartedPage() {
             accuracy,
           );
 
-          if (result.status === "LOW_ACCURACY") {
+          if (
+            result.status === "LOW_ACCURACY" ||
+            result.status === "OUT_OF_BOUNDS"
+          ) {
             setOutOfBoundsMsg({
-              title: "Imprecise Location Detected",
-              desc: `We detected your signal near "${result.detectedName}", but accuracy is too low (+${Math.round(accuracy)}m) to pin an exact Avadi ward. Please select manually below.`,
-            });
-          } else if (result.status === "OUT_OF_BOUNDS") {
-            setOutOfBoundsMsg({
-              title: "Outside Avadi Limits Detected",
-              desc: `Your routing shows your location as "${result.detectedName}" (outside Avadi Corporation limits). Please choose your ward manually below.`,
+              title: "Location Notice",
+              desc: `Could not verify exact Avadi coordinates. Please select your street manually below.`,
             });
           } else if (result.status === "EXACT_MATCH" && result.match) {
             const matchedWardObj = {
@@ -398,20 +356,8 @@ export default function GetStartedPage() {
               wardNumber: result.match!.wardNo,
               streetName: result.match!.streetName,
             }));
-          } else if (result.status === "PARTIAL_MATCH") {
-            setUnmatchedLocality(result.detectedName);
-            if (result.detectedName) {
-              setValueWard("streetName", result.detectedName, {
-                shouldValidate: true,
-              });
-              setFormData((prev) => ({
-                ...prev,
-                streetName: result.detectedName,
-              }));
-            }
           }
-        } catch (err: any) {
-          console.error("Geocoding Error:", err);
+        } catch {
           setLocationError(
             "Could not verify GPS location. Please choose manually.",
           );
@@ -424,28 +370,42 @@ export default function GetStartedPage() {
         setIsLocating(false);
         setLocationStatus("");
         setLocationError(
-          "Location permission denied or unavailable. Please pick your ward manually.",
+          "Location permission denied. Please pick your ward manually.",
         );
       },
-      {
-        enableHighAccuracy: true,
-        timeout: 12000,
-        maximumAge: 0,
-      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
     );
   };
 
-  // FINAL SUBMISSION IN STEP 3 (Saves Ward + Push Notification Opt-in)
-  const handleCompleteOnboarding = async (notificationsEnabled: boolean) => {
+  const handleCompleteOnboarding = async () => {
     if (!isValidWard) return;
-    setIsSubmitting(true);
     setApiError("");
+
+    let notificationStatus: NotificationPromptStatus = "unsupported";
+
+    if (typeof window !== "undefined" && "Notification" in window) {
+      if (Notification.permission === "default") {
+        setIsRequestingPermission(true);
+        try {
+          notificationStatus = await Notification.requestPermission();
+        } catch {
+          notificationStatus = "denied";
+        } finally {
+          setIsRequestingPermission(false);
+        }
+      } else {
+        notificationStatus = Notification.permission;
+      }
+    }
+
+    setIsSubmitting(true);
     try {
       const payload = {
         ...formData,
         wardNumber: currentWardNumber,
         streetName: currentStreetName,
-        notification_enabled: notificationsEnabled,
+        notification_enabled: notificationStatus === "granted",
+        notification_permission: notificationStatus,
       };
 
       const res = await fetch("/api/auth/onboarding", {
@@ -463,7 +423,6 @@ export default function GetStartedPage() {
       router.push("/dashboard");
     } catch (err: any) {
       setApiError(err.message || "An unexpected error occurred while saving.");
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -478,65 +437,11 @@ export default function GetStartedPage() {
     }
   }, [otpSent, resendCountdown]);
 
-  const wards = [
-    { id: "5650", name: "WARD-OOB" },
-    { id: "800", name: "WD-01" },
-    { id: "801", name: "WD-02" },
-    { id: "802", name: "WD-03" },
-    { id: "803", name: "WD-04" },
-    { id: "804", name: "WD-05" },
-    { id: "805", name: "WD-06" },
-    { id: "806", name: "WD-07" },
-    { id: "807", name: "WD-08" },
-    { id: "808", name: "WD-09" },
-    { id: "809", name: "WD-10" },
-    { id: "810", name: "WD-11" },
-    { id: "811", name: "WD-12" },
-    { id: "812", name: "WD-13" },
-    { id: "813", name: "WD-14" },
-    { id: "814", name: "WD-15" },
-    { id: "815", name: "WD-16" },
-    { id: "816", name: "WD-17" },
-    { id: "817", name: "WD-18" },
-    { id: "818", name: "WD-19" },
-    { id: "819", name: "WD-20" },
-    { id: "820", name: "WD-21" },
-    { id: "821", name: "WD-22" },
-    { id: "822", name: "WD-23" },
-    { id: "823", name: "WD-24" },
-    { id: "824", name: "WD-25" },
-    { id: "825", name: "WD-26" },
-    { id: "826", name: "WD-27" },
-    { id: "827", name: "WD-28" },
-    { id: "828", name: "WD-29" },
-    { id: "829", name: "WD-30" },
-    { id: "830", name: "WD-31" },
-    { id: "831", name: "WD-32" },
-    { id: "832", name: "WD-33" },
-    { id: "833", name: "WD-34" },
-    { id: "834", name: "WD-35" },
-    { id: "835", name: "WD-36" },
-    { id: "836", name: "WD-37" },
-    { id: "837", name: "WD-38" },
-    { id: "838", name: "WD-39" },
-    { id: "839", name: "WD-40" },
-    { id: "840", name: "WD-41" },
-    { id: "841", name: "WD-42" },
-    { id: "842", name: "WD-43" },
-    { id: "843", name: "WD-44" },
-    { id: "844", name: "WD-45" },
-    { id: "845", name: "WD-46" },
-    { id: "846", name: "WD-47" },
-    { id: "847", name: "WD-48" },
-  ];
-
-  // Helper for 3-Step progression index
-  const stepsOrder = ["register", "contact", "location"];
+  const stepsOrder = ["contact", "personal", "location"];
   const currentStepIdx = stepsOrder.indexOf(step);
 
   return (
     <div className="min-h-screen w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center sm:py-8 sm:px-4 transition-colors duration-300 font-sans select-none">
-      {/* Mobile-App Frame Container */}
       <div className="w-full sm:max-w-md min-h-screen sm:min-h-0 bg-white dark:bg-slate-900 sm:border sm:border-slate-200/80 dark:sm:border-slate-800/80 sm:rounded-[36px] shadow-none sm:shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 relative">
         {/* Top App Header & Segmented Progress */}
         <div className="pt-6 pb-5 px-6 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 space-y-4">
@@ -568,7 +473,6 @@ export default function GetStartedPage() {
             </button>
           </div>
 
-          {/* 3-Step Segmented Progress Bar */}
           <div className="grid grid-cols-3 gap-2 pt-1">
             {stepsOrder.map((st, idx) => (
               <div
@@ -601,8 +505,8 @@ export default function GetStartedPage() {
         {/* Main Content Area */}
         <div className="flex-1 px-6 py-6 overflow-y-auto">
           <AnimatePresence mode="wait">
-            {/* STEP 1: PERSONAL DETAILS */}
-            {step === "register" && (
+            {/* STEP 1: CONTACT DETAILS & INLINE OTP VERIFICATION */}
+            {step === "contact" && (
               <motion.div
                 key="step1"
                 initial={{ opacity: 0, x: 20 }}
@@ -613,177 +517,45 @@ export default function GetStartedPage() {
               >
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Tell us about yourself
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                    To tailor your ward experience, please provide your basic
-                    identity details.
-                  </p>
-                </div>
-
-                <form
-                  onSubmit={handleSubmitStep1(handleStep1Submit)}
-                  className="space-y-5"
-                >
-                  {/* Full Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Full Name *
-                    </label>
-                    <div className="relative mt-2">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <User size={18} />
-                      </span>
-                      <input
-                        type="text"
-                        placeholder="Enter your full name"
-                        {...registerStep1("name")}
-                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
-                      />
-                    </div>
-                    {errorsStep1.name && (
-                      <p className="text-xs text-rose-500 font-bold pl-1">
-                        {errorsStep1.name.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Date of Birth */}
-                  <div className="space-y-1.5 w-full max-w-full">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Date of Birth *
-                    </label>
-                    <div className="w-full max-w-full overflow-hidden mt-2">
-                      <input
-                        type="date"
-                        max={new Date().toISOString().split("T")[0]}
-                        {...registerStep1("dob")}
-                        className="w-full max-w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-border appearance-none block"
-                      />
-                    </div>
-                    {errorsStep1.dob && (
-                      <p className="text-xs text-rose-500 font-bold pl-1">
-                        {errorsStep1.dob.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Blood Group */}
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Blood Group *
-                    </label>
-                    <select
-                      {...registerStep1("bloodGroup")}
-                      className="mt-2 w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium cursor-pointer transition"
-                    >
-                      <option value="" disabled>
-                        Select Blood Group
-                      </option>
-                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
-                        (bg) => (
-                          <option key={bg} value={bg}>
-                            {bg}
-                          </option>
-                        ),
-                      )}
-                    </select>
-                    {errorsStep1.bloodGroup && (
-                      <p className="text-xs text-rose-500 font-bold pl-1">
-                        {errorsStep1.bloodGroup.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Gender - Tactile Pills */}
-                  <div className="space-y-2">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Gender *
-                    </label>
-                    <div className="grid grid-cols-3 gap-3 mt-2">
-                      {["Male", "Female", "Other"].map((g) => {
-                        const selectedGender = watchStep1("gender");
-                        const isSelected = selectedGender === g;
-                        return (
-                          <label
-                            key={g}
-                            className={`flex items-center justify-center h-12 rounded-2xl border text-sm font-bold cursor-pointer transition-all ${
-                              isSelected
-                                ? "border-primary bg-orange-50/80 dark:bg-orange-950/30 text-primary ring-2 ring-primary/20 shadow-xs"
-                                : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              value={g}
-                              {...registerStep1("gender")}
-                              className="sr-only"
-                              onChange={() =>
-                                setValueStep1("gender", g as any, {
-                                  shouldValidate: true,
-                                })
-                              }
-                            />
-                            <span className="flex items-center gap-1.5">
-                              {isSelected && (
-                                <Check size={14} className="stroke-3" />
-                              )}
-                              <span>{g}</span>
-                            </span>
-                          </label>
-                        );
-                      })}
-                    </div>
-                    {errorsStep1.gender && (
-                      <p className="text-xs text-rose-500 font-bold pl-1">
-                        {errorsStep1.gender.message}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Action Button */}
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      disabled={!isValidStep1}
-                      className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 disabled:hover:bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
-                    >
-                      <span>Continue</span>
-                      <ArrowRight size={18} />
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
-            {/* STEP 2: CONTACT DETAILS & INLINE OTP VERIFICATION */}
-            {step === "contact" && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    {otpSent ? "Verify verification code" : "Contact details"}
+                    {otpSent ? "Verify code" : "Get started with your phone"}
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
                     {otpSent
-                      ? `We sent a 4-digit security code to ${getValuesStep2().email}`
-                      : "Enter your phone and email to secure your civic identity."}
+                      ? `We sent a 4-digit verification code to ${getValuesContact().email}`
+                      : "We use your mobile number and email to securely verify your identity and deliver critical ward emergency alerts."}
                   </p>
                 </div>
 
                 {!otpSent ? (
-                  /* SUB-STEP 2A: ENTER PHONE & EMAIL */
                   <form
-                    onSubmit={handleSubmitStep2(handleSendOtpInline)}
+                    onSubmit={handleSubmitContact(handleSendOtp)}
                     className="space-y-5"
                   >
-                    {/* Mobile Number */}
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        Email Address *
+                      </label>
+                      <div className="relative mt-2">
+                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                          <Mail size={18} />
+                        </span>
+                        <input
+                          type="email"
+                          placeholder="yourname@example.com"
+                          {...registerContact("email")}
+                          className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                        />
+                      </div>
+                      <small className="block text-[11px] text-slate-400 dark:text-slate-500 font-medium pl-1 pt-1">
+                        Email OTP will be sent to this email
+                      </small>
+                      {errorsContact.email && (
+                        <p className="text-xs text-rose-500 font-bold pl-1">
+                          {errorsContact.email.message}
+                        </p>
+                      )}
+                    </div>
+
                     <div className="space-y-1.5">
                       <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                         Mobile Number *
@@ -796,60 +568,27 @@ export default function GetStartedPage() {
                           type="tel"
                           maxLength={10}
                           placeholder="10-digit phone (e.g. 9876543210)"
-                          {...registerStep2("phone")}
+                          {...registerContact("phone")}
                           className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
                         />
                       </div>
-                      {errorsStep2.phone && (
+                      {errorsContact.phone && (
                         <p className="text-xs text-rose-500 font-bold pl-1">
-                          {errorsStep2.phone.message}
+                          {errorsContact.phone.message}
                         </p>
                       )}
                     </div>
 
-                    {/* Email Address */}
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                        Email Address *
-                      </label>
-                      <div className="relative mt-2">
-                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                          <Mail size={18} />
-                        </span>
-                        <input
-                          type="email"
-                          placeholder="yourname@example.com"
-                          {...registerStep2("email")}
-                          className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
-                        />
-                      </div>
-                      {errorsStep2.email && (
-                        <p className="text-xs text-rose-500 font-bold pl-1">
-                          {errorsStep2.email.message}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex space-x-3 pt-4">
-                      <button
-                        type="button"
-                        disabled={isSubmitting}
-                        onClick={() => setStep("register")}
-                        className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
-                        title="Go Back"
-                      >
-                        <ArrowLeft size={18} />
-                      </button>
+                    <div className="pt-4">
                       <button
                         type="submit"
-                        disabled={!isValidStep2 || isSubmitting}
-                        className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                        disabled={!isValidContact || isSubmitting}
+                        className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
                       >
                         {isSubmitting ? (
                           <>
                             <Loader2 size={18} className="animate-spin" />
-                            <span>Sending Code...</span>
+                            <span>Checking & Sending Code...</span>
                           </>
                         ) : (
                           <>
@@ -861,9 +600,43 @@ export default function GetStartedPage() {
                     </div>
                   </form>
                 ) : (
-                  /* SUB-STEP 2B: INLINE OTP VERIFICATION */
                   <form
-                    onSubmit={handleSubmitOtp(onVerifyOtpSuccess)}
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      const code = otpValues.join("");
+                      if (code.length !== 4) return;
+
+                      setIsSubmitting(true);
+                      setApiError("");
+                      try {
+                        const contactData = getValuesContact();
+                        const res = await fetch("/api/auth/verify-otp", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            email: contactData.email,
+                            otp: code,
+                          }),
+                        });
+                        const result = await res.json();
+
+                        if (!res.ok) {
+                          throw new Error(
+                            result.error || "Invalid verification code.",
+                          );
+                        }
+
+                        setFormData((prev) => ({ ...prev, ...contactData }));
+                        setStep("personal");
+                      } catch (err: any) {
+                        setApiError(
+                          err.message ||
+                            "Verification failed. Please try again.",
+                        );
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    }}
                     className="space-y-6 animate-in fade-in zoom-in-95 duration-200"
                   >
                     <div className="p-3.5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between px-4">
@@ -875,10 +648,8 @@ export default function GetStartedPage() {
                         onClick={() => {
                           const digits = demoOtp.split("");
                           setOtpValues(digits);
-                          setValueOtp("otp", demoOtp, { shouldValidate: true });
                         }}
                         className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-black tracking-widest transition shadow-sm cursor-pointer"
-                        title="Click to auto-fill OTP"
                       >
                         {demoOtp} (Click to Fill)
                       </button>
@@ -901,12 +672,6 @@ export default function GetStartedPage() {
                           />
                         ))}
                       </div>
-
-                      {errorsOtp.otp && (
-                        <p className="text-xs text-rose-500 font-bold text-center">
-                          {errorsOtp.otp.message}
-                        </p>
-                      )}
 
                       <div className="text-center pt-1">
                         {resendCountdown > 0 ? (
@@ -937,13 +702,15 @@ export default function GetStartedPage() {
                         disabled={isSubmitting}
                         onClick={() => setOtpSent(false)}
                         className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
-                        title="Change Email / Phone"
+                        title="Change details"
                       >
                         <ArrowLeft size={18} />
                       </button>
                       <button
                         type="submit"
-                        disabled={!isValidOtp || isSubmitting}
+                        disabled={
+                          otpValues.join("").length !== 4 || isSubmitting
+                        }
                         className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
                       >
                         {isSubmitting ? (
@@ -964,7 +731,183 @@ export default function GetStartedPage() {
               </motion.div>
             )}
 
-            {/* STEP 3: CONSOLIDATED WARD MAPPING & ALERTS */}
+            {/* STEP 2: PERSONAL DETAILS & PASSWORD */}
+            {step === "personal" && (
+              <motion.div
+                key="step2"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
+                <div>
+                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                    Tell us about yourself
+                  </h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
+                    Provide your identity details and set a secure password for
+                    future logins.
+                  </p>
+                </div>
+
+                <form
+                  onSubmit={handleSubmitPersonal(handlePersonalSubmit)}
+                  className="space-y-5"
+                >
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Full Name *
+                    </label>
+                    <div className="relative mt-2">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <User size={18} />
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Enter your full name"
+                        {...registerPersonal("name")}
+                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                      />
+                    </div>
+                    {errorsPersonal.name && (
+                      <p className="text-xs text-rose-500 font-bold pl-1">
+                        {errorsPersonal.name.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Secure Password *
+                    </label>
+                    <div className="relative mt-2">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <Key size={18} />
+                      </span>
+                      <input
+                        type="password"
+                        placeholder="Create a password (min 6 chars)"
+                        {...registerPersonal("password")}
+                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                      />
+                    </div>
+                    {errorsPersonal.password && (
+                      <p className="text-xs text-rose-500 font-bold pl-1">
+                        {errorsPersonal.password.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 w-full max-w-full">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Date of Birth *
+                    </label>
+                    <div className="w-full max-w-full overflow-hidden mt-2">
+                      <input
+                        type="date"
+                        max={new Date().toISOString().split("T")[0]}
+                        {...registerPersonal("dob")}
+                        className="w-full max-w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-border appearance-none block"
+                      />
+                    </div>
+                    {errorsPersonal.dob && (
+                      <p className="text-xs text-rose-500 font-bold pl-1">
+                        {errorsPersonal.dob.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Blood Group *
+                    </label>
+                    <select
+                      {...registerPersonal("bloodGroup")}
+                      className="mt-2 w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium cursor-pointer transition"
+                    >
+                      {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
+                        (bg) => (
+                          <option key={bg} value={bg}>
+                            {bg}
+                          </option>
+                        ),
+                      )}
+                    </select>
+                    {errorsPersonal.bloodGroup && (
+                      <p className="text-xs text-rose-500 font-bold pl-1">
+                        {errorsPersonal.bloodGroup.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Gender *
+                    </label>
+                    <div className="grid grid-cols-3 gap-3 mt-2">
+                      {["Male", "Female", "Other"].map((g) => {
+                        const selectedGender = watchPersonal("gender");
+                        const isSelected = selectedGender === g;
+                        return (
+                          <label
+                            key={g}
+                            className={`flex items-center justify-center h-12 rounded-2xl border text-sm font-bold cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-primary bg-orange-50/80 dark:bg-orange-950/30 text-primary ring-2 ring-primary/20 shadow-xs"
+                                : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              value={g}
+                              {...registerPersonal("gender")}
+                              className="sr-only"
+                              onChange={() =>
+                                setValuePersonal("gender", g as any, {
+                                  shouldValidate: true,
+                                })
+                              }
+                            />
+                            <span className="flex items-center gap-1.5">
+                              {isSelected && (
+                                <Check size={14} className="stroke-3" />
+                              )}
+                              <span>{g}</span>
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    {errorsPersonal.gender && (
+                      <p className="text-xs text-rose-500 font-bold pl-1">
+                        {errorsPersonal.gender.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setStep("contact")}
+                      className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!isValidPersonal}
+                      className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                    >
+                      <span>Continue</span>
+                      <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
+            {/* STEP 3: WARD & LOCATION SELECTION */}
             {step === "location" && (
               <motion.div
                 key="location"
@@ -979,12 +922,11 @@ export default function GetStartedPage() {
                     Choose your ward
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                    Search your street, it helps us map your ward, so you can
-                    receive timely civic alerts and updates.
+                    Search your street to map your ward for localized civic
+                    alerts.
                   </p>
                 </div>
 
-                {/* GPS Status & Error Banners */}
                 {isLocating && locationStatus && (
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-center space-x-2.5 text-primary text-xs font-bold animate-pulse">
                     <Loader2 size={16} className="animate-spin shrink-0" />
@@ -1010,11 +952,9 @@ export default function GetStartedPage() {
                   </div>
                 )}
 
-                {/* SIMPLE WARD MAPPING BOX (Street Search or GPS) */}
                 <div className="space-y-4">
                   {autoMatchedWard ? (
-                    /* Auto Matched Success Card */
-                    <div className="p-5 bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl text-center space-y-1.5 shadow-xs animate-in zoom-in-95 duration-200">
+                    <div className="p-5 bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl text-center space-y-1.5 shadow-xs">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 shadow-sm">
                         <CheckCircle2 size={22} />
                       </div>
@@ -1036,8 +976,7 @@ export default function GetStartedPage() {
                       </button>
                     </div>
                   ) : selectedStreetItem ? (
-                    /* Manual Street Mapped Card */
-                    <div className="p-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-1.5 shadow-xs animate-in zoom-in-95 duration-200">
+                    <div className="p-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-1.5 shadow-xs">
                       <p className="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">
                         Selected Street
                       </p>
@@ -1065,7 +1004,6 @@ export default function GetStartedPage() {
                       </button>
                     </div>
                   ) : (
-                    /* Clean Street Search & GPS Detect Layout */
                     <div className="space-y-3.5">
                       <div className="relative mt-2">
                         <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
@@ -1092,9 +1030,8 @@ export default function GetStartedPage() {
                         )}
                       </div>
 
-                      {/* Search Results Dropdown */}
                       {streetResults.length > 0 && (
-                        <ul className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900 shadow-xl max-h-56 overflow-y-auto animate-in fade-in duration-150 text-left">
+                        <ul className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900 shadow-xl max-h-56 overflow-y-auto text-left">
                           {streetResults.map((item) => (
                             <li
                               key={item.id}
@@ -1105,7 +1042,7 @@ export default function GetStartedPage() {
                                 <MapPin size={16} />
                               </div>
                               <div className="flex-1 min-w-0 space-y-1">
-                                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-normal wrap-break-word pr-1 capitalize">
+                                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 capitalize">
                                   {item.streetName.toLocaleLowerCase("en-IN")}
                                 </p>
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-primary/10 group-hover:text-primary text-[11px] font-extrabold transition">
@@ -1128,38 +1065,37 @@ export default function GetStartedPage() {
                           <LocateFixed size={16} className="text-primary" />
                           <span>Detect Ward Using GPS</span>
                         </button>
-                        <small className="block text-[10px] text-slate-400 dark:text-slate-500 font-bold tracking-wider mt-2 text-center">
-                          Its best to choose your street manually if GPS is
-                          inaccurate.
-                        </small>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* MANDATORY NOTIFICATION & FINISH ACTIONS */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-4">
                   <div className="flex space-x-3">
                     <button
                       type="button"
                       disabled={isSubmitting}
-                      onClick={() => setStep("contact")}
+                      onClick={() => setStep("personal")}
                       className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
-                      title="Go Back"
                     >
                       <ArrowLeft size={18} />
                     </button>
-
                     <button
                       type="button"
-                      disabled={!isValidWard || isSubmitting}
-                      onClick={() => handleCompleteOnboarding(true)}
+                      disabled={
+                        !isValidWard || isSubmitting || isRequestingPermission
+                      }
+                      onClick={handleCompleteOnboarding}
                       className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
                     >
-                      {isSubmitting ? (
+                      {isRequestingPermission || isSubmitting ? (
                         <>
                           <Loader2 size={18} className="animate-spin" />
-                          <span>Saving Profile...</span>
+                          <span>
+                            {isRequestingPermission
+                              ? "Requesting Permission..."
+                              : "Saving Profile..."}
+                          </span>
                         </>
                       ) : (
                         <>
@@ -1184,14 +1120,6 @@ export default function GetStartedPage() {
             </Link>
           </p>
         </div>
-      </div>
-
-      {/* External Desktop Municipal Attribution */}
-      <div className="hidden sm:flex mt-6 text-center text-[10px] tracking-widest uppercase font-bold text-slate-400 dark:text-slate-500 flex-col items-center space-y-1">
-        <span>© {new Date().getFullYear()} Avadi City Corporation</span>
-        <span className="opacity-70 font-normal">
-          Citizen Services & Grievance Portal
-        </span>
       </div>
     </div>
   );

@@ -1,6 +1,5 @@
-// src/app/api/auth/send-otp/route.ts
 import { NextResponse } from "next/server";
-import { stepTwoSchema } from "@/lib/validations/onboarding";
+import { stepContactSchema } from "@/lib/validations/onboarding";
 import { prisma } from "@/lib/prisma";
 
 export async function POST(req: Request) {
@@ -8,7 +7,7 @@ export async function POST(req: Request) {
     const body = await req.json();
 
     // 1. Validate payload against shared schema
-    const validation = stepTwoSchema.safeParse(body);
+    const validation = stepContactSchema.safeParse(body);
     if (!validation.success) {
       return NextResponse.json(
         { error: "Validation failed", details: validation.error.flatten() },

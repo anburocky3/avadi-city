@@ -2,8 +2,25 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
+
+// APP VERSION
+export const APP_VERSION = "v1.0.0";
 
 // --- TYPESCRIPT INTERFACES ---
+export interface AuthUser {
+  id: string;
+  name: string;
+  dob: string;
+  email: string;
+  phone: string;
+  gender: string;
+  bloodGroup: string;
+  wardNumber: number;
+  streetName: string;
+  isVerified: boolean;
+}
+
 export interface Comment {
   id: number | string;
   author: string;
@@ -55,12 +72,33 @@ interface WardContextType {
   isLoadingComplaints: boolean;
   upvoteComplaint: (complaintId: string | number) => Promise<void>;
 
+  // volunteers
+  volunteers: Array<{ name: string; [key: string]: any }>;
+
   // Session State
   activeWard: { id: number; name: string };
   userProfile: { name: string; wardNumber: number };
+  updateProfile: (updatedData: Partial<AuthUser>) => Promise<void>;
+
+  // Alerts & Notifications
+  alerts: any[];
+  readAlerts: any[];
+  dismissedAlerts: any[];
+
+  authUser: AuthUser | null;
+  isLoadingAuth: boolean;
+  isAuthenticated: boolean;
+  logout: () => Promise<void>;
 }
 
 const WardContext = createContext<WardContextType | undefined>(undefined);
+
+const fetchAuthUser = async (): Promise<AuthUser | null> => {
+  const res = await fetch("/api/auth/me", { method: "GET" });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.user || null;
+};
 
 // --- API FETCHER HELPERS ---
 const fetchFeedsFromDB = async (): Promise<Feed[]> => {
@@ -89,11 +127,62 @@ const fetchComplaintsFromDB = async (): Promise<Complaint[]> => {
 export const WardProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
+  const router = useRouter();
   const queryClient = useQueryClient();
 
-  // 1. CLIENT SESSION STATE
-  const [activeWard] = useState({ id: 14, name: "Avadi Central" });
-  const [userProfile] = useState({ name: "Avadi Resident", wardNumber: 14 });
+  const updateProfile = async (updatedData: Partial<AuthUser>) => {
+    const res = await fetch("/api/auth/update-profile", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedData),
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Failed to update profile");
+    }
+
+    // Instantly update the React Query cache so all components reflect changes immediately
+    queryClient.setQueryData(["authUser"], data.user);
+  };
+
+  // Query authenticated user session
+  const { data: authUser = null, isLoading: isLoadingAuth } =
+    useQuery<AuthUser | null>({
+      queryKey: ["authUser"],
+      queryFn: fetchAuthUser,
+      staleTime: 5 * 60 * 1000, // Cache user session for 5 minutes
+      retry: false,
+    });
+
+  const isAuthenticated = Boolean(authUser);
+
+  // Logout Handler
+  const logout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      queryClient.setQueryData(["authUser"], null);
+      queryClient.clear(); // Clear cached feeds/complaints on logout
+      router.push("/"); // Redirect immediately to public guest home
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  // Ensure activeWard falls back dynamically to the logged-in user's wardNumber!
+  const activeWardId = authUser?.wardNumber || 14;
+
+  const activeWard = {
+    id: activeWardId,
+    name: authUser?.streetName
+      ? `${authUser.streetName}`
+      : `Ward ${activeWardId}`,
+    hints: authUser?.streetName ? authUser.streetName : "Active Municipal Ward",
+  };
+
+  const userProfile = authUser
+    ? { name: authUser.name, wardNumber: authUser.wardNumber }
+    : { name: "Guest", wardNumber: activeWardId };
 
   // 2. TANSTACK QUERY: FETCH FEEDS
   const {
@@ -149,7 +238,9 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
   // 5. MUTATION: OPTIMISTIC LIKE TOGGLE
   const likeMutation = useMutation({
     mutationFn: async (feedId: string | number) => {
-      const res = await fetch(`/api/feeds/${feedId}/like`, { method: "POST" });
+      const res = await fetch(`/api/feeds/${feedId}/like`, {
+        method: "POST",
+      });
       if (!res.ok) throw new Error("Database like sync failed");
       return res.json();
     },
@@ -283,6 +374,15 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         likeFeed,
         addCommentToFeed,
         upvoteComplaint,
+        volunteers: [],
+        updateProfile,
+        alerts: [],
+        readAlerts: [],
+        dismissedAlerts: [],
+        authUser,
+        isLoadingAuth,
+        isAuthenticated,
+        logout,
       }}
     >
       {children}

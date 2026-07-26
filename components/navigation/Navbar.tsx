@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Sun,
   Moon,
@@ -11,53 +12,39 @@ import {
   LogOut,
   MapPin,
   ChevronDown,
+  ShieldCheck,
 } from "lucide-react";
 
-// Context imports (Adjust paths if your directory structure differs)
+// Context & Theme imports
 import { useWard } from "@/context/wardContext";
+import { useTheme } from "@teispace/next-themes/client";
 
 // Component imports
 import { Modal } from "@/components/shared-components";
-import { useTheme } from "@teispace/next-themes/client";
-import { useLocale, useTranslations } from "next-intl";
 import { WardSelector } from "../ward-selector";
-
-// --- TYPESCRIPT DEFINITIONS ---
 
 export interface NavbarProps {
   onMenuClick: () => void;
 }
 
-interface Alert {
-  id: string | number;
-  [key: string]: any;
-}
-
-interface UserProfile {
-  name?: string;
-  wardNumber?: number;
-  [key: string]: any;
-}
-
-interface WardContextType {
-  activeWard: {
-    id: number;
-    name: string;
-    [key: string]: any;
-  };
-  alerts: Alert[];
-  readAlerts: (string | number)[];
-  dismissedAlerts: (string | number)[];
-  userProfile: UserProfile;
-  resetOnboarding?: () => void;
-}
-
 export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const router = useRouter();
+
+  // 1. Single unified hook call extracting Auth & Civic state
+  const {
+    authUser,
+    isAuthenticated,
+    logout,
+    activeWard,
+    alerts = [],
+    readAlerts = [],
+    dismissedAlerts = [],
+  } = useWard();
 
   // --- Hydration Mounting Safety State ---
   const [mounted, setMounted] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isWardModalOpen, setIsWardModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -75,38 +62,26 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const {
-    activeWard,
-    alerts = [],
-    readAlerts = [],
-    dismissedAlerts = [],
-    userProfile = {},
-    resetOnboarding = () => {},
-  } = useWard() as WardContextType;
-
-  // Theme & Language Hooks
+  // Theme Hook
   const { setTheme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
-  const t = useTranslations();
-  const locale = useLocale();
+  // Derived user details from live backend auth state
+  const userName = authUser?.name || "Avadi Resident";
+  const userInitial = userName.charAt(0).toUpperCase();
+  const currentWardId = authUser?.wardNumber || activeWard?.id || "00";
 
-  // Modal State
-  const [isWardModalOpen, setIsWardModalOpen] = useState<boolean>(false);
-
+  // Unread alerts calculation
   const unreadAlertsCount = alerts.filter(
     (alert) =>
       !readAlerts.includes(alert.id) && !dismissedAlerts.includes(alert.id),
   ).length;
 
-  const userName = userProfile?.name || "Avadi Resident";
-  const userInitial = userName.charAt(0).toUpperCase();
-
-  const handleLogout = () => {
-    resetOnboarding();
+  // Execute backend session logout
+  const handleLogout = async () => {
     setIsDropdownOpen(false);
-    router.push("/");
+    await logout();
   };
 
   return (
@@ -138,7 +113,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 AVADI <span className="text-primary font-black">CITY</span>
               </span>
               <span className="text-[8px] sm:text-[9px] font-extrabold text-slate-400 dark:text-slate-500 tracking-wider uppercase truncate">
-                WARD {activeWard?.id || "00"} ·{" "}
+                WARD {currentWardId} ·{" "}
                 <span className="hidden xs:inline">CONNECTING CITIZENS</span>
               </span>
             </div>
@@ -179,78 +154,96 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             </button>
           </div>
 
-          {/* User Profile Pill / Avatar Button */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="flex items-center space-x-2 py-1 px-1.5 sm:px-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition cursor-pointer active:scale-95"
-              aria-label="User Menu"
+          {/* User Profile Pill / Guest Sign-In Button */}
+          {isAuthenticated && authUser ? (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center space-x-2 py-1 px-1.5 sm:px-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-primary/50 transition cursor-pointer active:scale-95"
+                aria-label="User Menu"
+              >
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
+                  {userInitial}
+                </div>
+                <div className="hidden md:flex flex-col text-left min-w-0">
+                  <div className="flex items-center gap-1">
+                    <span className="font-bold text-xs text-slate-900 dark:text-white leading-tight truncate max-w-24">
+                      {userName}
+                    </span>
+                    {authUser.isVerified && (
+                      <ShieldCheck
+                        size={12}
+                        className="text-teal-500 shrink-0"
+                      />
+                    )}
+                  </div>
+                  <span className="text-[10px] font-semibold text-slate-400">
+                    Ward {currentWardId}
+                  </span>
+                </div>
+                <ChevronDown
+                  size={13}
+                  className="text-slate-400 shrink-0 hidden sm:block"
+                />
+              </button>
+
+              {/* Floating Dropdown Menu */}
+              {isDropdownOpen && (
+                <div className="absolute right-0 mt-2.5 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
+                    <p className="text-xs font-black text-slate-900 dark:text-white truncate">
+                      {userName}
+                    </p>
+                    <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                      {authUser.email || `Ward ${currentWardId} Resident`}
+                    </p>
+                  </div>
+
+                  <div className="p-1.5 space-y-0.5 text-xs font-bold">
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        router.push("/profile");
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                    >
+                      <User size={15} className="text-primary" />
+                      <span>My Profile</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setIsWardModalOpen(true);
+                      }}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                    >
+                      <MapPin size={15} className="text-emerald-500" />
+                      <span>Change Ward</span>
+                    </button>
+                  </div>
+
+                  <div className="p-1.5 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer font-bold text-xs"
+                    >
+                      <LogOut size={15} />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Unauthenticated Guest CTA */
+            <Link
+              href="/get-started"
+              className="px-3.5 py-2 rounded-xl bg-primary hover:bg-orange-600 text-white font-extrabold text-xs transition shadow-sm"
             >
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0">
-                {userInitial}
-              </div>
-              <div className="hidden md:flex flex-col text-left min-w-0">
-                <span className="font-bold text-xs text-slate-900 dark:text-white leading-tight truncate max-w-24">
-                  {userName}
-                </span>
-                <span className="text-[10px] font-semibold text-slate-400">
-                  Ward {activeWard?.id}
-                </span>
-              </div>
-              <ChevronDown
-                size={13}
-                className="text-slate-400 shrink-0 hidden sm:block"
-              />
-            </button>
-
-            {/* Floating Dropdown Menu */}
-            {isDropdownOpen && (
-              <div className="absolute right-0 mt-2.5 w-56 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150">
-                <div className="p-3.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
-                  <p className="text-xs font-black text-slate-900 dark:text-white truncate">
-                    {userName}
-                  </p>
-                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                    Ward {activeWard?.id} Resident
-                  </p>
-                </div>
-
-                <div className="p-1.5 space-y-0.5 text-xs font-bold">
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      router.push("/profile");
-                    }}
-                    className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  >
-                    <User size={15} className="text-primary" />
-                    <span>My Profile</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsDropdownOpen(false);
-                      setIsWardModalOpen(true);
-                    }}
-                    className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
-                  >
-                    <MapPin size={15} className="text-emerald-500" />
-                    <span>Change Ward</span>
-                  </button>
-                </div>
-
-                <div className="p-1.5 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    onClick={handleLogout}
-                    className="w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer font-bold text-xs"
-                  >
-                    <LogOut size={15} />
-                    <span>Logout</span>
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+              Sign In
+            </Link>
+          )}
         </div>
       </header>
 

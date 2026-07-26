@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useTheme } from "@teispace/next-themes";
+import { useTheme } from "@teispace/next-themes/client";
 import { useTranslations } from "next-intl";
 import {
   Phone,
@@ -15,59 +15,23 @@ import {
   Scale,
   CheckCircle2,
   Building2,
-  RotateCcw,
+  Share2,
+  Check,
 } from "lucide-react";
 
-// Adjust import paths to match your Next.js project structure
-import { useWard } from "@/context/wardContext";
+// Context & Component imports matching your project structure
+import { useWard, APP_VERSION } from "@/context/wardContext";
 import { Card, Modal } from "@/components/shared-components";
-
-// --- TYPESCRIPT DEFINITIONS ---
-
-export interface UserProfile {
-  name?: string;
-  dob?: string;
-  bloodGroup?: string;
-  gender?: string;
-  phone?: string;
-  email?: string;
-  wardNumber?: number;
-  [key: string]: any;
-}
-
-export interface Ward {
-  id: number;
-  name: string;
-  [key: string]: any;
-}
-
-export interface Volunteer {
-  name: string;
-  [key: string]: any;
-}
-
-export interface Complaint {
-  author: string;
-  [key: string]: any;
-}
-
-interface WardContextType {
-  userProfile: UserProfile;
-  activeWard: Ward;
-  completeOnboarding: (profileData: UserProfile) => void;
-  volunteers: Volunteer[];
-  complaints: Complaint[];
-}
 
 export const Profile: React.FC = () => {
   // --- Contexts & Hooks ---
   const {
-    userProfile = {},
-    activeWard = { id: 14, name: "Avadi Central" },
-    completeOnboarding = () => {},
+    authUser,
+    activeWard,
     volunteers = [],
     complaints = [],
-  } = useWard() as WardContextType;
+    updateProfile,
+  } = useWard();
 
   const { setTheme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
@@ -80,64 +44,103 @@ export const Profile: React.FC = () => {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState<boolean>(false);
   const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(false);
 
-  // --- Edit Form State ---
-  const [editName, setEditName] = useState<string>(userProfile.name || "");
+  // --- Share Widget State ---
+  const [copied, setCopied] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // --- Edit Form State (Powered by authUser) ---
+  const [editName, setEditName] = useState<string>(authUser?.name || "");
   const [editDob, setEditDob] = useState<string>(
-    userProfile.dob || "2000-01-01",
+    authUser?.dob
+      ? new Date(authUser.dob).toISOString().split("T")[0]
+      : "2000-01-01",
   );
   const [editBloodGroup, setEditBloodGroup] = useState<string>(
-    userProfile.bloodGroup || "O+",
+    authUser?.bloodGroup || "O+",
   );
   const [editGender, setEditGender] = useState<string>(
-    userProfile.gender || "Male",
+    authUser?.gender || "Male",
   );
-  const [editPhone, setEditPhone] = useState<string>(userProfile.phone || "");
-  const [editEmail, setEditEmail] = useState<string>(userProfile.email || "");
+  const [editPhone, setEditPhone] = useState<string>(authUser?.phone || "");
+  const [editEmail, setEditEmail] = useState<string>(authUser?.email || "");
 
   // --- Derived Metrics ---
-  const isVolunteer = volunteers.some((v) => v.name === userProfile.name);
+  const isVolunteer = volunteers.some((v) => v.name === authUser?.name);
   const myComplaintsCount = complaints.filter(
-    (c) => c.author === (userProfile.name || "Avadi Resident"),
+    (c) => c.author === (authUser?.name || "Avadi Resident"),
   ).length;
 
   // --- Handlers ---
-  const handleUpdateProfile = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const updated: UserProfile = {
-      ...userProfile,
-      name: editName,
-      dob: editDob,
-      bloodGroup: editBloodGroup,
-      gender: editGender,
-      phone: editPhone,
-      email: editEmail,
+    setIsSubmitting(true);
+    try {
+      if (updateProfile) {
+        await updateProfile({
+          name: editName,
+          dob: editDob,
+          bloodGroup: editBloodGroup as any,
+          gender: editGender as any,
+          phone: editPhone,
+          email: editEmail,
+        });
+      }
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error("Failed to update profile", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // --- Share Widget Handler ---
+  const handleShareApp = async () => {
+    const shareData = {
+      title: "Avadi City Portal",
+      text: "Join the official digital community platform for Avadi Corporation! Connect, report civic issues, and explore local services.",
+      url: window.location.origin,
     };
-    completeOnboarding(updated);
-    setIsEditModalOpen(false);
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        copyToClipboard();
+      }
+    } else {
+      copyToClipboard();
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(window.location.origin);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6 pb-24 md:pb-8">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6 pb-24 md:pb-8 font-sans">
       {/* Title Header */}
       <div>
         <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-none">
-          Resident Profile &amp; Account
+          Hello{" "}
+          {authUser?.name ? authUser.name.split(" ")[0] : "Avadi Resident"}!
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 font-medium">
-          Personal details, ward preferences, terms &amp; municipal corporation
-          details.
+          Manage your personal details, ward preferences, complaints, and
+          municipal corporation details.
         </p>
       </div>
 
       {/* Main Avatar and Details Card */}
       <Card className="p-5 border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
         <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-500/20 shrink-0 ring-4 ring-indigo-500/20 dark:ring-indigo-400/20">
-            {userProfile.name ? userProfile.name.charAt(0).toUpperCase() : "A"}
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-500/20 shrink-0 ring-4 ring-indigo-500/20 dark:ring-indigo-400/20">
+            {authUser?.name ? authUser.name.charAt(0).toUpperCase() : "A"}
           </div>
           <div>
             <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center space-x-1.5">
-              <span>{userProfile.name || "Avadi Resident"}</span>
+              <span>{authUser?.name || "Avadi Resident"}</span>
               {isVolunteer && (
                 <span title="Verified Volunteer" className="inline-flex">
                   <ShieldCheck
@@ -150,7 +153,8 @@ export const Profile: React.FC = () => {
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 flex items-center font-medium">
               <MapPin size={12} className="mr-1 text-primary shrink-0" />
               <span>
-                Ward {activeWard.id} · {activeWard.name}
+                Ward {authUser?.wardNumber || activeWard?.id || "00"} ·{" "}
+                {authUser?.streetName || activeWard?.name || "Avadi City"}
               </span>
             </p>
           </div>
@@ -158,12 +162,16 @@ export const Profile: React.FC = () => {
 
         <button
           onClick={() => {
-            setEditName(userProfile.name || "");
-            setEditDob(userProfile.dob || "2000-01-01");
-            setEditBloodGroup(userProfile.bloodGroup || "O+");
-            setEditGender(userProfile.gender || "Male");
-            setEditPhone(userProfile.phone || "");
-            setEditEmail(userProfile.email || "");
+            setEditName(authUser?.name || "");
+            setEditDob(
+              authUser?.dob
+                ? new Date(authUser.dob).toISOString().split("T")[0]
+                : "2000-01-01",
+            );
+            setEditBloodGroup(authUser?.bloodGroup || "O+");
+            setEditGender(authUser?.gender || "Male");
+            setEditPhone(authUser?.phone || "");
+            setEditEmail(authUser?.email || "");
             setIsEditModalOpen(true);
           }}
           className="px-4 py-2 border-2 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-black rounded-xl transition cursor-pointer text-center sm:w-auto"
@@ -195,6 +203,42 @@ export const Profile: React.FC = () => {
           >
             {isVolunteer ? "🟢 ACTIVE FORCE" : "⚪ CIVIC MEMBER"}
           </span>
+        </Card>
+      </div>
+
+      {/* SECTION 0: SHARE APP FEATURE WIDGET */}
+      <div className="space-y-3">
+        <h3 className="text-[10px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">
+          Spread the Word
+        </h3>
+
+        <Card className="p-4.5 border-2 border-slate-200 dark:border-slate-800 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent dark:from-orange-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between gap-4">
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center space-x-2 text-xs font-black text-slate-900 dark:text-white">
+              <Share2 size={16} className="text-primary shrink-0" />
+              <span>Share Avadi City App</span>
+            </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+              Invite friends and neighbors in your ward to join the portal.
+            </p>
+          </div>
+
+          <button
+            onClick={handleShareApp}
+            className="px-4 py-2.5 bg-primary hover:bg-orange-600 text-white text-xs font-black rounded-xl transition shadow-sm active:scale-95 shrink-0 flex items-center gap-1.5 cursor-pointer"
+          >
+            {copied ? (
+              <>
+                <Check size={14} />
+                <span>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 size={14} />
+                <span>Share App</span>
+              </>
+            )}
+          </button>
         </Card>
       </div>
 
@@ -250,7 +294,7 @@ export const Profile: React.FC = () => {
             </div>
             <div className="flex items-center space-x-1.5">
               <span className="text-[10px] text-slate-400 font-bold">
-                v2.4.0
+                {APP_VERSION}
               </span>
               <ChevronRight size={16} className="text-slate-400" />
             </div>
@@ -283,7 +327,7 @@ export const Profile: React.FC = () => {
       </div>
 
       {/* SECTION 3: MUNICIPAL HELPDESK & SUPPORT */}
-      <div className="space-y-3">
+      <div className="space-y-3 mb-10">
         <h3 className="text-[10px] font-black tracking-wider text-slate-400 dark:text-slate-500 uppercase">
           Municipal Helpdesk &amp; Emergency
         </h3>
@@ -333,7 +377,7 @@ export const Profile: React.FC = () => {
                 Avadi City App
               </h4>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                Version 2.4.0 Civic Release · Built for 48 Wards
+                {APP_VERSION} Civic Release · Built for 48 Wards
               </p>
             </div>
           </div>
@@ -536,7 +580,7 @@ export const Profile: React.FC = () => {
             <select
               value={editGender}
               onChange={(e) => setEditGender(e.target.value)}
-              className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none"
+              className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
             >
               <option value="Male">Male</option>
               <option value="Female">Female</option>
@@ -571,9 +615,10 @@ export const Profile: React.FC = () => {
 
           <button
             type="submit"
-            className="w-full py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black transition text-xs cursor-pointer shadow-md hover:shadow-lg"
+            disabled={isSubmitting}
+            className="w-full py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black transition text-xs cursor-pointer shadow-md hover:shadow-lg"
           >
-            Update Profile Details
+            {isSubmitting ? "Updating..." : "Update Profile Details"}
           </button>
         </form>
       </Modal>

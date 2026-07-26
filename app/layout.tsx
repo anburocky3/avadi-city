@@ -5,6 +5,8 @@ import { getMessages } from "next-intl/server";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
+import QueryProvider from "@/providers/QueryProvider";
+import { WardProvider } from "@/context/wardContext";
 
 export const metadata: Metadata = {
   title: "Avadi City App",
@@ -51,9 +53,13 @@ export default async function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
-          <RegisterServiceWorker />
-          <ThemeProvider>{children}</ThemeProvider>
-          <PwaInstallBanner />
+          <QueryProvider>
+            <WardProvider>
+              <RegisterServiceWorker />
+              <ThemeProvider>{children}</ThemeProvider>
+              <PwaInstallBanner />
+            </WardProvider>
+          </QueryProvider>
         </NextIntlClientProvider>
       </body>
     </html>

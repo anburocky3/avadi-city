@@ -98,12 +98,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   // --- Ward Context ---
   const {
-    activeWard = { id: 14, name: "Avadi Central", hints: "" },
+    activeWard,
     alerts = [],
     readAlerts = [],
     dismissedAlerts = [],
     resetOnboarding = () => {},
-  } = useWard() as WardContextType;
+  } = useWard() as unknown as WardContextType;
 
   // Safe Guard Return AFTER all hooks have been declared
   if (!mounted) {
@@ -214,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug truncate">
-                {activeWard.name}
+                {activeWard.name || "Active Municipal Ward"}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate block w-full">
                 {activeWard.hints || "Active Municipal Ward"}
@@ -231,9 +231,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Navigation - Main Group */}
         <div className="flex-1 space-y-6 overflow-y-auto pr-1 scrollbar-thin">
           <div>
-            <span className="px-2 text-[11px] font-extrabold tracking-widest text-slate-400 dark:text-slate-500 uppercase">
-              {t("mainPages")}
-            </span>
             <nav className="mt-2.5 space-y-1.5">
               {mainNav.map((item) => {
                 const Icon = item.icon;

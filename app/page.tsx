@@ -19,9 +19,11 @@ import {
   X,
   CheckCircle2,
   Sparkles,
+  LayoutDashboard,
 } from "lucide-react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
+import { useWard } from "@/context/wardContext";
 
 // Feature Data Types
 interface FeatureItem {
@@ -35,6 +37,7 @@ interface FeatureItem {
 }
 
 export default function LandingPage() {
+  const { isAuthenticated } = useWard();
   const [selectedFeature, setSelectedFeature] = useState<FeatureItem | null>(
     null,
   );
@@ -237,15 +240,26 @@ export default function LandingPage() {
             daily neighborhood needs across our municipality.
           </p>
 
-          {/* Get Started Button */}
+          {/* Dynamic Auth CTA Button */}
           <div className="w-full max-w-md pt-2">
-            <Link
-              href="/get-started"
-              className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:-translate-y-0.5 active:scale-98 transition-all flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer"
-            >
-              <span>Get Started Now</span>
-              <ArrowRight size={18} />
-            </Link>
+            {isAuthenticated ? (
+              <Link
+                href="/dashboard"
+                className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:-translate-y-0.5 active:scale-98 transition-all flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer"
+              >
+                <LayoutDashboard size={18} />
+                <span>Go to Dashboard</span>
+                <ArrowRight size={18} />
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="w-full py-4 px-6 bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-2xl font-black shadow-lg shadow-emerald-600/20 hover:shadow-emerald-600/30 hover:-translate-y-0.5 active:scale-98 transition-all flex items-center justify-center space-x-2 text-sm sm:text-base cursor-pointer"
+              >
+                <span>Get Started Now</span>
+                <ArrowRight size={18} />
+              </Link>
+            )}
           </div>
         </div>
 
@@ -410,10 +424,12 @@ export default function LandingPage() {
               {/* Modal Actions */}
               <div className="pt-3 flex flex-col sm:flex-row items-center gap-3">
                 <Link
-                  href="/get-started"
+                  href={isAuthenticated ? "/feed" : "/login"}
                   className="w-full sm:flex-1 py-3 px-4 bg-linear-to-r from-primary to-orange-500 hover:from-orange-500 hover:to-primary text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition flex items-center justify-center space-x-2 cursor-pointer text-center"
                 >
-                  <span>Explore in App</span>
+                  <span>
+                    {isAuthenticated ? "Go to Dashboard" : "Explore in App"}
+                  </span>
                   <ArrowRight size={16} />
                 </Link>
 

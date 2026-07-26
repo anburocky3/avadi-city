@@ -19,7 +19,7 @@ interface TabItem {
 export const BottomTabBar: React.FC = () => {
   const t = useTranslations();
   const pathname = usePathname();
-  const { userProfile } = useWard();
+  const { authUser } = useWard();
 
   // Strict single-word labels prevent mobile text truncation
   const tabs: TabItem[] = [
@@ -41,7 +41,10 @@ export const BottomTabBar: React.FC = () => {
       isSOS: true,
     },
     {
-      name: t("profile") || "Profile",
+      name:
+        (authUser?.name && `${authUser.name.split(" ")[0]}`) ||
+        t("profile") ||
+        "Profile",
       path: "/profile",
       icon: User,
       isProfile: true,
@@ -51,9 +54,9 @@ export const BottomTabBar: React.FC = () => {
   const renderTabIcon = (tab: TabItem, isActive: boolean) => {
     if (tab.isProfile) {
       const avatarUrl =
-        (userProfile as any)?.avatarUrl || (userProfile as any)?.avatar;
-      const initials = userProfile?.name
-        ? userProfile.name
+        (authUser as any)?.avatarUrl || (authUser as any)?.avatar;
+      const initials = authUser?.name
+        ? authUser.name
             .split(" ")
             .map((n) => n[0])
             .join("")
@@ -72,7 +75,7 @@ export const BottomTabBar: React.FC = () => {
           >
             <Image
               src={avatarUrl}
-              alt={userProfile?.name || "Profile"}
+              alt={authUser?.name || "Profile"}
               fill
               sizes="24px"
               className="object-cover"
@@ -85,8 +88,8 @@ export const BottomTabBar: React.FC = () => {
         <div
           className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black tracking-tighter transition-all duration-200 ${
             isActive
-              ? "bg-gradient-to-tr from-orange-500 to-amber-500 text-white ring-2 ring-orange-500/30 scale-110 shadow-sm"
-              : "bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700"
+              ? "bg-linear-to-tr from-orange-500 to-amber-500 text-white ring-2 ring-orange-500/30 scale-110 shadow-sm"
+              : "bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700 "
           }`}
         >
           {initials}
@@ -123,7 +126,7 @@ export const BottomTabBar: React.FC = () => {
               <div key={tab.path} className="flex items-center justify-center">
                 <Link
                   href={tab.path}
-                  className="group relative flex items-center justify-center -top-4 w-12 h-12 rounded-full bg-gradient-to-tr from-rose-600 to-red-500 text-white shadow-lg shadow-rose-500/30 ring-4 ring-white dark:ring-slate-950 transition-all active:scale-95 focus:outline-none"
+                  className="group relative flex items-center justify-center -top-4 w-12 h-12 rounded-full bg-linear-to-tr from-rose-600 to-red-500 text-white shadow-lg shadow-rose-500/30 ring-4 ring-white dark:ring-slate-950 transition-all active:scale-95 focus:outline-none"
                   aria-label="Emergency SOS"
                 >
                   <span
@@ -155,7 +158,7 @@ export const BottomTabBar: React.FC = () => {
               </div>
 
               <span
-                className={`text-[11px] mt-1 tracking-tight leading-none transition-all ${
+                className={`text-[11px] mt-2 tracking-tight leading-none transition-all ${
                   isActive
                     ? "font-extrabold text-orange-600 dark:text-orange-400"
                     : "font-medium"

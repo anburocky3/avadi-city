@@ -23,6 +23,7 @@ model User {
   bloodGroup          BloodGroup
   phone               String              @unique
   email               String              @unique
+  password            String?
   wardNumber          Int
   streetName          String
   notificationEnabled Boolean             @default(false)

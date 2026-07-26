@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { completeOnboardingSchema } from "@/lib/validations/onboarding";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 const bloodGroupEnumMap: Record<string, string> = {
   "A+": "A_POS",
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
       bloodGroup,
       phone,
       email,
+      password,
       wardNumber,
       streetName,
       notification_enabled,
@@ -51,12 +53,13 @@ export async function POST(req: Request) {
     if (existingUser) {
       return NextResponse.json(
         {
-          error:
-            "A citizen with this email or mobile number is already registered.",
+          error: "Email or mobile number is already registered.",
         },
         { status: 409 },
       );
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // 3. Save all screens into PostgreSQL
     const newUser = await prisma.user.create({
@@ -67,6 +70,7 @@ export async function POST(req: Request) {
         bloodGroup: (bloodGroupEnumMap[bloodGroup] || bloodGroup) as any, // Transforms "A-" to "A_NEG"
         phone,
         email,
+        password: hashedPassword, // Assuming you have a way to hash the password
         wardNumber,
         streetName,
         notificationEnabled: notification_enabled,

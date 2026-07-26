@@ -1,6 +1,6 @@
 import * as zod from "zod";
 
-export const stepOneSchema = zod.object({
+export const stepPersonalSchema = zod.object({
   name: zod
     .string()
     .min(3, { message: "Name must be at least 3 characters long" })
@@ -8,6 +8,9 @@ export const stepOneSchema = zod.object({
   gender: zod.enum(["Male", "Female", "Other"], {
     error: () => ({ message: "Please select your gender" }),
   }),
+  password: zod
+    .string()
+    .min(6, { message: "Password must be at least 6 characters long" }),
   dob: zod
     .string()
     .min(1, { message: "Date of birth is required" })
@@ -19,15 +22,15 @@ export const stepOneSchema = zod.object({
   }),
 });
 
-export const stepTwoSchema = zod.object({
+export const stepContactSchema = zod.object({
   phone: zod.string().regex(/^[6-9]\d{9}$/, {
     message: "Enter a valid 10-digit Indian mobile number",
   }),
-  email: zod.string().email({ message: "Enter a valid email address" }),
+  email: zod.email({ message: "Enter a valid email address" }),
 });
 
 export const stepOtpSchema = zod.object({
-  email: zod.string().email(),
+  email: zod.email({ message: "Enter a valid email address" }),
   otp: zod
     .string()
     .length(4, { message: "Please enter the complete 4-digit code" }),
@@ -42,8 +45,8 @@ export const stepWardSchema = zod.object({
 });
 
 // Master schema combining all screens + notification preference for the final database save
-export const completeOnboardingSchema = stepOneSchema
-  .merge(stepTwoSchema)
+export const completeOnboardingSchema = stepPersonalSchema
+  .merge(stepContactSchema)
   .merge(stepWardSchema)
   .extend({
     notification_enabled: zod.boolean().default(false),
