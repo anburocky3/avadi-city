@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { GuestFooter } from "@/components/navigation/GuestFooter";
 
 // Form Schema
 const contactFormSchema = zod.object({
@@ -165,7 +166,7 @@ export default function ContactPage() {
       </header>
 
       {/* Main Form & Information Grid */}
-      <main className="relative z-10 my-auto py-12 px-6 max-w-6xl mx-auto w-full space-y-12">
+      <main className="relative z-10 my-auto py-12 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-12">
         {/* Title Header */}
         <div className="text-center space-y-3 max-w-xl mx-auto">
           <span className="px-3.5 py-1 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 font-black text-[10px] uppercase tracking-widest border border-orange-200 dark:border-orange-500/30">
@@ -185,7 +186,7 @@ export default function ContactPage() {
           {/* Left Column: Official Contact & Civic Directory */}
           <div className="lg:col-span-5 space-y-6">
             {/* Official Avadi Municipal Corporation Box */}
-            <div className="p-6 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-md shadow-slate-200/50 dark:shadow-none space-y-5">
+            <div className="py-6 px-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-md shadow-slate-200/50 dark:shadow-none space-y-5">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-2">
                   <Building2 size={16} className="text-emerald-500" />
@@ -288,7 +289,7 @@ export default function ContactPage() {
             <motion.div
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-6 sm:p-8 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6"
+              className="py-6 px-4 sm:p-6 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none space-y-6"
             >
               {/* Submission Banners */}
               <AnimatePresence>
@@ -381,7 +382,7 @@ export default function ContactPage() {
                       type="text"
                       placeholder="e.g. Anbu Selvan"
                       {...register("fullName")}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition"
+                      className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition"
                     />
                     {errors.fullName && (
                       <p className="text-[10px] text-rose-500 font-bold">
@@ -398,7 +399,7 @@ export default function ContactPage() {
                       type="email"
                       placeholder="you@example.com"
                       {...register("email")}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition"
+                      className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition"
                     />
                     {errors.email && (
                       <p className="text-[10px] text-rose-500 font-bold">
@@ -418,7 +419,7 @@ export default function ContactPage() {
                       type="tel"
                       placeholder="10-digit mobile number"
                       {...register("phone")}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition"
+                      className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition"
                     />
                     {errors.phone && (
                       <p className="text-[10px] text-rose-500 font-bold">
@@ -433,7 +434,7 @@ export default function ContactPage() {
                     </label>
                     <select
                       {...register("wardNumber", { valueAsNumber: true })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition cursor-pointer"
+                      className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition cursor-pointer"
                     >
                       <option value="">Select your Ward (1 to 48)</option>
                       {Array.from({ length: 48 }, (_, i) => i + 1).map(
@@ -456,7 +457,7 @@ export default function ContactPage() {
                     rows={4}
                     placeholder="Provide detailed feedback, bug steps, or civic inquiry details..."
                     {...register("message")}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition resize-y"
+                    className="mt-2 w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-medium focus:ring-2 focus:ring-orange-500/40 focus:outline-none transition resize-y"
                   />
                   {errors.message && (
                     <p className="text-[10px] text-rose-500 font-bold">
@@ -480,6 +481,11 @@ export default function ContactPage() {
                     </>
                   )}
                 </button>
+                <Link href="/credits" className="block text-center sm:hidden">
+                  <small className="text-xs text-slate-500 dark:text-slate-400 font-semibold underline">
+                    Who created this?
+                  </small>
+                </Link>
               </form>
             </motion.div>
           </div>
@@ -487,30 +493,7 @@ export default function ContactPage() {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 w-full py-6 text-center border-t border-slate-200/80 dark:border-slate-800/60 space-y-2">
-        <div className="flex items-center justify-center space-x-4 text-xs font-bold text-slate-600 dark:text-slate-400">
-          <Link href="/" className="hover:text-primary transition">
-            Home
-          </Link>
-          <span>•</span>
-          <Link href="/contact" className="hover:text-orange-500 transition">
-            Contact & Support
-          </Link>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1 justify-center">
-            <span>Developed with</span>
-            <Heart size={10} className="text-rose-500 fill-rose-500 inline" />
-            <span>by</span>
-            <a
-              href="https://cyberdudenetworks.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-primary hover:underline"
-            >
-              CyberDude Networks Pvt. Ltd.
-            </a>
-          </span>
-        </div>
-      </footer>
+      <GuestFooter />
     </div>
   );
 }

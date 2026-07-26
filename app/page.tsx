@@ -431,7 +431,7 @@ export default function LandingPage() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="w-full py-6 text-center border-t border-slate-200/80 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-md mt-12">
+      <footer className="w-full py-6 text-center border-t border-slate-200/80 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-md ">
         <div className="max-w-xl mx-auto px-6 flex flex-col items-center space-y-3">
           <div className="flex flex-col items-center space-y-1">
             <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">

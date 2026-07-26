@@ -718,7 +718,7 @@ export default function GetStartedPage() {
                             />
                             <span className="flex items-center gap-1.5">
                               {isSelected && (
-                                <Check size={14} className="stroke-[3]" />
+                                <Check size={14} className="stroke-3" />
                               )}
                               <span>{g}</span>
                             </span>
