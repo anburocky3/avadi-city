@@ -47,7 +47,7 @@ export function ThemeToggle() {
       </div>
 
       {/* Subtle hover glow ring */}
-      <span className="absolute inset-0 rounded-xl bg-gradient-to-r from-amber-500/10 to-indigo-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
+      <span className="absolute inset-0 rounded-xl bg-linear-to-r from-amber-500/10 to-indigo-500/10 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
     </button>
   );
 }

@@ -1,24 +1,31 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { RegisterServiceWorker } from "@/components/pwa/register-sw";
+import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 
 export const metadata: Metadata = {
-  title: "Avadi City - Explore things in Avadi, Chennai",
+  title: "Avadi City App",
   description:
     "Explore things to do in Avadi, Chennai. Discover local attractions, events, and activities in Avadi. Plan your visit and make the most of your time in this vibrant city.",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Avadi City",
+  },
+  formatDetection: {
+    telephone: true,
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0f172a",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default async function RootLayout({
@@ -29,14 +36,26 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
+    <html lang="en" className={` h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        {/* iOS Splash screen image links */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash/apple-splash-2048-2732.jpg"
+          media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
+        />
+        <link
+          rel="apple-touch-startup-image"
+          href="/splash/apple-splash-1170-2532.jpg"
+          media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+        />
+      </head>
       <body className="min-h-full flex flex-col">
         <NextIntlClientProvider messages={messages}>
+          <RegisterServiceWorker />
           <ThemeProvider>{children}</ThemeProvider>
+          <PwaInstallBanner />
         </NextIntlClientProvider>
       </body>
     </html>
