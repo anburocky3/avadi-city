@@ -1,0 +1,54 @@
+model Feed {
+  id           String     @id @default(cuid())
+  authorId     String?    // Foreign key to User
+  authorName   String     // Cached display name for performance/fallbacks
+  authorAvatar String
+  ward         String
+  text         String     @db.Text
+  imageUrl     String?
+  isEmergency  Boolean    @default(false)
+  category     String     @default("Announcement")
+  likesCount   Int        @default(0) @map("likes_count")
+  timestamp    DateTime   @default(now())
+
+  // Relations
+  author       User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  comments     Comment[]
+  likes        FeedLike[]
+
+  @@index([ward])
+  @@index([category, timestamp])
+  @@map("feeds")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  feedId    String
+  authorId  String?  // Foreign key to User
+  author    String   // Cached display name
+  text      String   @db.Text
+  timestamp DateTime @default(now())
+
+  // Relations
+  feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([feedId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model FeedLike {
+  id        String   @id @default(cuid())
+  feedId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  // Relations
+  feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([feedId, userId]) // Prevents double-liking at the database level
+  @@index([userId])
+  @@map("feed_likes")
+}
