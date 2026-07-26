@@ -6,6 +6,7 @@
       "name": "avadi-city",
       "dependencies": {
         "@hookform/resolvers": "^5.4.0",
+        "@icons-pack/react-simple-icons": "^13.13.0",
         "@prisma/adapter-mariadb": "^7.9.0",
         "@prisma/client": "^7.9.0",
         "@teispace/next-themes": "^2.0.4",
@@ -54,6 +55,8 @@
     "@formatjs/intl-localematcher": ["@formatjs/intl-localematcher@0.8.13", "", { "dependencies": { "@formatjs/fast-memoize": "3.1.7" } }, "sha512-kHEAFOkeJSPNi7c5PaKaRjxcBrJwzzt81ifUu+8uve1EDW/VJl83KsxmqgqNZLzcFEhSliZGvx3+pk/RH0IOmg=="],
 
     "@hookform/resolvers": ["@hookform/resolvers@5.4.0", "", { "dependencies": { "@standard-schema/utils": "^0.3.0" }, "peerDependencies": { "react-hook-form": "^7.55.0" } }, "sha512-EIsqr/t/qbinPIhGjMdtvutIN1Kk4uwbROE9/UQ93CAVGR7GkA7Y92+fX80OzXi/OB67jVFYwKGO1WzkxmkFZw=="],
+
+    "@icons-pack/react-simple-icons": ["@icons-pack/react-simple-icons@13.13.0", "", { "peerDependencies": { "react": "^16.13 || ^17 || ^18 || ^19" } }, "sha512-B5HhQMIpcSH4z8IZ8HFhD59CboHceKYMpPC9kAwGyKntvPdyJJv26DLu4Z1wAjcCLyrJhf11tMhiQGom9Rxb9g=="],
 
     "@img/colour": ["@img/colour@1.1.0", "", {}, "sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ=="],
 

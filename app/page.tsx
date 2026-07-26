@@ -9,10 +9,10 @@ import {
   Train,
   Briefcase,
   Building2,
-  Sun,
-  Moon,
-  LogIn,
   ArrowRight,
+  Award,
+  Mail,
+  Heart,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -77,8 +77,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200">
       {/* Header Bar */}
-      <header className="w-full  border-b border-slate-200/60 dark:border-slate-800/40">
-        <div className="max-w-6xl mx-auto flex items-center justify-between  px-6 py-5 ">
+      <header className="w-full border-b border-slate-200/60 dark:border-slate-800/40">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-5">
           <div className="flex items-center space-x-3 cursor-pointer group">
             <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-750 p-0.5 shadow-md shadow-slate-200/50 dark:shadow-none flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-200">
               <img
@@ -105,7 +105,7 @@ export default function LandingPage() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center justify-between px-6 py-6 max-w-xl mx-auto text-center w-full">
-        {/* Headline & Description Section - Sharply centered in the middle between top header and Get Started */}
+        {/* Headline & Description Section */}
         <div className="my-auto space-y-3.5 py-6 max-w-md flex flex-col items-center justify-center">
           <h1 className="text-4xl sm:text-5xl font-black tracking-tight leading-tight text-slate-900 dark:text-white">
             Smart Services for a<br />
@@ -159,26 +159,69 @@ export default function LandingPage() {
               })}
             </div>
           </div>
+
+          {/* NEW: 2-Column Grid for Credits & Contact */}
+          <div className="w-full pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <Link
+                href="/credits"
+                className="flex items-center space-x-3 p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 hover:border-amber-500/40 dark:hover:border-amber-500/40 hover:shadow-md transition-all active:scale-95 text-left group cursor-pointer"
+              >
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 shrink-0 group-hover:scale-110 transition-transform">
+                  <Award size={18} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-black text-slate-800 dark:text-white block truncate">
+                    Credits & Team
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                    Meet the creators
+                  </span>
+                </div>
+              </Link>
+
+              <Link
+                href="/contact"
+                className="flex items-center space-x-3 p-3.5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800/80 hover:border-orange-500/40 dark:hover:border-orange-500/40 hover:shadow-md transition-all active:scale-95 text-left group cursor-pointer"
+              >
+                <div className="p-2.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0 group-hover:scale-110 transition-transform">
+                  <Mail size={18} />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-xs font-black text-slate-800 dark:text-white block truncate">
+                    Contact & Support
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium block truncate">
+                    24/7 Ward Helpline
+                  </span>
+                </div>
+              </Link>
+            </div>
+          </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-6 text-center border-t border-slate-200/60 dark:border-slate-800/40">
-        <div className="flex flex-col items-center space-y-1">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
-            © {new Date().getFullYear()} Avadi City - All Rights Reserved
-          </span>
-          <span className="text-[10px] text-slate-400 dark:text-slate-500">
-            Developed by{" "}
-            <a
-              href="https://cyberdudenetworks.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-primary hover:underline"
-            >
-              CyberDude Networks Pvt. Ltd.
-            </a>
-          </span>
+      <footer className="w-full py-6 text-center border-t border-slate-200/60 dark:border-slate-800/40 bg-white/50 dark:bg-slate-950/50 backdrop-blur-md">
+        <div className="max-w-xl mx-auto px-6 flex flex-col items-center space-y-3">
+          <div className="flex flex-col items-center space-y-1">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
+              © {new Date().getFullYear()} Avadi City - All Rights Reserved
+            </span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1 justify-center">
+              <span>Developed with</span>
+              <Heart size={10} className="text-rose-500 fill-rose-500 inline" />
+              <span>by</span>
+              <a
+                href="https://cyberdudenetworks.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold text-primary hover:underline"
+              >
+                CyberDude Networks Pvt. Ltd.
+              </a>
+            </span>
+          </div>
         </div>
       </footer>
     </div>

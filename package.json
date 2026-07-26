@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
+    "@icons-pack/react-simple-icons": "^13.13.0",
     "@prisma/adapter-mariadb": "^7.9.0",
     "@prisma/client": "^7.9.0",
     "@teispace/next-themes": "^2.0.4",
