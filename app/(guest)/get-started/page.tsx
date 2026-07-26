@@ -1215,7 +1215,7 @@ export default function GetStartedPage() {
                                 <MapPin size={16} />
                               </div>
                               <div className="flex-1 min-w-0 space-y-1.5">
-                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-150 leading-normal wrap-break-word pr-1 capitalize">
+                                <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-normal wrap-break-word pr-1 capitalize">
                                   {item.streetName.toLocaleLowerCase("en-IN")}
                                 </p>
 

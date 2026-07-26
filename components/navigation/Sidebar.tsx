@@ -30,6 +30,7 @@ import {
 // Adjust import paths according to your folder structure
 import { useWard } from "@/context/ward";
 import { Modal } from "@/components/shared-components";
+import { WardSelector } from "../ward-selector";
 // import { WardSelector } from "./WardSelector";
 
 // --- TYPESCRIPT DEFINITIONS ---
@@ -103,12 +104,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   const quickModules: NavItem[] = [
     { name: t("explore"), path: "/explore", icon: Compass },
-    { name: t("food"), path: "/food", icon: ChefHat },
-    { name: t("healthcare"), path: "/healthcare", icon: HeartPulse },
-    { name: t("services"), path: "/services", icon: Wrench },
-    { name: t("rentals"), path: "/rentals", icon: Building2 },
-    { name: t("jobs"), path: "/jobs", icon: Briefcase },
-    { name: t("volunteers"), path: "/volunteers", icon: HeartHandshake },
+    { name: t("foods"), path: "/foods", icon: ChefHat },
+    { name: t("healthcare.title"), path: "/healthcare", icon: HeartPulse },
+    { name: t("services.servicesTitle"), path: "/services", icon: Wrench },
+    { name: t("rentals.title"), path: "/rentals", icon: Building2 },
+    { name: t("jobs.title"), path: "/jobs", icon: Briefcase },
+    { name: t("volunteers.title"), path: "/volunteers", icon: HeartHandshake },
     { name: t("transport"), path: "/transport", icon: Train },
   ];
 
@@ -177,7 +178,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-primary flex items-center justify-center font-bold text-xs">
               W{activeWard.id}
             </div>
-            <div className="flex flex-col max-w-[140px]">
+            <div className="flex flex-col max-w-35">
               <span className="font-semibold text-xs text-slate-700 dark:text-slate-200 leading-normal truncate">
                 {activeWard.name}
               </span>
@@ -308,13 +309,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
       </aside>
 
-      {/* <Modal
+      <Modal
         isOpen={isWardModalOpen}
         onClose={() => setIsWardModalOpen(false)}
         title="Select Active Ward"
       >
         <WardSelector onClose={() => setIsWardModalOpen(false)} />
-      </Modal> */}
+      </Modal>
     </>
   );
 };

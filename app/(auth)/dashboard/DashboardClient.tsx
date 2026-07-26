@@ -210,7 +210,7 @@ export const DashboardClient: React.FC = () => {
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       {/* 1. Greeting Hero Card */}
-      <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-primary bg-linear-to-r from-orange-500/[0.05] via-teal-500/[0.02] to-transparent dark:from-orange-500/[0.10] dark:via-teal-500/[0.03] dark:to-transparent p-4 sm:p-5 md:p-6 shadow-md shadow-orange-500/5 flex items-center justify-between transition-all">
+      <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-primary bg-linear-to-r from-orange-500/5 via-teal-500/2 to-transparent dark:from-orange-500/10 dark:via-teal-500/3 dark:to-transparent p-4 sm:p-5 md:p-6 shadow-md shadow-orange-500/5 flex items-center justify-between transition-all">
         <div className="space-y-1">
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-linear-to-r from-orange-500/15 via-amber-500/10 to-teal-500/10 border border-orange-500/25 shadow-xs shadow-orange-500/10">
             <span className="bg-linear-to-r from-primary to-orange-600 bg-clip-text text-transparent font-black text-[10px] sm:text-xs uppercase tracking-widest">
@@ -435,7 +435,7 @@ export const DashboardClient: React.FC = () => {
 
       {/* 5. Gourmet Culinary Local Food Spotlight Card */}
       <div
-        onClick={() => router.push("/food")}
+        onClick={() => router.push("/foods")}
         className="p-4 sm:p-5 rounded-3xl bg-linear-to-r from-red-950 via-rose-900 to-amber-950 text-white border-2 border-amber-400/70 shadow-xl shadow-red-950/30 hover:border-amber-300 hover:scale-[1.01] transition-all duration-200 cursor-pointer relative overflow-hidden group space-y-3"
       >
         <div className="flex items-center justify-between relative z-10">
@@ -504,14 +504,8 @@ export const DashboardClient: React.FC = () => {
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {[
             {
-              name: "Local Alerts",
-              path: "/notifications",
-              icon: Bell,
-              bg: "bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-455",
-            },
-            {
               name: "Food & Dining",
-              path: "/food",
+              path: "/foods",
               icon: ChefHat,
               bg: "bg-amber-50 dark:bg-amber-950/20 text-amber-500 dark:text-amber-455",
             },
@@ -522,10 +516,10 @@ export const DashboardClient: React.FC = () => {
               bg: "bg-emerald-50 dark:bg-emerald-950/20 text-emerald-500 dark:text-emerald-455",
             },
             {
-              name: "Volunteers",
-              path: "/volunteers",
-              icon: HeartHandshake,
-              bg: "bg-teal-50 dark:bg-teal-950/20 text-teal-500 dark:text-teal-455",
+              name: "Local Jobs",
+              path: "/jobs",
+              icon: Briefcase,
+              bg: "bg-teal-50 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400",
             },
             {
               name: "Transport",
@@ -534,10 +528,16 @@ export const DashboardClient: React.FC = () => {
               bg: "bg-blue-50 dark:bg-blue-950/20 text-blue-500 dark:text-blue-455",
             },
             {
-              name: "Local Jobs",
-              path: "/jobs",
-              icon: Briefcase,
-              bg: "bg-teal-50 dark:bg-teal-950/20 text-teal-600 dark:text-teal-400",
+              name: "Volunteers",
+              path: "/volunteers",
+              icon: HeartHandshake,
+              bg: "bg-teal-50 dark:bg-teal-950/20 text-teal-500 dark:text-teal-455",
+            },
+            {
+              name: "Local Alerts",
+              path: "/notifications",
+              icon: Bell,
+              bg: "bg-rose-50 dark:bg-rose-950/20 text-rose-500 dark:text-rose-455",
             },
           ].map((util) => {
             const Icon = util.icon;

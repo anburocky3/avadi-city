@@ -109,7 +109,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                 AVADI <span className="text-primary font-black">CITY</span>
               </span>
               <span className="text-[8px] font-bold text-slate-400 dark:text-slate-500 tracking-wider uppercase mt-0.5">
-                SUPER-APP
+                CONNECTING CITIZENS!
               </span>
             </div>
           </div>

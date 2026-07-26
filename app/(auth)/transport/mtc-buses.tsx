@@ -455,7 +455,7 @@ export const MtcBuses: React.FC = () => {
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex items-start sm:items-center space-x-3.5 min-w-0">
                     {/* Vibrant Route Number Pillar */}
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex flex-col items-center justify-center font-black shrink-0 shadow-md shadow-emerald-500/10 border border-emerald-400">
+                    <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 text-white flex flex-col items-center justify-center font-black shrink-0 shadow-md shadow-emerald-500/10 border border-emerald-400">
                       <span className="text-sm leading-none tracking-tight">
                         {bus.routeNo}
                       </span>

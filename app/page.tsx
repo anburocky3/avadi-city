@@ -77,27 +77,29 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col justify-between transition-colors duration-200">
       {/* Header Bar */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-5 flex items-center justify-between border-b border-slate-200/60 dark:border-slate-800/40">
-        <div className="flex items-center space-x-3 cursor-pointer group">
-          <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-750 p-0.5 shadow-md shadow-slate-200/50 dark:shadow-none flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-200">
-            <img
-              src={"/logo.png"}
-              alt="AVADI CITY Official Logo"
-              className="w-full h-full object-cover object-center rounded-xl"
-            />
+      <header className="w-full  border-b border-slate-200/60 dark:border-slate-800/40">
+        <div className="max-w-6xl mx-auto flex items-center justify-between  px-6 py-5 ">
+          <div className="flex items-center space-x-3 cursor-pointer group">
+            <div className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-750 p-0.5 shadow-md shadow-slate-200/50 dark:shadow-none flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform duration-200">
+              <img
+                src={"/logo.png"}
+                alt="AVADI CITY Official Logo"
+                className="w-full h-full object-cover object-center rounded-xl"
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-lg tracking-tight text-slate-900 dark:text-white leading-none">
+                AVADI <span className="text-primary font-black">CITY</span>
+              </span>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-widest uppercase mt-0.5">
+                CONNECTING AVADIANS
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="font-black text-lg tracking-tight text-slate-900 dark:text-white leading-none">
-              AVADI <span className="text-primary font-black">CITY</span>
-            </span>
-            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-extrabold tracking-widest uppercase mt-0.5">
-              CONNECTING AVADIANS
-            </span>
-          </div>
-        </div>
 
-        <div className="flex items-center space-x-3">
-          <ThemeToggle />
+          <div className="flex items-center space-x-3">
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 

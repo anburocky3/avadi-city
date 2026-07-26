@@ -17,7 +17,7 @@ export const BottomTabBar = () => {
     { name: t("home"), path: "/", icon: Home },
     { name: t("complaints"), path: "/complaints", icon: AlertTriangle },
     { name: t("explore"), path: "/explore", icon: Compass },
-    { name: t("sos"), path: "/sos", icon: ShieldAlert, isSOS: true },
+    { name: t("sos.title"), path: "/sos", icon: ShieldAlert, isSOS: true },
     { name: t("profile"), path: "/profile", icon: User },
   ];
 

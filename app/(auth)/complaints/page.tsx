@@ -495,7 +495,7 @@ export const Complaints: React.FC = () => {
               </div>
             </div>
 
-            <div className="relative rounded-3xl border-2 border-amber-300/90 dark:border-amber-700/60 bg-amber-50/30 dark:bg-slate-900/80 p-5 sm:p-6 shadow-sm overflow-hidden min-h-[105px] flex items-center justify-center text-center">
+            <div className="relative rounded-3xl border-2 border-amber-300/90 dark:border-amber-700/60 bg-amber-50/30 dark:bg-slate-900/80 p-5 sm:p-6 shadow-sm overflow-hidden min-h-26.25 flex items-center justify-center text-center">
               <button
                 onClick={() =>
                   setHowSlideIndex((prev) =>
@@ -575,18 +575,18 @@ export const Complaints: React.FC = () => {
                   },
                 },
                 {
+                  name: "Govt Services",
+                  desc: "Access important government services and ward office information.",
+                  icon: Building2,
+                  badgeBg: "from-purple-600 to-indigo-700",
+                  action: () => router.push("/govt-services"),
+                },
+                {
                   name: "Local Alerts",
                   desc: "View useful details about your ward, nearby facilities, and local updates.",
                   icon: Bell,
                   badgeBg: "from-blue-500 to-indigo-600",
                   action: () => router.push("/notifications"),
-                },
-                {
-                  name: "Govt Services",
-                  desc: "Access important government services and ward office information.",
-                  icon: Building2,
-                  badgeBg: "from-purple-600 to-indigo-700",
-                  action: () => router.push("/gov-services"),
                 },
               ].map((srv) => {
                 const SrvIcon = srv.icon;
@@ -598,7 +598,7 @@ export const Complaints: React.FC = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div
-                        className={`p-2 rounded-xl bg-gradient-to-br ${srv.badgeBg} text-white shadow-sm shrink-0`}
+                        className={`p-2 rounded-xl bg-linear-to-br ${srv.badgeBg} text-white shadow-sm shrink-0`}
                       >
                         <SrvIcon size={16} />
                       </div>
@@ -649,10 +649,10 @@ export const Complaints: React.FC = () => {
                     icon: Building,
                   })
                 }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-[110px]"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-sm shrink-0">
+                  <div className="p-2 rounded-xl bg-linear-to-br from-emerald-600 to-teal-700 text-white shadow-sm shrink-0">
                     <Building size={16} />
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center shrink-0">
@@ -685,10 +685,10 @@ export const Complaints: React.FC = () => {
                     icon: Crown,
                   })
                 }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-[110px]"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-sm shrink-0">
+                  <div className="p-2 rounded-xl bg-linear-to-br from-amber-500 to-orange-600 text-white shadow-sm shrink-0">
                     <Crown size={16} />
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/60 text-[10px] font-black text-amber-600 dark:text-amber-400 flex items-center shrink-0">
@@ -721,10 +721,10 @@ export const Complaints: React.FC = () => {
                     icon: Building2,
                   })
                 }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-[110px]"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-sm shrink-0">
+                  <div className="p-2 rounded-xl bg-linear-to-br from-cyan-600 to-blue-700 text-white shadow-sm shrink-0">
                     <Building2 size={16} />
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200/60 dark:border-cyan-800/60 text-[10px] font-black text-cyan-600 dark:text-cyan-400 flex items-center shrink-0">
@@ -756,10 +756,10 @@ export const Complaints: React.FC = () => {
                     icon: UserCheck,
                   })
                 }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-[110px]"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-sm shrink-0">
+                  <div className="p-2 rounded-xl bg-linear-to-br from-blue-600 to-indigo-700 text-white shadow-sm shrink-0">
                     <UserCheck size={16} />
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-800/60 text-[10px] font-black text-blue-600 dark:text-blue-400 flex items-center shrink-0">
@@ -807,10 +807,10 @@ export const Complaints: React.FC = () => {
                     icon: Zap,
                   })
                 }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-[105px]"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-26.25"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-600 text-white shadow-sm shrink-0">
+                  <div className="p-2 rounded-xl bg-linear-to-br from-yellow-500 to-amber-600 text-white shadow-sm shrink-0">
                     <Zap size={16} />
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/60 text-[10px] font-black text-amber-600 dark:text-amber-400 flex items-center shrink-0">
@@ -843,10 +843,10 @@ export const Complaints: React.FC = () => {
                     icon: Building2,
                   })
                 }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-[105px]"
+                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-26.25"
               >
                 <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-sm shrink-0">
+                  <div className="p-2 rounded-xl bg-linear-to-br from-cyan-600 to-blue-700 text-white shadow-sm shrink-0">
                     <Building2 size={16} />
                   </div>
                   <span className="px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200/60 dark:border-cyan-800/60 text-[10px] font-black text-cyan-600 dark:text-cyan-400 flex items-center shrink-0">
@@ -1077,7 +1077,7 @@ export const Complaints: React.FC = () => {
               Select the category below that best describes your civic problem:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[460px] overflow-y-auto pr-1 scrollbar-none">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-115 overflow-y-auto pr-1 scrollbar-none">
               {visualCategories.map((cat) => {
                 const CatIcon = cat.icon;
                 const isSelected = selectedCategory === cat.id;
@@ -1088,7 +1088,7 @@ export const Complaints: React.FC = () => {
                     onClick={() => setSelectedCategory(cat.id)}
                     className={`rounded-2xl overflow-hidden border-2 transition-all cursor-pointer group flex flex-col justify-between bg-white dark:bg-slate-900 ${
                       isSelected
-                        ? "border-primary ring-4 ring-primary/40 shadow-xl bg-orange-500/[0.04] dark:bg-orange-500/15 scale-[1.01]"
+                        ? "border-primary ring-4 ring-primary/40 shadow-xl bg-orange-500/4 dark:bg-orange-500/15 scale-[1.01]"
                         : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500 shadow-sm"
                     }`}
                   >
@@ -1100,7 +1100,7 @@ export const Complaints: React.FC = () => {
                       />
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                         <div
-                          className={`p-1.5 rounded-xl bg-gradient-to-br ${cat.gradient} text-white shadow-lg flex items-center space-x-2 px-3 border border-white/30`}
+                          className={`p-1.5 rounded-xl bg-linear-to-br ${cat.gradient} text-white shadow-lg flex items-center space-x-2 px-3 border border-white/30`}
                         >
                           <CatIcon size={16} />
                           <span className="text-xs font-black tracking-wider uppercase">
@@ -1125,7 +1125,7 @@ export const Complaints: React.FC = () => {
                           {cat.desc}
                         </p>
                       </div>
-                      <div className="pt-3 flex items-center justify-between border-t border-slate-150 dark:border-slate-800 mt-2">
+                      <div className="pt-3 flex items-center justify-between border-t border-slate-200 dark:border-slate-800 mt-2">
                         <span
                           className={`text-xs font-extrabold ${isSelected ? "text-primary dark:text-orange-400" : "text-slate-600 dark:text-slate-300"}`}
                         >
@@ -1369,7 +1369,7 @@ export const Complaints: React.FC = () => {
                 <span className="text-slate-400 font-semibold">
                   Ward & Spot:
                 </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px]">
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-50">
                   Ward {submittedComplaint.ward} · {submittedComplaint.address}
                 </span>
               </div>
@@ -1492,7 +1492,7 @@ export const Complaints: React.FC = () => {
                     );
                   },
                 )}
-                <div className="absolute top-3.5 left-6 right-6 h-0.5 bg-slate-200 dark:bg-slate-800 -z-0" />
+                <div className="absolute top-3.5 left-6 right-6 h-0.5 bg-slate-200 dark:bg-slate-800 z-0" />
               </div>
             </div>
 
@@ -1539,7 +1539,7 @@ export const Complaints: React.FC = () => {
           <div className="space-y-5">
             <div className="flex items-center space-x-3.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
               <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${selectedAdminModal.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
+                className={`w-12 h-12 rounded-2xl bg-linear-to-br ${selectedAdminModal.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
               >
                 <selectedAdminModal.icon size={22} />
               </div>
@@ -1586,7 +1586,7 @@ export const Complaints: React.FC = () => {
                     <span className="text-[10px] font-bold text-slate-400 block">
                       Official Email
                     </span>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate max-w-[150px] sm:max-w-[210px] block">
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate max-w-37.5 sm:max-w-52.5 block">
                       {selectedAdminModal.email}
                     </span>
                   </div>
@@ -1640,7 +1640,7 @@ export const Complaints: React.FC = () => {
             digital portals for tax payments, certificates, and civic services.
           </p>
 
-          <div className="space-y-2.5 max-h-[420px] overflow-y-auto pr-1">
+          <div className="space-y-2.5 max-h-105 overflow-y-auto pr-1">
             {[
               {
                 title: "Property & Water Tax Online Payment",
@@ -1693,7 +1693,7 @@ export const Complaints: React.FC = () => {
                 href={service.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-primary transition-all flex items-start justify-between gap-3 group block"
+                className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-primary transition-all flex items-start justify-between gap-3 group"
               >
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">

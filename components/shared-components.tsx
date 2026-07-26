@@ -194,7 +194,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="w-full">
           {type === "card" && (
-            <div className="border border-slate-150 dark:border-slate-850 rounded-2xl p-5 space-y-3 bg-white dark:bg-slate-900">
+            <div className="border border-slate-200 dark:border-slate-850 rounded-2xl p-5 space-y-3 bg-white dark:bg-slate-900">
               <div className="flex items-center space-x-3">
                 <div className={`w-10 h-10 rounded-full ${pulseClass}`}></div>
                 <div className="space-y-2 flex-1">
@@ -211,7 +211,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
             </div>
           )}
           {type === "tile" && (
-            <div className="flex items-center space-x-4 p-4 border border-slate-100 dark:border-slate-800 rounded-xl">
+            <div className="flex items-center space-x-4 p-4 border border-slate-100 dark:border-slate-600 rounded-xl">
               <div className={`w-12 h-12 ${pulseClass}`}></div>
               <div className="space-y-2 flex-1">
                 <div className={`h-4 w-1/2 ${pulseClass}`}></div>

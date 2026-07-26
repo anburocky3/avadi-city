@@ -13,7 +13,7 @@ import { wards } from "@/data/wards";
 import { initialComplaints } from "@/data/complaints";
 import { initialPosts } from "@/data/posts";
 import { initialAlerts } from "@/data/alerts";
-import { initialVolunteers } from "@/data/volunteers";
+import { initialVolunteersData } from "@/data/volunteerSpots";
 import { initialRentals, initialJobs } from "@/data/listings";
 import { initialDonations } from "@/data/donations";
 import { initialServices } from "@/data/services";
@@ -242,7 +242,7 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     getLocalState<Alert[]>("alerts", normalizeAlerts(initialAlerts || [])),
   );
   const [volunteers, setVolunteers] = useState<Volunteer[]>(() =>
-    getLocalState<Volunteer[]>("volunteers", initialVolunteers || []),
+    getLocalState<Volunteer[]>("volunteers", initialVolunteersData || []),
   );
   const [rentals, setRentals] = useState<Rental[]>(() =>
     getLocalState<Rental[]>("rentals", initialRentals || []),

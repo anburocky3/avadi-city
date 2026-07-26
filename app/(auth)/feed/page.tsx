@@ -366,7 +366,7 @@ export const Feed: React.FC = () => {
             className="space-y-4"
           >
             {/* Quick Banner to Report New Issue */}
-            <Card className="p-4 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 rounded-2xl flex items-center justify-between">
+            <Card className="p-4 bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 rounded-2xl flex items-center justify-between">
               <div className="space-y-0.5">
                 <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-100">
                   Have a Civic Issue in your Ward?
@@ -478,7 +478,7 @@ export const Feed: React.FC = () => {
                 <Card
                   className={`p-5 transition-all duration-300 ${
                     post.isEmergency
-                      ? "bg-rose-500/[0.02] dark:bg-rose-950/5 animate-border-pulse-red"
+                      ? "bg-rose-500/2 dark:bg-rose-950/5 animate-border-pulse-red"
                       : "border-l-4 border-l-slate-200 dark:border-l-slate-800"
                   }`}
                 >
@@ -562,7 +562,7 @@ export const Feed: React.FC = () => {
 
                   {/* Optional Image */}
                   {post.imageUrl && (
-                    <div className="mt-3.5 overflow-hidden rounded-[20px] border border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950 aspect-[4/3] sm:aspect-[16/10] relative shadow-sm">
+                    <div className="mt-3.5 overflow-hidden rounded-[20px] border border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950 aspect-4/3 sm:aspect-16/10 relative shadow-sm">
                       <img
                         src={post.imageUrl}
                         alt="Post media attachment"
@@ -801,7 +801,7 @@ export const Feed: React.FC = () => {
             </div>
 
             {selectedPost.imageUrl && (
-              <div className="overflow-hidden rounded-[20px] border border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950 aspect-[4/3] sm:aspect-[16/10] relative shadow-sm">
+              <div className="overflow-hidden rounded-[20px] border border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-slate-950 aspect-4/3 sm:aspect-16/10 relative shadow-sm">
                 <img
                   src={selectedPost.imageUrl}
                   alt="Post Media"

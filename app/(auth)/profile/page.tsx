@@ -55,7 +55,6 @@ interface WardContextType {
   userProfile: UserProfile;
   activeWard: Ward;
   completeOnboarding: (profileData: UserProfile) => void;
-  resetOnboarding: () => void;
   volunteers: Volunteer[];
   complaints: Complaint[];
 }
@@ -66,7 +65,6 @@ export const Profile: React.FC = () => {
     userProfile = {},
     activeWard = { id: 14, name: "Avadi Central" },
     completeOnboarding = () => {},
-    resetOnboarding = () => {},
     volunteers = [],
     complaints = [],
   } = useWard() as WardContextType;
@@ -116,20 +114,6 @@ export const Profile: React.FC = () => {
     };
     completeOnboarding(updated);
     setIsEditModalOpen(false);
-  };
-
-  const handleResetDemo = () => {
-    if (typeof window !== "undefined") {
-      if (
-        window.confirm(
-          "Are you sure you want to reset all data and restart the Onboarding Flow? This is useful for demos.",
-        )
-      ) {
-        resetOnboarding();
-        localStorage.clear();
-        window.location.reload();
-      }
-    }
   };
 
   return (
@@ -220,7 +204,7 @@ export const Profile: React.FC = () => {
           App Configurations
         </h3>
 
-        <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-150 dark:divide-slate-800 overflow-hidden shadow-sm">
+        <div className="bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden shadow-sm">
           {/* Theme setting */}
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
@@ -331,18 +315,6 @@ export const Profile: React.FC = () => {
             </a>
           </div>
         </div>
-      </div>
-
-      {/* SECTION 4: DEMO DATA RESET */}
-      <div className="pt-2">
-        <button
-          type="button"
-          onClick={handleResetDemo}
-          className="w-full flex items-center justify-center space-x-2 p-3.5 rounded-2xl border border-rose-200 dark:border-rose-900/50 bg-rose-50/50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/40 font-bold text-xs transition cursor-pointer"
-        >
-          <RotateCcw size={15} />
-          <span>Reset Demo Data &amp; Restart Onboarding</span>
-        </button>
       </div>
 
       {/* MODAL 1: ABOUT AVADI CITY APP */}

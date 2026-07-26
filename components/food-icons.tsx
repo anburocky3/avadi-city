@@ -23,7 +23,7 @@ export const NonVegSymbol = ({ className = "w-4 h-4" }) => (
 // Professional Dessert / Ice Cream Icon Badge
 export const IceCreamSymbol = ({ className = "w-4 h-4" }) => (
   <span
-    className={`inline-flex items-center justify-center border-2 border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-950/60 rounded-[3px] text-purple-600 dark:text-purple-300 p-[1px] shrink-0 ${className}`}
+    className={`inline-flex items-center justify-center border-2 border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-950/60 rounded-[3px] text-purple-600 dark:text-purple-300 p-px shrink-0 ${className}`}
     title="Desserts & Ice Creams"
   >
     <IceCream size={10} />
