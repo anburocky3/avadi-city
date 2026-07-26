@@ -1,13 +1,13 @@
 model Feed {
   id           String     @id @default(cuid())
   authorId     String?    // Foreign key to User
-  authorName   String     // Cached display name for performance/fallbacks
+  authorName   String
   authorAvatar String
   ward         String
-  text         String     @db.Text
-  imageUrl     String?
+  text         String     @db.LongText // Use LongText for MySQL base64 images
+  imageUrl     String?    @db.LongText
   isEmergency  Boolean    @default(false)
-  category     String     @default("Announcement")
+  category     String     @default("general")
   likesCount   Int        @default(0) @map("likes_count")
   timestamp    DateTime   @default(now())
 
@@ -23,9 +23,9 @@ model Feed {
 
 model Comment {
   id        String   @id @default(cuid())
-  feedId    String
-  authorId  String?  // Foreign key to User
-  author    String   // Cached display name
+  feedId    String   @map("feed_id")
+  authorId  String?
+  author    String
   text      String   @db.Text
   timestamp DateTime @default(now())
 
@@ -40,15 +40,15 @@ model Comment {
 
 model FeedLike {
   id        String   @id @default(cuid())
-  feedId    String
-  userId    String
+  feedId    String   @map("feed_id")
+  userId    String   @map("user_id")
   createdAt DateTime @default(now())
 
   // Relations
   feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([feedId, userId]) // Prevents double-liking at the database level
+  @@unique([feedId, userId]) // Prevents double-liking
   @@index([userId])
   @@map("feed_likes")
 }

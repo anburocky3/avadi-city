@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 
 // Context imports (Adjust paths if your directory structure differs)
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 
 // Component imports
 import { Modal } from "@/components/shared-components";

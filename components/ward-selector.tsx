@@ -13,7 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 

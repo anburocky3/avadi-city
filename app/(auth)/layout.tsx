@@ -1,6 +1,7 @@
 import React from "react";
-import { WardProvider } from "@/context/ward";
+import { WardProvider } from "@/context/wardContext";
 import { AppShell } from "@/components/navigation/AppShell";
+import QueryProvider from "@/providers/QueryProvider";
 
 export default async function AuthLayout({
   children,
@@ -12,8 +13,10 @@ export default async function AuthLayout({
   // if (!session) redirect('/login');
 
   return (
-    <WardProvider>
-      <AppShell>{children}</AppShell>
-    </WardProvider>
+    <QueryProvider>
+      <WardProvider>
+        <AppShell>{children}</AppShell>
+      </WardProvider>
+    </QueryProvider>
   );
 }

@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 // Adjust path aliases according to your Next.js project structure
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 import { Card, Badge, Modal, EmptyState } from "@/components/shared-components";
 
 // --- TYPESCRIPT DEFINITIONS ---

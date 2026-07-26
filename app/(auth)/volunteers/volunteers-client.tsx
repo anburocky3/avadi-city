@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Path mapped to shared-components
 import { Card, Badge } from "@/components/shared-components";
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 

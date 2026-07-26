@@ -14,7 +14,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 // Adjust path aliases to match your project structure
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 import {
   Card,
   Badge,

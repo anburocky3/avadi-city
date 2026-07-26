@@ -1,5 +1,5 @@
 import { DonationCause } from "@/app/(auth)/volunteers/volunteers-client";
-import { Volunteer } from "@/context/ward";
+import { Volunteer } from "@/context/wardContext";
 
 export const initialDonationsData: DonationCause[] = [
   {

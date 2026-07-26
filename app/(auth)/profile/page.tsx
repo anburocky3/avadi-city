@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 // Adjust import paths to match your Next.js project structure
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 import { Card, Modal } from "@/components/shared-components";
 
 // --- TYPESCRIPT DEFINITIONS ---

@@ -28,7 +28,7 @@ import {
   EmptyState,
   SkeletonLoader,
 } from "@/components/shared-components";
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 

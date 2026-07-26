@@ -266,5 +266,11 @@
     "alertHeader": "EMERGENCY RED ALERT BROADCASTED",
     "urgentBloodText": "Urgent {group} Blood Request Pinned to Feed",
     "alertDetails": "Broadcast sent to all 48 wards. Local volunteers will receive notification details at {hospital}."
+  },
+  "bottomTabs": {
+    "home": "Home",
+    "complaint": "Complaint",
+    "explore": "Explore",
+    "sos": "SOS"
   }
 }

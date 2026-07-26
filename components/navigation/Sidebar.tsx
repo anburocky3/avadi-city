@@ -30,7 +30,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 
 // Adjust import paths according to your folder structure
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 import { Modal } from "@/components/shared-components";
 import { WardSelector } from "../ward-selector";
 

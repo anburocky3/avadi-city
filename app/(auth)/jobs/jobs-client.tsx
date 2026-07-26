@@ -21,7 +21,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Shared components path mapping
 import { Modal, EmptyState } from "@/components/shared-components";
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 

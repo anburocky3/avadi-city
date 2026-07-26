@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
-import { PrismaClient } from "../generated/prisma/client";
+import { PrismaClient } from "../prisma/generated/prisma/client";
 
 // 1. Declare a global variable to hold the Prisma instance across hot reloads
 const globalForPrisma = globalThis as unknown as {

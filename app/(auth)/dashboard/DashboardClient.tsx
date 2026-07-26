@@ -39,7 +39,7 @@ import {
   NonVegSymbol,
   IceCreamSymbol,
 } from "@/components/food-icons";
-import { useWard } from "@/context/ward";
+import { useWard } from "@/context/wardContext";
 
 // --- TYPESCRIPT DEFINITIONS ---
 
@@ -86,7 +86,7 @@ interface PlaceSlide {
 interface WardContextType {
   userProfile: UserProfile;
   activeWard: Ward;
-  posts: Post[];
+  posts: Feed[];
   alerts: Alert[];
   complaints: Complaint[];
   dismissedAlerts: (string | number)[];
