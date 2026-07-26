@@ -649,16 +649,18 @@ export default function GetStartedPage() {
                   </div>
 
                   {/* Date of Birth */}
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 w-full max-w-full">
                     <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       Date of Birth *
                     </label>
-                    <input
-                      type="date"
-                      max={new Date().toISOString().split("T")[0]}
-                      {...registerStep1("dob")}
-                      className="mt-2 w-full max-w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-block box-border"
-                    />
+                    <div className="w-full max-w-full overflow-hidden mt-2">
+                      <input
+                        type="date"
+                        max={new Date().toISOString().split("T")[0]}
+                        {...registerStep1("dob")}
+                        className="w-full max-w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-border appearance-none block"
+                      />
+                    </div>
                     {errorsStep1.dob && (
                       <p className="text-xs text-rose-500 font-bold pl-1">
                         {errorsStep1.dob.message}

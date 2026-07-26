@@ -92,7 +92,7 @@ export default function GlobalError({ error, reset }: GlobalErrorProps) {
 
             <Link
               href="/"
-              className="w-full py-3 px-4 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-extrabold text-xs rounded-2xl border border-slate-200 dark:border-white/15 backdrop-blur-md transition flex items-center justify-center space-x-2 active:scale-98 cursor-pointer block"
+              className="w-full py-3 px-4 bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/15 text-slate-700 dark:text-slate-200 font-extrabold text-xs rounded-2xl border border-slate-200 dark:border-white/15 backdrop-blur-md transition flex items-center justify-center space-x-2 active:scale-98 cursor-pointer"
             >
               <Home size={15} />
               <span>Return to Home</span>
