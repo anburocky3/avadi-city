@@ -5,7 +5,7 @@ import { verifyAuthToken } from "@/lib/auth";
 // Define your public guest routes
 const guestRoutes = ["/", "/credits", "/contact", "/login", "/get-started"];
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // 1. Check if the requested path matches any guest route exactly or starts with it
