@@ -84,7 +84,7 @@ export default function LoginPage() {
 
       // Update React Query auth cache instantly
       queryClient.setQueryData(["authUser"], data.user);
-      router.push("/feed");
+      router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
       setApiError(err.message || "Sign in failed. Please check your password.");

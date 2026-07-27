@@ -80,21 +80,23 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          {/* Backdrop */}
+        // 1. Removed 'backdrop-blur-xs' from this static layout wrapper
+        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          {/* 2. Added 'backdrop-blur-xs' here so it fades in/out with opacity */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
             onClick={onClose}
-            className="fixed inset-0 bg-slate-950/80"
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-xs"
           />
 
           {/* Modal Container */}
           <motion.div
             initial={{ y: "100%", opacity: 0.5 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0.5 }}
+            exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
             className="w-full sm:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90svh] sm:max-h-[85vh]"
           >
@@ -105,7 +107,7 @@ export const Modal: React.FC<ModalProps> = ({
               </h3>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+                className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
               >
                 ✕
               </button>

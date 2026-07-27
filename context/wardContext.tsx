@@ -11,6 +11,7 @@ export const APP_VERSION = "v1.0.0";
 export interface AuthUser {
   id: string;
   name: string;
+  avatarUrl?: string;
   dob: string;
   email: string;
   phone: string;
@@ -41,6 +42,7 @@ export interface Feed {
   id: number | string;
   authorName: string;
   authorAvatar: string;
+  authorId: string;
   ward: string;
   text: string;
   imageUrl?: string | null;

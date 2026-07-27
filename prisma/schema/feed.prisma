@@ -1,8 +1,8 @@
 model Feed {
   id           String     @id @default(cuid())
-  authorId     String?    // Foreign key to User
+  authorId     String    // Foreign key to User
   authorName   String
-  authorAvatar String
+  authorAvatar String?
   ward         String
   text         String     @db.LongText // Use LongText for MySQL base64 images
   imageUrl     String?    @db.LongText
@@ -12,7 +12,7 @@ model Feed {
   timestamp    DateTime   @default(now())
 
   // Relations
-  author       User?      @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
   comments     Comment[]
   likes        FeedLike[]
 

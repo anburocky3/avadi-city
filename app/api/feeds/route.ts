@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { verifyAuthToken } from "@/lib/auth";
+import { cookies } from "next/headers";
 
 // GET /api/feeds
 export async function GET(request: Request) {
@@ -41,6 +43,10 @@ export async function GET(request: Request) {
 // POST /api/feeds
 export async function POST(request: Request) {
   try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("avadi_session")?.value;
+    const payload = token ? await verifyAuthToken(token) : null;
+
     const body = await request.json();
 
     if (!body.text || !body.text.trim()) {
@@ -52,6 +58,7 @@ export async function POST(request: Request) {
 
     const newFeed = await prisma.feed.create({
       data: {
+        authorId: payload?.userId || "anonymous",
         authorName: body.authorName || "Avadi Resident",
         authorAvatar:
           body.authorAvatar ||
@@ -59,8 +66,8 @@ export async function POST(request: Request) {
         ward: body.ward ? String(body.ward) : "14",
         text: body.text.trim(),
         imageUrl: body.imageUrl || null,
+        category: body.category || "general",
         isEmergency: Boolean(body.isEmergency),
-        category: body.category || "Chit-chat",
       },
       include: {
         comments: true,
