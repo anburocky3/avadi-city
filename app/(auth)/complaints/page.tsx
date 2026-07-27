@@ -16,11 +16,9 @@ import {
   ThumbsUp,
   Camera,
   Check,
-  Calendar,
   ArrowLeft,
   ArrowRight,
   Wrench,
-  Sparkles,
   Bell,
   Building2,
   FileText,
@@ -35,13 +33,15 @@ import {
   CheckCircle2,
   Copy,
   Clock,
-  Layers,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
   LucideIcon,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 
 // Adjust path aliases according to your Next.js project structure
 import { useWard } from "@/context/wardContext";
@@ -52,7 +52,7 @@ import {
   EmptyState,
   SkeletonLoader,
 } from "@/components/shared-components";
-import { useTranslations } from "next-intl";
+import { useWardAdminProfile } from "@/hooks/useWardAdminProfile";
 
 // --- TYPESCRIPT INTERFACES & TYPES ---
 
@@ -80,22 +80,12 @@ export interface Complaint {
   isUserSubmitted?: boolean;
 }
 
-export interface AdminModalData {
-  title: string;
-  role: string;
-  name: string;
-  phone: string;
-  email: string;
-  office: string;
-  timings: string;
-  badgeBg: string;
-  icon: LucideIcon | React.ElementType;
-}
-
 export interface GuideStep {
   stepTag: string;
   title: string;
   desc: string;
+  icon: LucideIcon | React.ElementType;
+  illustrationBg: string;
 }
 
 export interface VisualCategoryItem {
@@ -115,7 +105,107 @@ export interface CategoryConfigItem {
   icon: LucideIcon | React.ElementType;
 }
 
-// --- STATIC CONFIGURATIONS ---
+// --- STATIC DATA & DIRECTORIES ---
+
+// MLA should have political info but others are administrators with official contact details. This directory can be expanded as needed.
+export interface AdminModalData {
+  title: string;
+  role: string;
+  name: string;
+  phone: string;
+  email: string;
+  office: string;
+  timings: string;
+  badgeBg: string;
+  icon: LucideIcon | React.ElementType;
+  avatar?: string;
+  deputy?: {
+    name: string;
+    phone: string;
+    avatar?: string;
+  };
+  party?: string;
+  partyStyle?: string;
+  department?: string;
+  jurisdiction?: string;
+}
+
+export const OFFICIALS_DIRECTORY: Record<string, AdminModalData> = {
+  mla: {
+    title: "MLA of Avadi Constituency",
+    role: "Avadi Constituency (MLA)",
+    name: "Hon. R. Ramesh Kumar",
+    avatar: "/img/officials/avadi-mla.jpg",
+    party: "TVK",
+    partyStyle:
+      "bg-linear-to-r from-red-900 to-red-950 text-amber-300 border border-amber-400/40 shadow-sm",
+    jurisdiction: "Avadi Assembly Constituency (TN-006)",
+    phone: "+91 44 2638 5555",
+    email: "mla.avadi@tn.gov.in",
+    office: "Avadi MLA Constituency Office, NM Road, Avadi, Chennai - 600054",
+    timings: "Mon - Sat: 10:00 AM - 6:00 PM",
+    badgeBg: "from-emerald-600 to-teal-700",
+    icon: Building,
+  },
+  mayor: {
+    title: "Mayor of Avadi Corporation",
+    role: "Mayor",
+    name: "Thiru.G.Udhayakumar",
+    avatar: "/img/officials/avadi-mayor.jpeg",
+    deputy: {
+      name: "Thiru.S.Suryakumar",
+      phone: "+919382222323",
+      avatar: "/img/officials/avadi-deputy-mayor.jpeg",
+    },
+    department: "Avadi Corporation Office",
+    jurisdiction: "All 48 Wards · Avadi Corporation",
+    phone: "+919710086560",
+    email: "commr.avadi@tn.gov.in",
+    office: "Avadi Corporation Building, NM Road, Avadi, Chennai - 600054",
+    timings: "Mon - Fri: 10:00 AM - 5:00 PM",
+    badgeBg: "from-amber-500 to-orange-600",
+    icon: Building2,
+  },
+  commissioner: {
+    title: "Corporation Commissioner",
+    role: "Commissioner",
+    name: "Tmt.R.SARANYA, IAS",
+    avatar: "/img/officials/avadi-comissioner.jpeg",
+    department: "Avadi Corporation Office",
+    jurisdiction: "All 48 Wards · Avadi Corporation",
+    phone: "+91 044-26554440",
+    email: "commr.avadi@tn.gov.in",
+    office: "Avadi Corporation Building, NM Road, Avadi, Chennai - 600054",
+    timings: "Mon - Fri: 10:00 AM - 5:00 PM",
+    badgeBg: "from-amber-500 to-orange-600",
+    icon: Crown,
+  },
+  eb: {
+    title: "TANGEDCO / EB Electricity Board",
+    role: "Power & Electricity Utility",
+    name: "Avadi EB Executive Engineer Office",
+    department: "TANGEDCO West Zone",
+    phone: "1912 / +91 44 2638 0111",
+    email: "ae.eb.avadi@tnebltd.gov.in",
+    office: "TNEB Sub-Station Office, CTH Road, Avadi, Chennai - 600054",
+    timings: "24x7 Power Emergency / Helpline 1912",
+    badgeBg: "from-yellow-500 to-amber-600",
+    icon: Zap,
+  },
+  corporationHQ: {
+    title: "Avadi Municipal Corporation Info",
+    role: "Civic Head Office",
+    name: "Grievance Redressal & HQ Portal",
+    department: "Public Grievance Cell",
+    phone: "1800-425-5111 / +91 44 2638 0222",
+    email: "commr.avadi@tn.gov.in",
+    office:
+      "Avadi Municipal Corporation Headquarters, New Military Road, Avadi - 600054",
+    timings: "Mon - Sat: 9:00 AM - 5:30 PM (Toll-Free 24x7)",
+    badgeBg: "from-cyan-600 to-blue-700",
+    icon: Building2,
+  },
+};
 
 const categoryConfig: Record<string, CategoryConfigItem> = {
   "Garbage/Sanitation": {
@@ -132,7 +222,7 @@ const categoryConfig: Record<string, CategoryConfigItem> = {
   },
   "Roads/Potholes": {
     bg: "bg-slate-100 dark:bg-slate-800/80",
-    text: "text-slate-700 dark:text-slate-350",
+    text: "text-slate-700 dark:text-slate-300",
     border: "border-slate-200 dark:border-slate-700/50",
     icon: AlertTriangle,
   },
@@ -158,24 +248,32 @@ const categoryConfig: Record<string, CategoryConfigItem> = {
 
 const complaintGuideSteps: GuideStep[] = [
   {
-    stepTag: "GUIDE STEP 1 OF 4",
-    title: "1. Choose Issue Category",
-    desc: "Select from Sanitation, Roads, Electricity, Water or Streetlights.",
+    stepTag: "STEP 1 OF 4 · SELECT",
+    title: "Choose Issue Category",
+    desc: "Pick from Sanitation, Roads, Electricity, Water or Streetlights.",
+    icon: PlusCircle,
+    illustrationBg: "from-orange-500 to-amber-500",
   },
   {
-    stepTag: "GUIDE STEP 2 OF 4",
-    title: "2. Provide Location & Evidence",
-    desc: "Attach up to 2 photos & landmark description.",
+    stepTag: "STEP 2 OF 4 · EVIDENCE",
+    title: "Provide Location & Photos",
+    desc: "Attach up to 3 photos and a clear spot landmark description.",
+    icon: Camera,
+    illustrationBg: "from-blue-600 to-cyan-600",
   },
   {
-    stepTag: "GUIDE STEP 3 OF 4",
-    title: "3. Instant Grievance Tracking ID",
+    stepTag: "STEP 3 OF 4 · TRACKING",
+    title: "Instant Grievance ID",
     desc: "Receive a unique Tracking ID to monitor resolution status.",
+    icon: ShieldCheck,
+    illustrationBg: "from-purple-600 to-indigo-600",
   },
   {
-    stepTag: "GUIDE STEP 4 OF 4",
-    title: "4. Zonal Action & Resolution",
-    desc: "Ward Zonal Officer resolves the issue and updates completion proof.",
+    stepTag: "STEP 4 OF 4 · ACTION",
+    title: "Zonal Action & Proof",
+    desc: "Ward Officer resolves the problem and logs completion proof.",
+    icon: CheckCircle2,
+    illustrationBg: "from-emerald-600 to-teal-600",
   },
 ];
 
@@ -257,7 +355,6 @@ const sampleIssuePhotos = [
   },
 ];
 
-// Zod Schema Validation
 const complaintSchema = zod.object({
   ward: zod.preprocess((val) => Number(val), zod.number().min(1).max(48)),
   category: zod.enum([
@@ -302,7 +399,6 @@ export const Complaints: React.FC = () => {
     useState<boolean>(false);
   const [isListLoading, setIsListLoading] = useState<boolean>(false);
 
-  // Multi-step report modal wizard state
   const [reportStep, setReportStep] = useState<number>(1);
   const [selectedCategory, setSelectedCategory] =
     useState<ComplaintCategory>("Garbage/Sanitation");
@@ -310,7 +406,6 @@ export const Complaints: React.FC = () => {
     useState<Complaint | null>(null);
   const [copiedId, setCopiedId] = useState<boolean>(false);
 
-  // Image preview states
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [upvotingId, setUpvotingId] = useState<number | string | null>(null);
 
@@ -343,7 +438,7 @@ export const Complaints: React.FC = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setHowSlideIndex((prev) => (prev + 1) % complaintGuideSteps.length);
-    }, 4500);
+    }, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -434,14 +529,11 @@ export const Complaints: React.FC = () => {
     setTimeout(() => setUpvotingId(null), 500);
   };
 
-  const statusStages = ["Submitted", "Acknowledged", "In Progress", "Resolved"];
-
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
-      {/* Dynamic View Mode Switcher Header */}
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6 font-sans select-none">
       {viewMode === "overview" ? (
         /* ====================================================== */
-        /* 1. CIVIC GRIEVANCE PORTAL OVERVIEW PAGE */
+        /* 1. CIVIC GRIEVANCE PORTAL OVERVIEW PAGE                */
         /* ====================================================== */
         <motion.div
           key="overview"
@@ -450,82 +542,101 @@ export const Complaints: React.FC = () => {
           className="space-y-6"
         >
           {/* Top Header */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white leading-none">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
                 {t("complaintsTitle")}
               </h1>
-              <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
                 {t("complaintsSubtitle")}
               </p>
             </div>
-            <span className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20 shrink-0">
-              <MapPin size={13} />
+            <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20 shrink-0 w-fit">
+              <MapPin size={14} />
               <span>
                 {t("ward")} {String(activeWard.id).padStart(2, "0")}
               </span>
             </span>
           </div>
 
-          {/* How Complaint Reporting Works Guide Slider */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-amber-700 dark:text-amber-500">
-                <HelpCircle
+          {/* Reimagined Illustrated Guide Banner */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center space-x-2 text-slate-900 dark:text-white">
+                <Sparkles
                   size={18}
-                  className="shrink-0 text-amber-600 dark:text-amber-500"
+                  className="text-amber-500 shrink-0 animate-pulse"
                 />
-                <h2 className="text-xs sm:text-sm font-extrabold tracking-tight">
+                <h2 className="text-sm sm:text-base font-extrabold tracking-tight">
                   How Complaint Reporting Works
                 </h2>
               </div>
 
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1.5">
                 {complaintGuideSteps.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setHowSlideIndex(i)}
-                    className={`h-2 rounded-full transition-all cursor-pointer ${
+                    className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
                       i === howSlideIndex
-                        ? "w-5 bg-amber-500 dark:bg-amber-400"
+                        ? "w-6 bg-primary"
                         : "w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400"
                     }`}
+                    aria-label={`Go to guide step ${i + 1}`}
                   />
                 ))}
               </div>
             </div>
 
-            <div className="relative rounded-3xl border-2 border-amber-300/90 dark:border-amber-700/60 bg-amber-50/30 dark:bg-slate-900/80 p-5 sm:p-6 shadow-sm overflow-hidden min-h-26.25 flex items-center justify-center text-center">
+            <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl min-h-[160px] sm:min-h-[180px] flex items-center">
+              <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute right-20 -bottom-12 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
+
               <button
                 onClick={() =>
                   setHowSlideIndex((prev) =>
                     prev === 0 ? complaintGuideSteps.length - 1 : prev - 1,
                   )
                 }
-                className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-700/60 text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-700 shadow-sm flex items-center justify-center cursor-pointer absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 z-10 transition-transform active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center cursor-pointer absolute left-3 sm:left-4 z-20 transition active:scale-90"
                 title="Previous Step"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={18} />
               </button>
 
               <AnimatePresence mode="wait">
                 <motion.div
                   key={howSlideIndex}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-1 max-w-md px-8"
+                  className="w-full flex flex-col sm:flex-row items-center justify-between px-14 sm:px-16 py-6 gap-4 z-10"
                 >
-                  <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 dark:text-amber-400 block">
-                    {complaintGuideSteps[howSlideIndex].stepTag}
-                  </span>
-                  <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
-                    {complaintGuideSteps[howSlideIndex].title}
-                  </h3>
-                  <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-normal">
-                    {complaintGuideSteps[howSlideIndex].desc}
-                  </p>
+                  <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
+                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-amber-400 block">
+                      {complaintGuideSteps[howSlideIndex].stepTag}
+                    </span>
+                    <h3 className="font-black text-base sm:text-xl text-white leading-tight">
+                      {complaintGuideSteps[howSlideIndex].title}
+                    </h3>
+                    <p className="text-xs sm:text-sm font-medium text-slate-300 leading-relaxed max-w-lg">
+                      {complaintGuideSteps[howSlideIndex].desc}
+                    </p>
+                  </div>
+
+                  <div className="shrink-0 hidden xs:flex">
+                    <div
+                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-linear-to-br ${complaintGuideSteps[howSlideIndex].illustrationBg} text-white flex items-center justify-center shadow-lg shadow-black/30 border border-white/20`}
+                    >
+                      {React.createElement(
+                        complaintGuideSteps[howSlideIndex].icon,
+                        {
+                          size: 28,
+                        },
+                      )}
+                    </div>
+                  </div>
                 </motion.div>
               </AnimatePresence>
 
@@ -535,38 +646,38 @@ export const Complaints: React.FC = () => {
                     (prev) => (prev + 1) % complaintGuideSteps.length,
                   )
                 }
-                className="w-8 h-8 rounded-full bg-white dark:bg-slate-800 border-2 border-amber-200 dark:border-amber-700/60 text-slate-700 dark:text-slate-200 hover:bg-amber-50 dark:hover:bg-slate-700 shadow-sm flex items-center justify-center cursor-pointer absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 z-10 transition-transform active:scale-95"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center cursor-pointer absolute right-3 sm:right-4 z-20 transition active:scale-90"
                 title="Next Step"
               >
-                <ChevronRight size={16} />
+                <ChevronRight size={18} />
               </button>
             </div>
           </div>
 
           {/* Services Section */}
           <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center">
-                <Wrench size={16} className="text-primary mr-2" />
-                <span>Services</span>
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center">
+                <Wrench size={18} className="text-primary mr-2" />
+                <span>Services & Actions</span>
               </h2>
-              <span className="text-[10px] font-semibold text-slate-400">
+              <span className="text-xs font-semibold text-slate-400">
                 Quick civic utilities
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {[
                 {
-                  name: "Report",
-                  desc: "Report local problems like garbage, water, roads, or streetlights and track their status.",
+                  name: "Report Civic Issue",
+                  desc: "Log local problems like garbage, water, roads, or streetlights and get a tracking ID.",
                   icon: PlusCircle,
                   badgeBg: "from-orange-500 to-amber-500",
                   action: () => openReportWizard("Garbage/Sanitation"),
                 },
                 {
-                  name: "My Complaint",
-                  desc: "Report local problems like garbage, water, roads, or streetlights and track their status.",
+                  name: "My Complaints",
+                  desc: "Track active status updates, zonal officer replies, and resolution proof photos.",
                   icon: FileText,
                   badgeBg: "from-teal-500 to-emerald-600",
                   action: () => {
@@ -575,15 +686,15 @@ export const Complaints: React.FC = () => {
                   },
                 },
                 {
-                  name: "Govt Services",
-                  desc: "Access important government services and ward office information.",
+                  name: "Govt e-Services",
+                  desc: "Access property tax payment, EB bills, birth certificates, and RTO portals.",
                   icon: Building2,
                   badgeBg: "from-purple-600 to-indigo-700",
-                  action: () => router.push("/govt-services"),
+                  action: () => setIsGovtServicesModalOpen(true),
                 },
                 {
-                  name: "Local Alerts",
-                  desc: "View useful details about your ward, nearby facilities, and local updates.",
+                  name: "Local Ward Alerts",
+                  desc: "View urgent weather advisories, water supply cuts, and road closure notices.",
                   icon: Bell,
                   badgeBg: "from-blue-500 to-indigo-600",
                   action: () => router.push("/notifications"),
@@ -591,283 +702,193 @@ export const Complaints: React.FC = () => {
               ].map((srv) => {
                 const SrvIcon = srv.icon;
                 return (
-                  <div
+                  <motion.div
                     key={srv.name}
+                    whileHover={{ y: -2 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={srv.action}
-                    className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer space-y-2 flex flex-col justify-between"
+                    className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-3 flex flex-col justify-between"
                   >
                     <div className="flex items-center justify-between">
                       <div
-                        className={`p-2 rounded-xl bg-linear-to-br ${srv.badgeBg} text-white shadow-sm shrink-0`}
+                        className={`p-2.5 rounded-2xl bg-linear-to-br ${srv.badgeBg} text-white shadow-md shrink-0`}
                       >
-                        <SrvIcon size={16} />
+                        <SrvIcon size={18} />
                       </div>
-                      <span className="text-[10px] font-bold text-primary flex items-center">
-                        Open <ArrowRight size={10} className="ml-0.5" />
+                      <span className="text-xs font-bold text-primary flex items-center">
+                        Open <ArrowRight size={12} className="ml-1" />
                       </span>
                     </div>
                     <div>
-                      <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
+                      <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
                         {srv.name}
                       </h4>
-                      <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
+                      <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-snug mt-1">
                         {srv.desc}
                       </p>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
           </div>
 
-          {/* Administration Section */}
-          <div className="space-y-3 pt-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center">
-                <UserCheck size={16} className="text-primary mr-2" />
-                <span>Administration</span>
+          {/* Administration Section (Refactored from Structured Data) */}
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center">
+                <UserCheck size={18} className="text-primary mr-2" />
+                <span>Administration & Officials</span>
               </h2>
-              <span className="text-[10px] font-semibold text-slate-400">
-                Official contact & grievance officers
+              <span className="text-xs font-semibold text-slate-400">
+                Grievance officers
               </span>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-stretch">
-              {/* 1. MLA */}
-              <div
-                onClick={() =>
-                  setSelectedAdminModal({
-                    title: "MLA of Avadi Constituency",
-                    role: "Avadi Constituency MLA",
-                    name: "Hon. S. M. Nasar (MLA)",
-                    phone: "+91 44 2638 5555",
-                    email: "mla.avadi@tn.gov.in",
-                    office:
-                      "Avadi MLA Constituency Office, NM Road, Avadi, Chennai - 600054",
-                    timings: "Mon - Sat: 10:00 AM - 6:00 PM",
-                    badgeBg: "from-emerald-600 to-teal-700",
-                    icon: Building,
-                  })
-                }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-linear-to-br from-emerald-600 to-teal-700 text-white shadow-sm shrink-0">
-                    <Building size={16} />
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200/60 dark:border-emerald-800/60 text-[10px] font-black text-emerald-600 dark:text-emerald-400 flex items-center shrink-0">
-                    Contact <ArrowRight size={10} className="ml-0.5" />
-                  </span>
-                </div>
-                <div className="mt-2.5">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
-                    MLA Office
-                  </h4>
-                  <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
-                    Avadi Constituency MLA & Office
-                  </p>
-                </div>
-              </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {[
+                { key: "MLA Office", data: OFFICIALS_DIRECTORY.mla },
+                { key: "Mayor Office", data: OFFICIALS_DIRECTORY.mayor },
+                { key: "Commissioner", data: OFFICIALS_DIRECTORY.commissioner },
+                { key: "Ward Admin", data: useWardAdminProfile() },
+              ].map(({ key, data }) => {
+                const IconComponent = data.icon;
 
-              {/* 2. MAYOR */}
-              <div
-                onClick={() =>
-                  setSelectedAdminModal({
-                    title: "Mayor of Avadi Corporation",
-                    role: "City Mayor",
-                    name: "Hon. G. Riddhi (Mayor)",
-                    phone: "+91 44 2638 1234",
-                    email: "mayor@avadicorporation.gov.in",
-                    office:
-                      "Avadi Corporation Building, NM Road, Avadi, Chennai - 600054",
-                    timings: "Mon - Fri: 10:00 AM - 5:00 PM",
-                    badgeBg: "from-amber-500 to-orange-600",
-                    icon: Crown,
-                  })
-                }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-linear-to-br from-amber-500 to-orange-600 text-white shadow-sm shrink-0">
-                    <Crown size={16} />
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/60 text-[10px] font-black text-amber-600 dark:text-amber-400 flex items-center shrink-0">
-                    Contact <ArrowRight size={10} className="ml-0.5" />
-                  </span>
-                </div>
-                <div className="mt-2.5">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
-                    Mayor
-                  </h4>
-                  <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
-                    Avadi Corporation Mayor & Office
-                  </p>
-                </div>
-              </div>
+                return (
+                  <motion.div
+                    key={key}
+                    whileHover={{ y: -3 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedAdminModal(data)}
+                    className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-pointer flex flex-col justify-between group min-h-[160px] relative overflow-hidden"
+                  >
+                    {/* Top Header: Avatar Portrait & Action Badge */}
+                    <div className="flex items-start justify-between gap-2 z-10">
+                      {data.avatar ? (
+                        <div className="relative">
+                          <img
+                            src={data.avatar}
+                            alt={data.name}
+                            className="w-13 h-13 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md group-hover:scale-105 transition-transform duration-300 bg-slate-100 dark:bg-slate-800"
+                          />
+                          <div
+                            className={`absolute -bottom-1 -right-1 p-1 rounded-lg bg-linear-to-br ${data.badgeBg} text-white shadow-xs`}
+                          >
+                            <IconComponent size={12} />
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className={`w-13 h-13 rounded-2xl bg-linear-to-br ${data.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
+                        >
+                          <IconComponent size={24} />
+                        </div>
+                      )}
 
-              {/* 3. COMMISSIONER */}
-              <div
-                onClick={() =>
-                  setSelectedAdminModal({
-                    title: "Commissioner of Avadi Corporation",
-                    role: "Municipal Corporation Commissioner",
-                    name: "Dr. K. Vijay, IAS (Commissioner)",
-                    phone: "1800-425-5111 / +91 44 2638 0222",
-                    email: "commr.avadi@tn.gov.in",
-                    office:
-                      "Avadi Municipal Corporation Headquarters, New Military Road, Avadi - 600054",
-                    timings: "Mon - Sat: 9:00 AM - 5:30 PM (Toll-Free 24x7)",
-                    badgeBg: "from-cyan-600 to-blue-700",
-                    icon: Building2,
-                  })
-                }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-linear-to-br from-cyan-600 to-blue-700 text-white shadow-sm shrink-0">
-                    <Building2 size={16} />
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200/60 dark:border-cyan-800/60 text-[10px] font-black text-cyan-600 dark:text-cyan-400 flex items-center shrink-0">
-                    Contact <ArrowRight size={10} className="ml-0.5" />
-                  </span>
-                </div>
-                <div className="mt-2.5">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
-                    Commissioner
-                  </h4>
-                  <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
-                    Avadi Corporation Commissioner (IAS)
-                  </p>
-                </div>
-              </div>
+                      <span className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 group-hover:bg-primary group-hover:text-white text-[10px] font-black text-slate-600 dark:text-slate-300 flex items-center transition-colors shrink-0">
+                        <span>Contact</span>
+                        <ArrowRight size={11} className="ml-1" />
+                      </span>
+                    </div>
 
-              {/* 4. WARD ADMIN */}
-              <div
-                onClick={() =>
-                  setSelectedAdminModal({
-                    title: `Ward ${activeWard.id} Administration`,
-                    role: `Ward ${activeWard.id} Admin Officer`,
-                    name: "Er. K. Ramesh (Zonal Admin)",
-                    phone: "+91 94454 81414",
-                    email: `ward${activeWard.id}.admin@avadicorporation.gov.in`,
-                    office: `Ward ${activeWard.id} Civic Center, Main Trunk Road, Avadi, Chennai`,
-                    timings: "Mon - Sat: 9:00 AM - 6:00 PM",
-                    badgeBg: "from-blue-600 to-indigo-700",
-                    icon: UserCheck,
-                  })
-                }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-27.5"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-linear-to-br from-blue-600 to-indigo-700 text-white shadow-sm shrink-0">
-                    <UserCheck size={16} />
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-800/60 text-[10px] font-black text-blue-600 dark:text-blue-400 flex items-center shrink-0">
-                    Contact <ArrowRight size={10} className="ml-0.5" />
-                  </span>
-                </div>
-                <div className="mt-2.5">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
-                    Ward Admin
-                  </h4>
-                  <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
-                    Ward {activeWard.id} Zonal Officer & Admin
-                  </p>
-                </div>
-              </div>
+                    {/* Middle: Domain / Political Party Pill */}
+                    <div className="mt-3.5 space-y-1.5 z-10">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {data.party ? (
+                          <span
+                            className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${
+                              data.partyStyle ||
+                              "bg-rose-500/10 text-rose-600 border border-rose-500/20"
+                            }`}
+                          >
+                            ★ Party: {data.party}
+                          </span>
+                        ) : data.department ? (
+                          <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-extrabold text-slate-500 dark:text-slate-400 truncate max-w-full">
+                            {data.department}
+                          </span>
+                        ) : null}
+                      </div>
+
+                      {/* Official Name & Role */}
+                      <div>
+                        <h4 className="font-black text-sm text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors line-clamp-1">
+                          {data.name}
+                        </h4>
+                        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
+                          {data.role}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Subtle Background Glow on Hover */}
+                    <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-primary/5 rounded-full blur-xl group-hover:bg-primary/10 transition-colors pointer-events-none" />
+                  </motion.div>
+                );
+              })}
             </div>
           </div>
 
           {/* Quick Links Section */}
-          <div className="space-y-3 pt-3 mb-10">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center">
-                <Link size={16} className="text-primary mr-2" />
-                <span>Quick Links</span>
+          <div className="space-y-3 pt-2 mb-10">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center">
+                <Link size={18} className="text-primary mr-2" />
+                <span>Helplines & Portals</span>
               </h2>
-              <span className="text-[10px] font-semibold text-slate-400">
-                EB & Corporation portals & helpline
+              <span className="text-xs font-semibold text-slate-400">
+                24x7 Emergency utilities
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3 items-stretch">
-              {/* EB */}
-              <div
-                onClick={() =>
-                  setSelectedAdminModal({
-                    title: "TANGEDCO / EB Electricity Board",
-                    role: "Power & Electricity Utility",
-                    name: "Avadi EB Executive Engineer Office",
-                    phone: "1912 / +91 44 2638 0111",
-                    email: "ae.eb.avadi@tnebltd.gov.in",
-                    office:
-                      "TNEB Sub-Station Office, CTH Road, Avadi, Chennai - 600054",
-                    timings: "24x7 Power Emergency / Helpline 1912",
-                    badgeBg: "from-yellow-500 to-amber-600",
-                    icon: Zap,
-                  })
-                }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-26.25"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-linear-to-br from-yellow-500 to-amber-600 text-white shadow-sm shrink-0">
-                    <Zap size={16} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                {
+                  name: "EB (Electricity Board)",
+                  desc: "TANGEDCO power outage & fuse failure helpline",
+                  data: OFFICIALS_DIRECTORY.eb,
+                  badgeBg: "from-yellow-500 to-amber-600",
+                },
+                {
+                  name: "Corporation Contact",
+                  desc: "Avadi HQ Grievance & Toll-Free Helpline",
+                  data: OFFICIALS_DIRECTORY.corporationHQ,
+                  badgeBg: "from-cyan-600 to-blue-700",
+                },
+              ].map((item) => (
+                <motion.div
+                  key={item.name}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => setSelectedAdminModal(item.data)}
+                  className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer flex items-center justify-between gap-3"
+                >
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div
+                      className={`p-2.5 rounded-2xl bg-linear-to-br ${item.badgeBg} text-white shadow-sm shrink-0`}
+                    >
+                      <Zap size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <h4 className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
+                        {item.name}
+                      </h4>
+                      <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-tight mt-0.5 truncate">
+                        {item.desc}
+                      </p>
+                    </div>
                   </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60 dark:border-amber-800/60 text-[10px] font-black text-amber-600 dark:text-amber-400 flex items-center shrink-0">
-                    Contact <ArrowRight size={10} className="ml-0.5" />
+                  <span className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">
+                    View
                   </span>
-                </div>
-                <div className="mt-2">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
-                    EB (Electricity Board)
-                  </h4>
-                  <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
-                    TANGEDCO power outage & fusion helpline
-                  </p>
-                </div>
-              </div>
-
-              {/* Corporation Helpline */}
-              <div
-                onClick={() =>
-                  setSelectedAdminModal({
-                    title: "Avadi Municipal Corporation Info",
-                    role: "Civic Head Office",
-                    name: "Grievance Redressal & HQ Portal",
-                    phone: "1800-425-5111 / +91 44 2638 0222",
-                    email: "commr.avadi@tn.gov.in",
-                    office:
-                      "Avadi Municipal Corporation Headquarters, New Military Road, Avadi - 600054",
-                    timings: "Mon - Sat: 9:00 AM - 5:30 PM (Toll-Free 24x7)",
-                    badgeBg: "from-cyan-600 to-blue-700",
-                    icon: Building2,
-                  })
-                }
-                className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between h-full min-h-26.25"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="p-2 rounded-xl bg-linear-to-br from-cyan-600 to-blue-700 text-white shadow-sm shrink-0">
-                    <Building2 size={16} />
-                  </div>
-                  <span className="px-2.5 py-1 rounded-lg bg-cyan-50 dark:bg-cyan-950/50 border border-cyan-200/60 dark:border-cyan-800/60 text-[10px] font-black text-cyan-600 dark:text-cyan-400 flex items-center shrink-0">
-                    Contact <ArrowRight size={10} className="ml-0.5" />
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <h4 className="font-extrabold text-xs text-slate-800 dark:text-slate-200">
-                    Corporation Contact
-                  </h4>
-                  <p className="text-[10px] font-medium text-slate-400 leading-tight mt-0.5">
-                    Avadi HQ Grievance & Toll-Free Helpline
-                  </p>
-                </div>
-              </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </motion.div>
       ) : (
         /* ====================================================== */
-        /* 2. DETAILED COMPLAINTS WORKSPACE PAGE */
+        /* 2. DETAILED COMPLAINTS WORKSPACE PAGE                  */
         /* ====================================================== */
         <motion.div
           key="workspace"
@@ -880,37 +901,37 @@ export const Complaints: React.FC = () => {
             <div className="space-y-1">
               <button
                 onClick={() => setViewMode("overview")}
-                className="inline-flex items-center space-x-1 text-xs font-bold text-primary hover:underline cursor-pointer mb-1"
+                className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer mb-1"
               >
-                <ArrowLeft size={13} />
+                <ArrowLeft size={16} />
                 <span>Back to Overview</span>
               </button>
-              <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white leading-none">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
                 Active Ward Grievances
               </h1>
-              <p className="text-xs text-slate-400 dark:text-slate-500">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
                 Track status updates and upvote community civic fixes.
               </p>
             </div>
 
             {/* Tab Switcher */}
-            <div className="flex bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800 rounded-xl max-w-sm">
+            <div className="flex bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md">
               <button
                 onClick={() => setActiveTab("my-complaints")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer ${
                   activeTab === "my-complaints"
-                    ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-350"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200/60 dark:border-slate-800"
+                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
                 }`}
               >
                 My Complaints ({myComplaints.length})
               </button>
               <button
                 onClick={() => setActiveTab("nearby")}
-                className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer ${
                   activeTab === "nearby"
-                    ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-350"
+                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200/60 dark:border-slate-800"
+                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
                 }`}
               >
                 Nearby W{activeWard.id} ({nearbyComplaints.length})
@@ -920,7 +941,7 @@ export const Complaints: React.FC = () => {
 
           {/* List Container */}
           {isListLoading ? (
-            <SkeletonLoader type="card" count={2} />
+            <SkeletonLoader count={2} type="card" />
           ) : displayList.length > 0 ? (
             <div className="space-y-4">
               {displayList.map((complaint) => {
@@ -947,28 +968,29 @@ export const Complaints: React.FC = () => {
                   `AVD-2026-${1000 + Number(complaint.id)}`;
 
                 return (
-                  <Card
+                  <motion.div
                     key={complaint.id}
+                    whileHover={{ scale: 1.005 }}
                     onClick={() => setSelectedComplaint(complaint)}
-                    className="p-4 sm:p-5 border-l-4 border-l-primary hover:shadow-md transition cursor-pointer space-y-3"
+                    className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-primary hover:shadow-md transition cursor-pointer space-y-3"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center space-x-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start space-x-3 min-w-0">
                         <div
-                          className={`p-2.5 rounded-xl border ${config.bg} ${config.text} ${config.border} shrink-0`}
+                          className={`p-3 rounded-2xl border ${config.bg} ${config.text} ${config.border} shrink-0 mt-0.5`}
                         >
                           <IconComponent size={20} />
                         </div>
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2 mb-0.5">
-                            <span className="font-mono text-[10px] font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2 mb-1">
+                            <span className="font-mono text-[10px] sm:text-xs font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
                               {formattedIssueId}
                             </span>
-                            <span className="text-[10px] font-bold text-slate-400">
+                            <span className="text-xs font-bold text-slate-400">
                               Ward {complaint.ward} · {complaint.category}
                             </span>
                           </div>
-                          <h3 className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-white leading-snug">
+                          <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
                             {complaint.title}
                           </h3>
                         </div>
@@ -976,30 +998,30 @@ export const Complaints: React.FC = () => {
 
                       <Badge
                         variant={statusVariants[complaint.status] || "default"}
-                        className="shrink-0"
+                        className="shrink-0 font-extrabold text-xs"
                       >
                         {complaint.status}
                       </Badge>
                     </div>
 
-                    <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed line-clamp-2">
+                    <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2 pl-1">
                       {complaint.description}
                     </p>
 
                     {complaint.address && (
-                      <div className="flex items-center space-x-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/60 p-2 rounded-lg border border-slate-100 dark:border-slate-800">
-                        <MapPin size={13} className="text-primary shrink-0" />
+                      <div className="flex items-center space-x-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                        <MapPin size={14} className="text-primary shrink-0" />
                         <span className="truncate">{complaint.address}</span>
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs font-semibold text-slate-500">
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs font-bold text-slate-500">
                       <button
                         onClick={(e) => handleUpvote(complaint.id, e)}
-                        className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-orange-500/10 hover:text-orange-500 transition cursor-pointer text-xs font-bold"
+                        className="flex items-center space-x-1.5 px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-orange-500/10 hover:text-orange-500 transition cursor-pointer text-xs font-extrabold active:scale-95"
                       >
                         <ThumbsUp
-                          size={13}
+                          size={14}
                           className={
                             upvotingId === complaint.id
                               ? "animate-bounce text-orange-500"
@@ -1008,13 +1030,13 @@ export const Complaints: React.FC = () => {
                         />
                         <span>{complaint.upvotes} Upvotes</span>
                       </button>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-xs text-slate-400 font-medium">
                         {complaint.date
                           ? new Date(complaint.date).toLocaleDateString()
                           : "Recently"}
                       </span>
                     </div>
-                  </Card>
+                  </motion.div>
                 );
               })}
             </div>
@@ -1039,10 +1061,10 @@ export const Complaints: React.FC = () => {
           {/* Floating "+" Button */}
           <button
             onClick={() => openReportWizard("Garbage/Sanitation")}
-            className="fixed bottom-20 right-4 z-45 md:absolute md:bottom-auto md:top-0 md:right-0 md:mt-2 w-12 h-12 rounded-full bg-primary hover:bg-orange-600 text-white flex items-center justify-center shadow-lg hover:shadow-xl active:scale-95 transition-all cursor-pointer"
+            className="fixed bottom-20 right-4 z-40 md:absolute md:bottom-auto md:top-0 md:right-0 md:mt-1 w-14 h-14 rounded-full bg-primary hover:bg-orange-600 text-white flex items-center justify-center shadow-xl hover:shadow-2xl active:scale-95 transition-all cursor-pointer"
             title="Report New Grievance"
           >
-            <Plus size={24} />
+            <Plus size={26} />
           </button>
         </motion.div>
       )}
@@ -1060,7 +1082,7 @@ export const Complaints: React.FC = () => {
         }
       >
         {/* Step Progress Bar */}
-        <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full mb-4 overflow-hidden">
+        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-5 overflow-hidden">
           <div
             className="bg-primary h-full transition-all duration-300 rounded-full"
             style={{
@@ -1073,23 +1095,25 @@ export const Complaints: React.FC = () => {
         {/* STEP 1: VISUAL CATEGORY SELECTION */}
         {reportStep === 1 && (
           <div className="space-y-4">
-            <p className="text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-300">
+            <p className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200">
               Select the category below that best describes your civic problem:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-115 overflow-y-auto pr-1 scrollbar-none">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[440px] overflow-y-auto pr-1">
               {visualCategories.map((cat) => {
                 const CatIcon = cat.icon;
                 const isSelected = selectedCategory === cat.id;
 
                 return (
-                  <div
+                  <motion.div
                     key={cat.id}
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
                     onClick={() => setSelectedCategory(cat.id)}
-                    className={`rounded-2xl overflow-hidden border-2 transition-all cursor-pointer group flex flex-col justify-between bg-white dark:bg-slate-900 ${
+                    className={`rounded-3xl overflow-hidden border-2 transition-all cursor-pointer group flex flex-col justify-between bg-white dark:bg-slate-900 ${
                       isSelected
-                        ? "border-primary ring-4 ring-primary/40 shadow-xl bg-orange-500/4 dark:bg-orange-500/15 scale-[1.01]"
-                        : "border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-400 dark:hover:border-slate-500 shadow-sm"
+                        ? "border-primary ring-4 ring-primary/20 shadow-xl bg-orange-500/5 dark:bg-orange-500/10"
+                        : "border-slate-200 dark:border-slate-800 hover:border-slate-400 shadow-xs"
                     }`}
                   >
                     <div className="relative h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
@@ -1100,7 +1124,7 @@ export const Complaints: React.FC = () => {
                       />
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                         <div
-                          className={`p-1.5 rounded-xl bg-linear-to-br ${cat.gradient} text-white shadow-lg flex items-center space-x-2 px-3 border border-white/30`}
+                          className={`p-1.5 rounded-xl bg-linear-to-br ${cat.gradient} text-white shadow-md flex items-center space-x-2 px-3 border border-white/20`}
                         >
                           <CatIcon size={16} />
                           <span className="text-xs font-black tracking-wider uppercase">
@@ -1116,35 +1140,39 @@ export const Complaints: React.FC = () => {
                       </div>
                     </div>
 
-                    <div className="p-4 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-700/80 flex-1 flex flex-col justify-between">
+                    <div className="p-4 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex-1 flex flex-col justify-between">
                       <div>
-                        <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white tracking-tight leading-tight">
+                        <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight">
                           {cat.title}
                         </h3>
-                        <p className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-100 leading-relaxed mt-1.5">
+                        <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
                           {cat.desc}
                         </p>
                       </div>
-                      <div className="pt-3 flex items-center justify-between border-t border-slate-200 dark:border-slate-800 mt-2">
+                      <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 mt-2">
                         <span
-                          className={`text-xs font-extrabold ${isSelected ? "text-primary dark:text-orange-400" : "text-slate-600 dark:text-slate-300"}`}
+                          className={`text-xs font-extrabold ${
+                            isSelected
+                              ? "text-primary dark:text-orange-400"
+                              : "text-slate-400"
+                          }`}
                         >
                           {isSelected
                             ? "✓ Ready for Next Step"
-                            : "Tap to select this problem"}
+                            : "Tap to select"}
                         </span>
                         <span
-                          className={`px-3 py-1 rounded-lg text-xs font-black border ${
+                          className={`px-3 py-1 rounded-xl text-xs font-black border ${
                             isSelected
-                              ? "bg-primary text-white border-primary shadow-sm"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border-slate-200 dark:border-slate-700"
+                              ? "bg-primary text-white border-primary shadow-xs"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                           }`}
                         >
                           {isSelected ? "CHOSEN" : "SELECT"}
                         </span>
                       </div>
                     </div>
-                  </div>
+                  </motion.div>
                 );
               })}
             </div>
@@ -1152,10 +1180,10 @@ export const Complaints: React.FC = () => {
             <button
               type="button"
               onClick={() => setReportStep(2)}
-              className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white rounded-xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer mt-2 tracking-wider uppercase"
+              className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer mt-3 tracking-wider uppercase active:scale-98"
             >
-              <span>NEXT</span>
-              <ArrowRight size={16} />
+              <span>NEXT STEP</span>
+              <ArrowRight size={18} />
             </button>
           </div>
         )}
@@ -1166,92 +1194,92 @@ export const Complaints: React.FC = () => {
             onSubmit={handleSubmit(handleReportSubmit)}
             className="space-y-4"
           >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
               <button
                 type="button"
                 onClick={() => setReportStep(1)}
-                className="inline-flex items-center space-x-1 text-xs font-bold text-primary hover:underline cursor-pointer"
+                className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer"
               >
-                <ArrowLeft size={13} />
+                <ArrowLeft size={16} />
                 <span>Change Category</span>
               </button>
 
-              <span className="px-2.5 py-1 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px] font-extrabold border border-orange-500/20">
+              <span className="px-3 py-1 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20">
                 {selectedCategory}
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-650 dark:text-slate-400">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Ward Number
                 </label>
                 <input
                   type="number"
                   required
                   {...register("ward")}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-primary/45"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
                 {errors.ward && (
-                  <p className="text-[10px] text-rose-500 font-medium">
+                  <p className="text-xs text-rose-500 font-medium">
                     {errors.ward.message}
                   </p>
                 )}
               </div>
 
               <div className="space-y-1">
-                <label className="text-[11px] font-bold text-slate-650 dark:text-slate-400">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Address / Spot Landmark
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Near Pattabiram Railway Station"
                   {...register("address")}
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-primary/45"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-650 dark:text-slate-400">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Issue Summary Title
               </label>
               <input
                 type="text"
                 placeholder="Brief summary (e.g. Streetlight broken for past 4 days)"
                 {...register("title")}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-primary/45"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
               {errors.title && (
-                <p className="text-[10px] text-rose-500 font-medium">
+                <p className="text-xs text-rose-500 font-medium">
                   {errors.title.message}
                 </p>
               )}
             </div>
 
             <div className="space-y-1">
-              <label className="text-[11px] font-bold text-slate-650 dark:text-slate-400">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 Detailed Problem Description
               </label>
               <textarea
                 placeholder="Describe what needs fixing, how long it has been broken, or safety concerns..."
                 rows={3}
                 {...register("description")}
-                className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-primary/45 placeholder-slate-400"
+                className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400"
               />
               {errors.description && (
-                <p className="text-[10px] text-rose-500 font-medium">
+                <p className="text-xs text-rose-500 font-medium">
                   {errors.description.message}
                 </p>
               )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 pt-1">
               <div className="flex items-center justify-between">
-                <label className="text-[11px] font-bold text-slate-650 dark:text-slate-400">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                   Issue Photos
                 </label>
-                <span className="text-[10px] text-slate-400 font-medium">
+                <span className="text-xs text-slate-400 font-medium">
                   Upload or select sample photo below
                 </span>
               </div>
@@ -1262,18 +1290,18 @@ export const Complaints: React.FC = () => {
                     key={idx}
                     type="button"
                     onClick={() => handleSelectSamplePhoto(sample.url)}
-                    className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary text-[10px] font-bold text-slate-600 dark:text-slate-300 shrink-0 transition"
+                    className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 transition"
                   >
                     + {sample.label}
                   </button>
                 ))}
               </div>
 
-              <div className="flex flex-wrap gap-2.5 items-center">
+              <div className="flex flex-wrap gap-3 items-center pt-1">
                 {imagePreviews.map((url, i) => (
                   <div
                     key={i}
-                    className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100"
+                    className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 shadow-sm"
                   >
                     <img
                       src={url}
@@ -1283,16 +1311,18 @@ export const Complaints: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => handleRemoveImage(i)}
-                      className="absolute top-1 right-1 w-4 h-4 rounded-full bg-slate-900/70 text-white flex items-center justify-center font-bold text-[8px] hover:bg-slate-900"
+                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-900/80 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-900 cursor-pointer"
                     >
                       ✕
                     </button>
                   </div>
                 ))}
                 {imagePreviews.length < 3 && (
-                  <label className="w-16 h-16 rounded-xl border border-dashed border-slate-300 dark:border-slate-750 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition cursor-pointer">
-                    <Camera size={16} />
-                    <span className="text-[8px] font-bold mt-1">Upload</span>
+                  <label className="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
+                    <Camera size={20} />
+                    <span className="text-[10px] font-extrabold mt-1">
+                      Upload
+                    </span>
                     <input
                       type="file"
                       accept="image/*"
@@ -1308,7 +1338,7 @@ export const Complaints: React.FC = () => {
             <button
               type="submit"
               disabled={!isValid}
-              className="w-full py-3 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-xl font-bold shadow-md hover:shadow-lg transition text-xs cursor-pointer"
+              className="w-full py-3.5 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer mt-2 tracking-wider uppercase active:scale-98"
             >
               Submit Grievance Report
             </button>
@@ -1317,27 +1347,27 @@ export const Complaints: React.FC = () => {
 
         {/* STEP 3: SUCCESS ACKNOWLEDGEMENT */}
         {reportStep === 3 && submittedComplaint && (
-          <div className="space-y-5 text-center py-2">
+          <div className="space-y-5 text-center py-4">
             <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-md animate-bounce">
               <CheckCircle2 size={36} />
             </div>
 
             <div>
-              <h3 className="text-base font-black text-slate-800 dark:text-white">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white">
                 Grievance Submitted Successfully!
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Your report has been logged with Avadi Municipal Corporation &
                 Zonal Officer.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-orange-500/10 border border-orange-500/20 space-y-2">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
+            <div className="p-4 sm:p-5 rounded-3xl bg-orange-500/10 border border-orange-500/20 space-y-2">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
                 Official Grievance Issue ID
               </span>
               <div className="flex items-center justify-center space-x-2">
-                <span className="font-mono text-lg font-black text-slate-900 dark:text-white tracking-widest">
+                <span className="font-mono text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-widest">
                   {submittedComplaint.issueId ||
                     `AVD-2026-${1000 + Number(submittedComplaint.id)}`}
                 </span>
@@ -1349,16 +1379,16 @@ export const Complaints: React.FC = () => {
                         `AVD-2026-${1000 + Number(submittedComplaint.id)}`,
                     )
                   }
-                  className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-primary transition text-xs font-bold flex items-center space-x-1"
+                  className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-primary transition text-xs font-extrabold flex items-center space-x-1.5 shadow-2xs"
                   title="Copy Issue ID"
                 >
-                  <Copy size={13} />
+                  <Copy size={14} />
                   <span>{copiedId ? "Copied!" : "Copy"}</span>
                 </button>
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left space-y-2 text-xs">
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left space-y-2.5 text-xs sm:text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-400 font-semibold">Category:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
@@ -1369,7 +1399,7 @@ export const Complaints: React.FC = () => {
                 <span className="text-slate-400 font-semibold">
                   Ward & Spot:
                 </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-50">
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-xs">
                   Ward {submittedComplaint.ward} · {submittedComplaint.address}
                 </span>
               </div>
@@ -1383,7 +1413,7 @@ export const Complaints: React.FC = () => {
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => {
@@ -1391,16 +1421,16 @@ export const Complaints: React.FC = () => {
                   setViewMode("workspace");
                   setIsReportModalOpen(false);
                 }}
-                className="w-full py-3 bg-primary hover:bg-orange-600 text-white rounded-xl font-bold shadow-md transition text-xs cursor-pointer flex items-center justify-center space-x-1.5"
+                className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md transition text-xs sm:text-sm cursor-pointer flex items-center justify-center space-x-2 active:scale-98"
               >
-                <FileText size={14} />
+                <FileText size={16} />
                 <span>View in My Complaints</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsReportModalOpen(false)}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition text-xs cursor-pointer"
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-xs sm:text-sm cursor-pointer"
               >
                 Close
               </button>
@@ -1421,32 +1451,34 @@ export const Complaints: React.FC = () => {
               <img
                 src={selectedComplaint.imageUrl}
                 alt={selectedComplaint.title}
-                className="w-20 h-20 rounded-2xl object-cover border"
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shrink-0 shadow-sm"
               />
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-center space-x-2">
-                  <span className="font-mono text-[10px] font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded border border-orange-500/20">
+                  <span className="font-mono text-[10px] sm:text-xs font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
                     {selectedComplaint.issueId ||
                       `AVD-2026-${1000 + Number(selectedComplaint.id)}`}
                   </span>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                  <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                     Ward {selectedComplaint.ward}
                   </span>
                 </div>
-                <h3 className="font-extrabold text-sm text-slate-850 dark:text-slate-100 leading-snug">
+                <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
                   {selectedComplaint.title}
                 </h3>
                 {selectedComplaint.address && (
-                  <p className="text-[10px] font-medium text-slate-400 flex items-center">
-                    <MapPin size={10} className="mr-0.5 text-primary" />
-                    <span>{selectedComplaint.address}</span>
+                  <p className="text-xs font-medium text-slate-500 flex items-center pt-0.5">
+                    <MapPin size={12} className="mr-1 text-primary shrink-0" />
+                    <span className="truncate">
+                      {selectedComplaint.address}
+                    </span>
                   </p>
                 )}
               </div>
             </div>
 
-            <div className="bg-slate-100/50 dark:bg-slate-900/60 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl">
-              <h4 className="text-[10px] font-extrabold tracking-wider text-slate-400 dark:text-slate-500 uppercase mb-4">
+            <div className="bg-slate-50 dark:bg-slate-900/80 p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 rounded-3xl">
+              <h4 className="text-xs font-extrabold tracking-wider text-slate-400 dark:text-slate-500 uppercase mb-5">
                 Resolution Stepper Tracker
               </h4>
 
@@ -1469,16 +1501,16 @@ export const Complaints: React.FC = () => {
                         className="flex flex-col items-center relative z-10"
                       >
                         <div
-                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
                             isCompleted
-                              ? "bg-primary text-white shadow-sm"
+                              ? "bg-primary text-white shadow-md shadow-primary/30"
                               : "bg-slate-200 dark:bg-slate-800 text-slate-400"
-                          } ${isCurrent ? "ring-4 ring-primary/20" : ""}`}
+                          } ${isCurrent ? "ring-4 ring-primary/20 scale-110" : ""}`}
                         >
-                          {isCompleted ? <Check size={14} /> : idx + 1}
+                          {isCompleted ? <Check size={16} /> : idx + 1}
                         </div>
                         <span
-                          className={`text-[9px] font-bold mt-1.5 ${
+                          className={`text-[10px] sm:text-xs font-extrabold mt-2 text-center max-w-[64px] sm:max-w-none ${
                             isCurrent
                               ? "text-primary font-black"
                               : isCompleted
@@ -1492,36 +1524,36 @@ export const Complaints: React.FC = () => {
                     );
                   },
                 )}
-                <div className="absolute top-3.5 left-6 right-6 h-0.5 bg-slate-200 dark:bg-slate-800 z-0" />
+                <div className="absolute top-4 left-8 right-8 h-0.5 bg-slate-200 dark:bg-slate-800 z-0" />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
                 Issue Description
               </h4>
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200/60 dark:border-slate-800">
+              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800">
                 {selectedComplaint.description}
               </p>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-between text-xs">
+            <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-between text-xs sm:text-sm">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 block">
+                <span className="text-xs font-bold text-slate-400 block">
                   Assigned Officer
                 </span>
-                <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                <span className="font-black text-slate-800 dark:text-slate-200">
                   Er. K. Ramesh (Ward {selectedComplaint.ward} Zonal Admin)
                 </span>
               </div>
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold text-[10px] border border-emerald-500/20">
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/20 shrink-0">
                 Tracking Active
               </span>
             </div>
 
             <button
               onClick={() => setSelectedComplaint(null)}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition text-xs cursor-pointer"
+              className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black transition text-xs sm:text-sm cursor-pointer"
             >
               Done
             </button>
@@ -1537,82 +1569,126 @@ export const Complaints: React.FC = () => {
           title={selectedAdminModal.title}
         >
           <div className="space-y-5">
-            <div className="flex items-center space-x-3.5 p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800">
-              <div
-                className={`w-12 h-12 rounded-2xl bg-linear-to-br ${selectedAdminModal.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
-              >
-                <selectedAdminModal.icon size={22} />
-              </div>
-              <div>
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary bg-primary/10 px-2 py-0.5 rounded-full">
-                  {selectedAdminModal.role}
-                </span>
-                <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-100 mt-1">
+            {/* Hero Banner inside Modal */}
+            <div className="flex items-center space-x-4 p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+              {selectedAdminModal.avatar ? (
+                <img
+                  src={selectedAdminModal.avatar}
+                  alt={selectedAdminModal.name}
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md shrink-0 bg-slate-100 dark:bg-slate-800"
+                />
+              ) : (
+                <div
+                  className={`w-16 h-16 rounded-2xl bg-linear-to-br ${selectedAdminModal.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
+                >
+                  <selectedAdminModal.icon size={30} />
+                </div>
+              )}
+
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                    {selectedAdminModal.role}
+                  </span>
+                  {selectedAdminModal.party && (
+                    <span
+                      className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                        selectedAdminModal.partyStyle ||
+                        "bg-red-500/10 text-red-600"
+                      }`}
+                    >
+                      Party: {selectedAdminModal.party}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
                   {selectedAdminModal.name}
                 </h3>
+                {selectedAdminModal.jurisdiction && (
+                  <p className="text-xs font-semibold text-slate-400 truncate">
+                    📍 {selectedAdminModal.jurisdiction}
+                  </p>
+                )}
               </div>
             </div>
 
-            <div className="space-y-2.5">
-              <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    <Phone size={16} />
+            {selectedAdminModal.deputy && (
+              <div className="flex items-center space-x-4 p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                <div className="space-y-1 min-w-0 flex-1">
+                  {selectedAdminModal.deputy.name}{" "}
+                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                      Deputy MAYOR
+                    </span>
+                  </h3>
+                </div>
+              </div>
+            )}
+
+            {/* Contact Action Tiles */}
+            <div className="space-y-3">
+              <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs">
+                <div className="flex items-center space-x-3 min-w-0">
+                  <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <Phone size={18} />
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 block">
+                  <div className="min-w-0">
+                    <span className="text-[10px] sm:text-xs font-bold text-slate-400 block">
                       Phone Number
                     </span>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                    <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 truncate block">
                       {selectedAdminModal.phone}
                     </span>
                   </div>
                 </div>
                 <a
                   href={`tel:${selectedAdminModal.phone.replace(/\s+/g, "")}`}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition flex items-center space-x-1"
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs sm:text-sm font-bold transition flex items-center space-x-1.5 shrink-0 shadow-sm"
                 >
-                  <Phone size={12} />
+                  <Phone size={14} />
                   <span>Call</span>
                 </a>
               </div>
 
-              <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                    <Mail size={16} />
+              {selectedAdminModal.email.length > 0 && (
+                <div className="p-3.5 sm:p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shadow-2xs">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                      <Mail size={18} />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] sm:text-xs font-bold text-slate-400 block">
+                        Official Email
+                      </span>
+                      <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-slate-200 truncate block">
+                        {selectedAdminModal.email}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-[10px] font-bold text-slate-400 block">
-                      Official Email
-                    </span>
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200 truncate max-w-37.5 sm:max-w-52.5 block">
-                      {selectedAdminModal.email}
-                    </span>
-                  </div>
+                  <a
+                    href={`mailto:${selectedAdminModal.email}`}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs sm:text-sm font-bold transition flex items-center space-x-1.5 shrink-0 shadow-sm"
+                  >
+                    <Mail size={14} />
+                    <span>Email</span>
+                  </a>
                 </div>
-                <a
-                  href={`mailto:${selectedAdminModal.email}`}
-                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition flex items-center space-x-1 shrink-0"
-                >
-                  <Mail size={12} />
-                  <span>Email</span>
-                </a>
-              </div>
+              )}
 
-              <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 flex items-start space-x-3">
-                <div className="p-2 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
-                  <MapPin size={16} />
+              <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 flex items-start space-x-3 shadow-2xs">
+                <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">
+                  <MapPin size={18} />
                 </div>
                 <div>
-                  <span className="text-[10px] font-bold text-slate-400 block">
-                    Office Address
+                  <span className="text-[10px] sm:text-xs font-bold text-slate-400 block">
+                    Office Address & Timings
                   </span>
-                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed block">
+                  <span className="text-xs sm:text-sm font-extrabold text-slate-800 dark:text-slate-200 leading-relaxed block mt-0.5">
                     {selectedAdminModal.office}
                   </span>
-                  <span className="text-[10px] font-semibold text-slate-400 mt-1 block">
-                    🕒 {selectedAdminModal.timings}
+                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mt-1.5 block items-center">
+                    <Clock size={13} className="mr-1 text-amber-500 inline" />
+                    <span>{selectedAdminModal.timings}</span>
                   </span>
                 </div>
               </div>
@@ -1620,7 +1696,7 @@ export const Complaints: React.FC = () => {
 
             <button
               onClick={() => setSelectedAdminModal(null)}
-              className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition text-xs cursor-pointer"
+              className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black transition text-xs sm:text-sm cursor-pointer"
             >
               Done
             </button>
@@ -1635,12 +1711,12 @@ export const Complaints: React.FC = () => {
         title="Official Government & Municipal e-Services"
       >
         <div className="space-y-4 pt-1">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
             Access official Tamil Nadu State & Avadi Municipal Corporation
             digital portals for tax payments, certificates, and civic services.
           </p>
 
-          <div className="space-y-2.5 max-h-105 overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
             {[
               {
                 title: "Property & Water Tax Online Payment",
@@ -1655,7 +1731,7 @@ export const Complaints: React.FC = () => {
                 title: "TANGEDCO Electricity Bill Payment & Outages",
                 dept: "Tamil Nadu Electricity Board (TNEB)",
                 link: "https://www.tangedco.gov.in",
-                desc: "Pay monthly EB electricity bills online, register power failure complaints & track service connections.",
+                desc: "Pay monthly EB electricity bills online, register power failure complaints & track connections.",
                 badge: "EB Power",
                 badgeBg:
                   "bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400",
@@ -1664,7 +1740,7 @@ export const Complaints: React.FC = () => {
                 title: "TN e-Sevai Revenue Certificates Portal",
                 dept: "TNeGA Government of Tamil Nadu",
                 link: "https://www.tnesevai.tn.gov.in",
-                desc: "Apply online for Community Certificate, Income Certificate, Native/Residence Certificate & First Graduate.",
+                desc: "Apply online for Community Certificate, Income Certificate, Residence Certificate & First Graduate.",
                 badge: "e-Sevai",
                 badgeBg:
                   "bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400",
@@ -1688,42 +1764,44 @@ export const Complaints: React.FC = () => {
                   "bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400",
               },
             ].map((service, idx) => (
-              <a
+              <motion.a
                 key={idx}
+                whileHover={{ scale: 1.005 }}
+                whileTap={{ scale: 0.99 }}
                 href={service.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-primary transition-all flex items-start justify-between gap-3 group"
+                className="p-4 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 hover:border-primary/60 transition-all flex items-start justify-between gap-3 group shadow-2xs"
               >
-                <div className="space-y-1">
+                <div className="space-y-1 min-w-0">
                   <div className="flex items-center space-x-2">
                     <span
-                      className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${service.badgeBg}`}
+                      className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase ${service.badgeBg}`}
                     >
                       {service.badge}
                     </span>
-                    <span className="text-[10px] font-bold text-slate-400">
+                    <span className="text-xs font-bold text-slate-400 truncate">
                       {service.dept}
                     </span>
                   </div>
-                  <h4 className="font-extrabold text-xs text-slate-900 dark:text-white group-hover:text-primary transition-colors">
+                  <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white group-hover:text-primary transition-colors">
                     {service.title}
                   </h4>
-                  <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-snug">
+                  <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-snug">
                     {service.desc}
                   </p>
                 </div>
 
-                <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 group-hover:text-primary group-hover:border-primary flex items-center justify-center shrink-0 transition-colors mt-1">
-                  <ExternalLink size={14} />
+                <div className="w-9 h-9 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 group-hover:text-primary group-hover:border-primary flex items-center justify-center shrink-0 transition-colors mt-1 shadow-xs">
+                  <ExternalLink size={16} />
                 </div>
-              </a>
+              </motion.a>
             ))}
           </div>
 
           <button
             onClick={() => setIsGovtServicesModalOpen(false)}
-            className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold transition text-xs cursor-pointer"
+            className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black transition text-xs sm:text-sm cursor-pointer"
           >
             Close
           </button>

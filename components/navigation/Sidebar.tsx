@@ -214,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
             <div className="flex flex-col min-w-0 flex-1">
               <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug truncate">
-                {activeWard.name || "Active Municipal Ward"}
+                Ward {activeWard.id || "Active Municipal Ward"}
               </span>
               <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate block w-full">
                 {activeWard.hints || "Active Municipal Ward"}

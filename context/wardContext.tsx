@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 
@@ -97,7 +103,7 @@ interface WardContextType {
   ) => Promise<boolean>;
 
   // Session State
-  activeWard: { id: number; name: string };
+  activeWard: { id: number; name: string; hints?: string };
   userProfile: { name: string; wardNumber: number };
   updateProfile: (updatedData: Partial<AuthUser>) => Promise<void>;
 
@@ -155,6 +161,9 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
   const router = useRouter();
   const queryClient = useQueryClient();
 
+  // Local state to track instantaneous ward switching without page reloads
+  const [overrideWardId, setOverrideWardId] = useState<number | null>(null);
+
   const updateProfile = async (updatedData: Partial<AuthUser>) => {
     const res = await fetch("/api/auth/update-profile", {
       method: "PUT",
@@ -169,6 +178,9 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
     // Instantly update the React Query cache so all components reflect changes immediately
     queryClient.setQueryData(["authUser"], data.user);
+    if (data.user?.wardNumber) {
+      setOverrideWardId(data.user.wardNumber);
+    }
   };
 
   // Query authenticated user session
@@ -182,27 +194,46 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
   const isAuthenticated = Boolean(authUser);
 
+  // Initialize guest override from localStorage if present
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedWard = localStorage.getItem("activeWard");
+      if (savedWard && !authUser?.wardNumber) {
+        setOverrideWardId(Number(savedWard));
+      }
+    }
+  }, [authUser?.wardNumber]);
+
   // Logout Handler
   const logout = async () => {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
       queryClient.setQueryData(["authUser"], null);
       queryClient.clear(); // Clear cached feeds/complaints on logout
+      setOverrideWardId(null);
+      if (typeof window !== "undefined") {
+        localStorage.removeItem("activeWard");
+      }
       router.push("/"); // Redirect immediately to public guest home
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
-  // Ensure activeWard falls back dynamically to the logged-in user's wardNumber!
-  const activeWardId = authUser?.wardNumber || 14;
+  // Ensure activeWard prioritizes instant local selections, then auth profile, defaulting to Ward 14
+  const activeWardId = overrideWardId || authUser?.wardNumber || 14;
+  const isMatchingUserWard = activeWardId === authUser?.wardNumber;
 
   const activeWard = {
     id: activeWardId,
-    name: authUser?.streetName
-      ? `${authUser.streetName}`
-      : `Ward ${activeWardId}`,
-    hints: authUser?.streetName ? authUser.streetName : "Active Municipal Ward",
+    name:
+      authUser?.streetName && isMatchingUserWard
+        ? `${authUser.streetName}`
+        : `Ward ${activeWardId}`,
+    hints:
+      authUser?.streetName && isMatchingUserWard
+        ? authUser.streetName
+        : "Active Municipal Ward",
   };
 
   const userProfile = authUser
@@ -454,15 +485,34 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
   const bloodGroup = authUser?.bloodGroup || "Unknown";
 
-  const wards = Array.from({ length: 20 }, (_, i) => ({
+  // Generated all 48 wards of Avadi Municipal Corporation
+  const wards = Array.from({ length: 48 }, (_, i) => ({
     id: i + 1,
     name: `Ward ${i + 1}`,
   }));
 
-  const selectWard = (wardId: number) => {
-    const selectedWard = wards.find((w) => w.id === wardId);
+  // Option 1 Implementation: Instantly updates state & storage, then refreshes server components in-place
+  const selectWard = (wardId: number | string) => {
+    // 1. Force conversion to Number to prevent strict equality failures (e.g. "15" === 15)
+    const id = Number(wardId);
+    const selectedWard = wards.find((w) => w.id === id);
+
     if (selectedWard) {
-      router.push(`/wards/${wardId}`);
+      // 2. Set immediate local override state
+      setOverrideWardId(id);
+
+      // 3. Persist selection to browser storage
+      if (typeof window !== "undefined") {
+        localStorage.setItem("activeWard", String(id));
+      }
+
+      // 4. Instantly update React Query cache for authUser so it doesn't revert to Ward 1!
+      queryClient.setQueryData(["authUser"], (oldUser: any) =>
+        oldUser ? { ...oldUser, wardNumber: id } : oldUser,
+      );
+
+      // 5. Refresh server components in place
+      router.refresh();
     }
   };
 

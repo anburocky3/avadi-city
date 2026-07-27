@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useWard } from "@/context/wardContext";
+import { ALL_AVADI_STREETS } from "@/lib/wards";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 
@@ -44,15 +46,14 @@ const wardSelectionSchema = zod.object({
 
 type WardSelectionFormData = zod.infer<typeof wardSelectionSchema>;
 
-export const WardSelector: React.FC<WardSelectorProps> = ({
-  onClose,
-  onCustomSelect,
-  allStreetsData = [],
-}) => {
+export const WardSelector: React.FC<WardSelectorProps> = ({ onClose }) => {
   const { wards, selectWard } = useWard();
+
+  const queryClient = useQueryClient();
 
   // Street Search State
   const [streetQuery, setStreetQuery] = useState<string>("");
+  const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
   const [selectedStreetItem, setSelectedStreetItem] =
     useState<StreetItem | null>(null);
   const [showManualFallback, setShowManualFallback] = useState<boolean>(false);
@@ -72,72 +73,95 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
     },
   });
 
+  const { mutate: updateWard, isPending: isSubmitting } = useMutation({
+    mutationFn: async (data: WardSelectionFormData) => {
+      const response = await fetch("/api/auth/update-profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // Force Number conversion before sending to API
+          wardNumber: Number(data.wardNumber),
+          streetName: data.streetName,
+          address: data.streetName,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message || "Failed to update ward selection in profile.",
+        );
+      }
+
+      return response.json();
+    },
+    onSuccess: (responseData, variables) => {
+      // 1. Get the confirmed ward ID as a strict Number
+      const confirmedWardId = Number(
+        responseData?.user?.wardNumber || variables.wardNumber,
+      );
+
+      // 2. Update context & local storage immediately
+      selectWard(confirmedWardId);
+
+      // 3. Invalidate authUser query in the background to guarantee 100% database sync
+      queryClient.invalidateQueries({ queryKey: ["authUser"] });
+
+      // 4. Close modal
+      if (onClose) {
+        onClose();
+      }
+    },
+    onError: (error: any) => {
+      console.error("Ward update error:", error);
+      alert(
+        error?.message ||
+          "Could not update your ward selection. Please try again.",
+      );
+    },
+  });
+
   // Dynamic filter for live street search dropdown
-  const streetResults = useMemo(() => {
-    if (!streetQuery.trim() || selectedStreetItem) return [];
-    const query = streetQuery.toLowerCase();
+  const handleStreetSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value;
+    setStreetQuery(searchTerm);
+    setSelectedStreetItem(null);
+    setValueWard("streetName", searchTerm, { shouldValidate: true });
+
+    if (!searchTerm.trim()) {
+      setStreetResults([]);
+      return;
+    }
 
     // 1. Search in explicitly provided streets list
-    const directMatches = allStreetsData.filter((item) =>
-      item.streetName.toLowerCase().includes(query),
+    const directMatches = ALL_AVADI_STREETS.filter((item) =>
+      item.streetName.toLowerCase().includes(searchTerm),
     );
 
-    if (directMatches.length > 0) return directMatches.slice(0, 8);
+    if (directMatches.length > 0) {
+      setStreetResults(directMatches.slice(0, 15));
+      return;
+    }
 
-    // 2. Fallback search inside Wards data hints/streets
-    const wardMatches: StreetItem[] = [];
-    wards.forEach((w: WardItem) => {
-      if (
-        w.name.toLowerCase().includes(query) ||
-        w.hints?.toLowerCase().includes(query)
-      ) {
-        wardMatches.push({
-          id: `ward-hint-${w.id}`,
-          streetName: `${w.name} Area`,
-          wardNo: w.id,
-        });
-      }
-      w.streets?.forEach((st, idx) => {
-        if (st.toLowerCase().includes(query)) {
-          wardMatches.push({
-            id: `st-${w.id}-${idx}`,
-            streetName: st,
-            wardNo: w.id,
-          });
-        }
-      });
-    });
-
-    return wardMatches.slice(0, 8);
-  }, [streetQuery, selectedStreetItem, allStreetsData, wards]);
-
-  const handleStreetSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setStreetQuery(val);
-    setSelectedStreetItem(null);
-    setValueWard("streetName", val, { shouldValidate: true });
+    // setStreetResults(wardMatches.slice(0, 15));
   };
 
   const handleSelectStreetItem = (item: StreetItem) => {
     setSelectedStreetItem(item);
     setStreetQuery(item.streetName);
+    setStreetResults([]);
     setValueWard("wardNumber", item.wardNo, { shouldValidate: true });
     setValueWard("streetName", item.streetName, { shouldValidate: true });
   };
 
   const handleWardSelectSubmit = (data: WardSelectionFormData) => {
-    selectWard(data.wardNumber);
-
-    if (onCustomSelect) {
-      onCustomSelect(data.wardNumber, data.streetName);
-    }
-    if (onClose) {
-      onClose();
-    }
+    updateWard(data);
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 sm:p-5 max-w-lg mx-auto w-full">
+    <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-lg mx-auto w-full">
       <div className="text-center pb-3">
         <h2 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white tracking-tight">
           Find Your Street
@@ -158,7 +182,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
               <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 Street Name / Landmark *
               </label>
-              <div className="relative">
+              <div className="relative mt-2">
                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <Search size={18} />
                 </span>
@@ -174,6 +198,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
                     type="button"
                     onClick={() => {
                       setStreetQuery("");
+                      setStreetResults([]);
                       setSelectedStreetItem(null);
                       setValueWard("wardNumber", 0, { shouldValidate: true });
                       setValueWard("streetName", "", { shouldValidate: true });
@@ -205,7 +230,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
                     </div>
                     <div className="flex-1 min-w-0 space-y-1">
                       <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate capitalize">
-                        {item.streetName}
+                        {item.streetName.toLocaleLowerCase()}
                       </p>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
                         <Building2 size={12} className="shrink-0" />
@@ -225,7 +250,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
                   <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
                     No street found matching &quot;{streetQuery}&quot;
                   </p>
-                  <button
+                  {/* <button
                     type="button"
                     onClick={() => {
                       setShowManualFallback(true);
@@ -236,7 +261,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
                     className="text-[11px] text-primary hover:underline font-bold mt-1 inline-block cursor-pointer"
                   >
                     Pick your ward number manually instead →
-                  </button>
+                  </button> */}
                 </div>
               )}
 
@@ -266,6 +291,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
                   onClick={() => {
                     setSelectedStreetItem(null);
                     setStreetQuery("");
+                    setStreetResults([]);
                     setValueWard("wardNumber", 0, { shouldValidate: true });
                     setValueWard("streetName", "", { shouldValidate: true });
                   }}
@@ -276,7 +302,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
               </div>
             )}
 
-            {!selectedStreetItem && (
+            {/* {!selectedStreetItem && (
               <div className="text-center pt-1">
                 <button
                   type="button"
@@ -286,7 +312,7 @@ export const WardSelector: React.FC<WardSelectorProps> = ({
                   Can&apos;t find your street? Select ward manually
                 </button>
               </div>
-            )}
+            )} */}
           </div>
         ) : (
           /* MANUAL WARD SELECTION FALLBACK FORM */

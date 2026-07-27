@@ -74,19 +74,19 @@ export default function GetStartedClient() {
   const [resendCountdown, setResendCountdown] = useState(30);
 
   // Step 3 Location & Ward Mapping States
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationStatus, setLocationStatus] = useState("");
-  const [locationError, setLocationError] = useState("");
-  const [autoMatchedWard, setAutoMatchedWard] = useState<{
-    id: number;
-    name: string;
-    streetName: string;
-    hints: string;
-  } | null>(null);
-  const [outOfBoundsMsg, setOutOfBoundsMsg] = useState<{
-    title: string;
-    desc: string;
-  } | null>(null);
+  // const [isLocating, setIsLocating] = useState(false);
+  // const [locationStatus, setLocationStatus] = useState("");
+  // const [locationError, setLocationError] = useState("");
+  // const [autoMatchedWard, setAutoMatchedWard] = useState<{
+  //   id: number;
+  //   name: string;
+  //   streetName: string;
+  //   hints: string;
+  // } | null>(null);
+  // const [outOfBoundsMsg, setOutOfBoundsMsg] = useState<{
+  //   title: string;
+  //   desc: string;
+  // } | null>(null);
 
   const [streetQuery, setStreetQuery] = useState("");
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
@@ -296,86 +296,86 @@ export default function GetStartedClient() {
     }));
   };
 
-  const handleRequestLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser.");
-      return;
-    }
+  // const handleRequestLocation = () => {
+  //   if (!navigator.geolocation) {
+  //     setLocationError("Geolocation is not supported by your browser.");
+  //     return;
+  //   }
 
-    setIsLocating(true);
-    setLocationError("");
-    setOutOfBoundsMsg(null);
-    setAutoMatchedWard(null);
-    setLocationStatus("Acquiring satellite / GPS lock...");
+  //   setIsLocating(true);
+  //   setLocationError("");
+  //   setOutOfBoundsMsg(null);
+  //   setAutoMatchedWard(null);
+  //   setLocationStatus("Acquiring satellite / GPS lock...");
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude, accuracy } = position.coords;
-          setLocationStatus("Translating GPS coordinates...");
+  //   navigator.geolocation.getCurrentPosition(
+  //     async (position) => {
+  //       try {
+  //         const { latitude, longitude, accuracy } = position.coords;
+  //         setLocationStatus("Translating GPS coordinates...");
 
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
-            { headers: { "Accept-Language": "en-US,en;q=0.9" } },
-          );
+  //         const res = await fetch(
+  //           `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`,
+  //           { headers: { "Accept-Language": "en-US,en;q=0.9" } },
+  //         );
 
-          if (!res.ok) throw new Error("Failed to resolve address.");
+  //         if (!res.ok) throw new Error("Failed to resolve address.");
 
-          const data = await res.json();
-          setLocationStatus("Verifying municipal boundaries...");
+  //         const data = await res.json();
+  //         setLocationStatus("Verifying municipal boundaries...");
 
-          const result = validateAndMatchAvadiLocation(
-            data.address || {},
-            accuracy,
-          );
+  //         const result = validateAndMatchAvadiLocation(
+  //           data.address || {},
+  //           accuracy,
+  //         );
 
-          if (
-            result.status === "LOW_ACCURACY" ||
-            result.status === "OUT_OF_BOUNDS"
-          ) {
-            setOutOfBoundsMsg({
-              title: "Location Notice",
-              desc: `Could not verify exact Avadi coordinates. Please select your street manually below.`,
-            });
-          } else if (result.status === "EXACT_MATCH" && result.match) {
-            const matchedWardObj = {
-              id: result.match.wardNo,
-              name: result.match.wardCode || `Ward ${result.match.wardNo}`,
-              streetName: result.match.streetName,
-              hints: `GPS verified in Avadi (${result.match.streetName})`,
-            };
-            setAutoMatchedWard(matchedWardObj);
-            setValueWard("wardNumber", result.match.wardNo, {
-              shouldValidate: true,
-            });
-            setValueWard("streetName", result.match.streetName, {
-              shouldValidate: true,
-            });
-            setFormData((prev) => ({
-              ...prev,
-              wardNumber: result.match!.wardNo,
-              streetName: result.match!.streetName,
-            }));
-          }
-        } catch {
-          setLocationError(
-            "Could not verify GPS location. Please choose manually.",
-          );
-        } finally {
-          setIsLocating(false);
-          setLocationStatus("");
-        }
-      },
-      () => {
-        setIsLocating(false);
-        setLocationStatus("");
-        setLocationError(
-          "Location permission denied. Please pick your ward manually.",
-        );
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
-    );
-  };
+  //         if (
+  //           result.status === "LOW_ACCURACY" ||
+  //           result.status === "OUT_OF_BOUNDS"
+  //         ) {
+  //           setOutOfBoundsMsg({
+  //             title: "Location Notice",
+  //             desc: `Could not verify exact Avadi coordinates. Please select your street manually below.`,
+  //           });
+  //         } else if (result.status === "EXACT_MATCH" && result.match) {
+  //           const matchedWardObj = {
+  //             id: result.match.wardNo,
+  //             name: result.match.wardCode || `Ward ${result.match.wardNo}`,
+  //             streetName: result.match.streetName,
+  //             hints: `GPS verified in Avadi (${result.match.streetName})`,
+  //           };
+  //           setAutoMatchedWard(matchedWardObj);
+  //           setValueWard("wardNumber", result.match.wardNo, {
+  //             shouldValidate: true,
+  //           });
+  //           setValueWard("streetName", result.match.streetName, {
+  //             shouldValidate: true,
+  //           });
+  //           setFormData((prev) => ({
+  //             ...prev,
+  //             wardNumber: result.match!.wardNo,
+  //             streetName: result.match!.streetName,
+  //           }));
+  //         }
+  //       } catch {
+  //         setLocationError(
+  //           "Could not verify GPS location. Please choose manually.",
+  //         );
+  //       } finally {
+  //         setIsLocating(false);
+  //         setLocationStatus("");
+  //       }
+  //     },
+  //     () => {
+  //       setIsLocating(false);
+  //       setLocationStatus("");
+  //       setLocationError(
+  //         "Location permission denied. Please pick your ward manually.",
+  //       );
+  //     },
+  //     { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 },
+  //   );
+  // };
 
   const handleCompleteOnboarding = async () => {
     if (!isValidWard) return;
@@ -927,7 +927,7 @@ export default function GetStartedClient() {
                   </p>
                 </div>
 
-                {isLocating && locationStatus && (
+                {/* {isLocating && locationStatus && (
                   <div className="p-4 bg-primary/5 border border-primary/20 rounded-2xl flex items-center justify-center space-x-2.5 text-primary text-xs font-bold animate-pulse">
                     <Loader2 size={16} className="animate-spin shrink-0" />
                     <span>{locationStatus}</span>
@@ -950,10 +950,10 @@ export default function GetStartedClient() {
                       {outOfBoundsMsg.desc}
                     </p>
                   </div>
-                )}
+                )} */}
 
                 <div className="space-y-4">
-                  {autoMatchedWard ? (
+                  {/* {autoMatchedWard ? (
                     <div className="p-5 bg-emerald-500/10 dark:bg-emerald-950/20 border border-emerald-500/30 rounded-2xl text-center space-y-1.5 shadow-xs">
                       <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 shadow-sm">
                         <CheckCircle2 size={22} />
@@ -1066,6 +1066,100 @@ export default function GetStartedClient() {
                           <span>Detect Ward Using GPS</span>
                         </button>
                       </div>
+                    </div>
+                  )} */}
+
+                  {selectedStreetItem ? (
+                    <div className="p-5 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-1.5 shadow-xs">
+                      <p className="text-[10px] uppercase tracking-wider font-black text-emerald-600 dark:text-emerald-400">
+                        Selected Street
+                      </p>
+                      <h3 className="text-xl font-black text-slate-900 dark:text-white">
+                        Ward {selectedStreetItem.wardNo}
+                      </h3>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300 capitalize">
+                        {selectedStreetItem.streetName}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedStreetItem(null);
+                          setStreetQuery("");
+                          setValueWard("wardNumber", 0, {
+                            shouldValidate: true,
+                          });
+                          setValueWard("streetName", "", {
+                            shouldValidate: true,
+                          });
+                        }}
+                        className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 font-bold underline pt-1 inline-block cursor-pointer"
+                      >
+                        Search a different street
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3.5">
+                      <div className="relative mt-2">
+                        <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                          <Search size={18} />
+                        </span>
+                        <input
+                          type="text"
+                          value={streetQuery}
+                          onChange={handleStreetSearchChange}
+                          placeholder="Search street (e.g. MTH Road, Kamaraj Nagar)..."
+                          className="w-full h-12 pl-11 pr-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 font-medium text-base sm:text-sm focus:ring-2 focus:ring-primary/50 focus:outline-none transition shadow-2xs"
+                        />
+                        {streetQuery && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setStreetQuery("");
+                              setStreetResults([]);
+                            }}
+                            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                          >
+                            <X size={18} />
+                          </button>
+                        )}
+                      </div>
+
+                      {streetResults.length > 0 && (
+                        <ul className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900 shadow-xl max-h-56 overflow-y-auto text-left">
+                          {streetResults.map((item) => (
+                            <li
+                              key={item.id}
+                              onClick={() => handleSelectStreetItem(item)}
+                              className="p-3.5 hover:bg-orange-50/80 dark:hover:bg-slate-800/80 cursor-pointer flex items-start gap-3 transition group"
+                            >
+                              <div className="p-2 rounded-xl bg-orange-100/70 dark:bg-orange-950/40 text-primary shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-white transition shadow-2xs">
+                                <MapPin size={16} />
+                              </div>
+                              <div className="flex-1 min-w-0 space-y-1">
+                                <p className="text-sm font-bold text-slate-900 dark:text-slate-100 capitalize">
+                                  {item.streetName.toLocaleLowerCase("en-IN")}
+                                </p>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 group-hover:bg-primary/10 group-hover:text-primary text-[11px] font-extrabold transition">
+                                  <Building2 size={12} className="shrink-0" />
+                                  <span>Ward {item.wardNo}</span>
+                                </span>
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {/* <div className="pt-1">
+                        <button
+                          type="button"
+                          disabled={isLocating}
+                          onClick={handleRequestLocation}
+                          className="w-full h-12 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center space-x-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <LocateFixed size={16} className="text-primary" />
+                          <span>Detect Ward Using GPS</span>
+                        </button>
+                      </div> */}
                     </div>
                   )}
                 </div>

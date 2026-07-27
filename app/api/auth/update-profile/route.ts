@@ -19,22 +19,37 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { name, dob, bloodGroup, gender, phone, email } = body;
 
-    // Update user in Prisma
+    // 1. Destructure all possible profile fields, including ward number & address
+    const {
+      name,
+      dob,
+      bloodGroup,
+      gender,
+      phone,
+      email,
+      wardNumber,
+      streetName,
+    } = body;
+
+    // 2. Safely update user in Prisma (only updates fields that are provided)
     const updatedUser = await prisma.user.update({
       where: { id: payload.userId },
       data: {
-        name: name?.trim(),
+        name: name !== undefined ? name?.trim() : undefined,
         dob: dob ? new Date(dob) : undefined,
-        bloodGroup,
-        gender,
-        phone: phone?.trim(),
-        email: email?.trim().toLowerCase(),
+        bloodGroup: bloodGroup !== undefined ? bloodGroup : undefined,
+        gender: gender !== undefined ? gender : undefined,
+        phone: phone !== undefined ? phone?.trim() : undefined,
+        // Safe optional chaining prevents crashes when email is undefined:
+        email: email !== undefined ? email?.trim()?.toLowerCase() : undefined,
+        // Store ward number and address fields:
+        wardNumber: wardNumber !== undefined ? Number(wardNumber) : undefined,
+        streetName: streetName !== undefined ? streetName?.trim() : undefined,
       },
     });
 
-    // Generate fresh auth token with updated name/email/ward
+    // 3. Generate fresh auth token with updated name/email/ward
     const newToken = await signAuthToken({
       userId: updatedUser.id,
       email: updatedUser.email,
