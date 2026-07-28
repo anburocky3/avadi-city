@@ -22,6 +22,7 @@ model User {
   dob                 DateTime
   bloodGroup          BloodGroup
   phone               String              @unique
+  avatar              String?             @db.LongText
   email               String              @unique
   password            String?
   wardNumber          Int

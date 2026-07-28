@@ -1,8 +1,6 @@
 model Feed {
   id           String     @id @default(cuid())
   authorId     String    // Foreign key to User
-  authorName   String
-  authorAvatar String?
   ward         String
   text         String     @db.LongText // Use LongText for MySQL base64 images
   imageUrl     String?    @db.LongText
