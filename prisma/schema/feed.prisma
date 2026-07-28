@@ -14,6 +14,7 @@ model Feed {
   comments     Comment[]
   likes        FeedLike[]
 
+  @@index([authorId])
   @@index([ward])
   @@index([category, timestamp])
   @@map("feeds")
@@ -22,8 +23,8 @@ model Feed {
 model Comment {
   id        String   @id @default(cuid())
   feedId    String   @map("feed_id")
-  authorId  String?
-  author    String
+  authorId  String?  @map("author_id")
+  author    String   // Fallback name preserved even if user account is deleted
   text      String   @db.Text
   timestamp DateTime @default(now())
 
@@ -42,11 +43,12 @@ model FeedLike {
   userId    String   @map("user_id")
   createdAt DateTime @default(now())
 
-  // Relations
+  // Foreign Key Relations
   feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([feedId, userId]) // Prevents double-liking
+  @@unique([feedId, userId]) // Prevents double-liking at the DB level
+  @@index([feedId])
   @@index([userId])
   @@map("feed_likes")
 }
