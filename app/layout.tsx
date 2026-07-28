@@ -3,6 +3,7 @@ import "./globals.css";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
+import ToastProvider from "@/components/providers/ToastProvider";
 import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import QueryProvider from "@/providers/QueryProvider";
@@ -57,7 +58,9 @@ export default async function RootLayout({
           <QueryProvider>
             <WardProvider>
               <RegisterServiceWorker />
-              <ThemeProvider>{children}</ThemeProvider>
+              <ThemeProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </ThemeProvider>
               <PwaInstallBanner />
             </WardProvider>
           </QueryProvider>
