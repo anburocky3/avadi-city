@@ -4,7 +4,7 @@ import { verifyAuthToken, signAuthToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { r2Client, BUCKET_NAME, PUBLIC_R2_DOMAIN } from "@/lib/r2";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { BloodGroup, Gender } from "@prisma/client";
+import { BloodGroup, Gender } from "@/prisma/generated/prisma/enums";
 
 export async function PUT(request: Request) {
   try {
