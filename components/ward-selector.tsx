@@ -75,17 +75,20 @@ export const WardSelector: React.FC<WardSelectorProps> = ({ onClose }) => {
 
   const { mutate: updateWard, isPending: isSubmitting } = useMutation({
     mutationFn: async (data: WardSelectionFormData) => {
+      // 1. Pack payload into FormData instead of JSON
+      const formData = new FormData();
+      formData.append("wardNumber", String(data.wardNumber));
+
+      if (data.streetName) {
+        formData.append("streetName", data.streetName);
+        formData.append("address", data.streetName);
+      }
+
       const response = await fetch("/api/auth/update-profile", {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          // Force Number conversion before sending to API
-          wardNumber: Number(data.wardNumber),
-          streetName: data.streetName,
-          address: data.streetName,
-        }),
+        // IMPORTANT: Do NOT manually set the "Content-Type" header here!
+        // The browser automatically sets it to "multipart/form-data; boundary=..."
+        body: formData,
       });
 
       if (!response.ok) {

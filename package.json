@@ -9,15 +9,17 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1096.0",
     "@hookform/resolvers": "^5.4.0",
     "@icons-pack/react-simple-icons": "^13.13.0",
     "@prisma/adapter-mariadb": "^7.9.0",
-    "@prisma/client": "^7.9.0",
+    "@prisma/client": "^7.9.1",
     "@tanstack/react-query": "^5.101.4",
     "@tanstack/react-query-devtools": "^5.101.4",
     "@teispace/next-themes": "^2.0.4",
     "@types/bcryptjs": "^3.0.0",
     "bcryptjs": "^3.0.3",
+    "browser-image-compression": "^2.0.2",
     "cheerio": "^1.2.0",
     "framer-motion": "^12.42.2",
     "jose": "^6.2.4",
@@ -35,7 +37,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "prisma": "^7.9.0",
+    "prisma": "^7.9.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5"
   },

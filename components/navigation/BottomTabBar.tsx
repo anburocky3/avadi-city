@@ -23,7 +23,7 @@ export const BottomTabBar: React.FC = () => {
 
   // Strict single-word labels prevent mobile text truncation
   const tabs: TabItem[] = [
-    { name: t("bottomTabs.home") || "Home", path: "/", icon: Home },
+    { name: t("bottomTabs.home") || "Home", path: "/dashboard", icon: Home },
     {
       name: t("bottomTabs.complaint") || "Complaint",
       path: "/complaints",

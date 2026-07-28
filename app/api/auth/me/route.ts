@@ -13,8 +13,9 @@ export async function GET() {
     }
 
     const session = await verifyAuthToken(token);
-    if (!session) {
-      return NextResponse.json({ user: null }, { status: 401 });
+    if (!session || !session.userId) {
+      cookieStore.delete("avadi_session"); // 👈 Clean up invalid tokens
+      return NextResponse.json({ message: "Invalid token" }, { status: 401 });
     }
 
     const user = await prisma.user.findUnique({
@@ -25,6 +26,7 @@ export async function GET() {
         email: true,
         phone: true,
         gender: true,
+        avatar: true,
         bloodGroup: true,
         wardNumber: true,
         streetName: true,
@@ -32,8 +34,22 @@ export async function GET() {
       },
     });
 
+    if (!user) {
+      cookieStore.delete("avadi_session");
+      return NextResponse.json(
+        { message: "User no longer exists", user: null },
+        { status: 401 },
+      );
+    }
+
     return NextResponse.json({ user }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ user: null }, { status: 500 });
+    const cookieStore = await cookies();
+    cookieStore.delete("avadi_session");
+
+    return NextResponse.json(
+      { user: null, message: "Database error" },
+      { status: 401 },
+    );
   }
 }

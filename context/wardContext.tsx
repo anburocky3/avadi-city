@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation"; // 👈 Added usePathname
 
 // APP VERSION
 export const APP_VERSION = "v1.0.0";
@@ -17,7 +17,7 @@ export const APP_VERSION = "v1.0.0";
 export interface AuthUser {
   id: string;
   name: string;
-  avatarUrl?: string;
+  avatar?: string;
   dob: string;
   email: string;
   phone: string;
@@ -105,7 +105,10 @@ interface WardContextType {
   // Session State
   activeWard: { id: number; name: string; hints?: string };
   userProfile: { name: string; wardNumber: number };
-  updateProfile: (updatedData: Partial<AuthUser>) => Promise<void>;
+  updateProfile: (
+    updatedData: Partial<AuthUser>,
+    avatarFile?: File | null,
+  ) => Promise<void>;
 
   // ward
   wards: Array<{ id: number; name: string }>;
@@ -159,16 +162,34 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const router = useRouter();
+  const pathname = usePathname(); // 👈 Track current route for security checks
   const queryClient = useQueryClient();
 
   // Local state to track instantaneous ward switching without page reloads
   const [overrideWardId, setOverrideWardId] = useState<number | null>(null);
 
-  const updateProfile = async (updatedData: Partial<AuthUser>) => {
+  const updateProfile = async (
+    updatedData: Partial<AuthUser>,
+    avatarFile?: File | null,
+  ) => {
+    const formData = new FormData();
+
+    if (updatedData.name) formData.append("name", updatedData.name);
+    if (updatedData.dob) formData.append("dob", String(updatedData.dob));
+    if (updatedData.bloodGroup)
+      formData.append("bloodGroup", updatedData.bloodGroup);
+    if (updatedData.gender) formData.append("gender", updatedData.gender);
+    if (updatedData.phone) formData.append("phone", updatedData.phone);
+    if (updatedData.email) formData.append("email", updatedData.email);
+
+    // Append compressed avatar file if selected
+    if (avatarFile) {
+      formData.append("avatar", avatarFile);
+    }
+
     const res = await fetch("/api/auth/update-profile", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(updatedData),
+      body: formData,
     });
 
     const data = await res.json();
@@ -178,6 +199,7 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
     // Instantly update the React Query cache so all components reflect changes immediately
     queryClient.setQueryData(["authUser"], data.user);
+
     if (data.user?.wardNumber) {
       setOverrideWardId(data.user.wardNumber);
     }
@@ -193,6 +215,25 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     });
 
   const isAuthenticated = Boolean(authUser);
+
+  // --- 🛡️ SECURITY GUARDRAIL EFFECT ---
+  // If MySQL tables are wiped or user record is deleted, kick them to login immediately!
+  useEffect(() => {
+    // Define your public pages where unauthenticated guests are allowed
+    const publicRoutes = [
+      "/",
+      "/login",
+      "/get-started",
+      "/credits",
+      "/contact",
+    ];
+    const isProtectedRoute = !publicRoutes.includes(pathname);
+
+    // Once auth check finishes, if there is no valid user on a protected page -> redirect
+    if (!isLoadingAuth && !authUser && isProtectedRoute) {
+      router.replace("/login");
+    }
+  }, [isLoadingAuth, authUser, pathname, router]);
 
   // Initialize guest override from localStorage if present
   useEffect(() => {

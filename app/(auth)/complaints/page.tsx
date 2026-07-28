@@ -588,7 +588,7 @@ export const Complaints: React.FC = () => {
               </div>
             </div>
 
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl min-h-[160px] sm:min-h-[180px] flex items-center">
+            <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl min-h-40 sm:min-h-45 flex items-center">
               <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
               <div className="absolute right-20 -bottom-12 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -760,7 +760,7 @@ export const Complaints: React.FC = () => {
                     whileHover={{ y: -3 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setSelectedAdminModal(data)}
-                    className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-pointer flex flex-col justify-between group min-h-[160px] relative overflow-hidden"
+                    className="p-4 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-pointer flex flex-col justify-between group min-h-40 relative overflow-hidden"
                   >
                     {/* Top Header: Avatar Portrait & Action Badge */}
                     <div className="flex items-start justify-between gap-2 z-10">
@@ -1099,7 +1099,7 @@ export const Complaints: React.FC = () => {
               Select the category below that best describes your civic problem:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-[440px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-110 overflow-y-auto pr-1">
               {visualCategories.map((cat) => {
                 const CatIcon = cat.icon;
                 const isSelected = selectedCategory === cat.id;
@@ -1399,7 +1399,7 @@ export const Complaints: React.FC = () => {
                 <span className="text-slate-400 font-semibold">
                   Ward & Spot:
                 </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-[200px] sm:max-w-xs">
+                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-50 sm:max-w-xs">
                   Ward {submittedComplaint.ward} · {submittedComplaint.address}
                 </span>
               </div>
@@ -1510,7 +1510,7 @@ export const Complaints: React.FC = () => {
                           {isCompleted ? <Check size={16} /> : idx + 1}
                         </div>
                         <span
-                          className={`text-[10px] sm:text-xs font-extrabold mt-2 text-center max-w-[64px] sm:max-w-none ${
+                          className={`text-[10px] sm:text-xs font-extrabold mt-2 text-center max-w-16 sm:max-w-none ${
                             isCurrent
                               ? "text-primary font-black"
                               : isCompleted
@@ -1716,7 +1716,7 @@ export const Complaints: React.FC = () => {
             digital portals for tax payments, certificates, and civic services.
           </p>
 
-          <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-115 overflow-y-auto pr-1">
             {[
               {
                 title: "Property & Water Tax Online Payment",

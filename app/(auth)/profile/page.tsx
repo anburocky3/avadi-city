@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTheme } from "@teispace/next-themes/client";
 import { useTranslations } from "next-intl";
 import {
@@ -17,11 +17,15 @@ import {
   Building2,
   Share2,
   Check,
+  Camera,
+  Loader2,
+  User,
 } from "lucide-react";
 
 // Context & Component imports matching your project structure
 import { useWard, APP_VERSION } from "@/context/wardContext";
 import { Card, Modal } from "@/components/shared-components";
+import imageCompression from "browser-image-compression";
 
 export const Profile: React.FC = () => {
   // --- Contexts & Hooks ---
@@ -33,6 +37,7 @@ export const Profile: React.FC = () => {
     updateProfile,
   } = useWard();
 
+  const [mounted, setMounted] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
   const isDark = resolvedTheme === "dark";
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
@@ -64,11 +69,47 @@ export const Profile: React.FC = () => {
   const [editPhone, setEditPhone] = useState<string>(authUser?.phone || "");
   const [editEmail, setEditEmail] = useState<string>(authUser?.email || "");
 
+  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
+    null,
+  );
+  // Support both naming styles (avatarUrl or avatar) from your R2 implementation
+  const [previewUrl, setPreviewUrl] = useState<string | null>(
+    authUser?.avatar || authUser?.avatar || null,
+  );
+  const [isCompressing, setIsCompressing] = useState<boolean>(false);
+
   // --- Derived Metrics ---
   const isVolunteer = volunteers.some((v) => v.name === authUser?.name);
   const myComplaintsCount = complaints.filter(
     (c) => c.author === (authUser?.name || "Avadi Resident"),
   ).length;
+
+  useEffect(() => setMounted(true), []);
+
+  // Compress image before setting preview & state
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressing(true);
+    try {
+      const options = {
+        maxSizeMB: 0.25, // Keep under 250KB
+        maxWidthOrHeight: 400,
+        useWebWorker: true,
+        fileType: "image/webp", // Convert to lightweight WebP
+      };
+
+      const compressedFile = await imageCompression(file, options);
+      setSelectedAvatarFile(compressedFile);
+      setPreviewUrl(URL.createObjectURL(compressedFile));
+    } catch (error) {
+      console.error("Compression failed:", error);
+      alert("Could not process image. Please try a different photo.");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
 
   // --- Handlers ---
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -76,18 +117,22 @@ export const Profile: React.FC = () => {
     setIsSubmitting(true);
     try {
       if (updateProfile) {
-        await updateProfile({
-          name: editName,
-          dob: editDob,
-          bloodGroup: editBloodGroup as any,
-          gender: editGender as any,
-          phone: editPhone,
-          email: editEmail,
-        });
+        await updateProfile(
+          {
+            name: editName,
+            dob: editDob,
+            bloodGroup: editBloodGroup as any,
+            gender: editGender as any,
+            phone: editPhone,
+            email: editEmail,
+          },
+          selectedAvatarFile, // 👈 Passes the compressed avatar file to the context
+        );
       }
       setIsEditModalOpen(false);
     } catch (err) {
       console.error("Failed to update profile", err);
+      alert("Failed to update profile. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -135,8 +180,19 @@ export const Profile: React.FC = () => {
       {/* Main Avatar and Details Card */}
       <Card className="p-5 border-2 border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shadow-sm">
         <div className="flex items-center space-x-4">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-500/20 shrink-0 ring-4 ring-indigo-500/20 dark:ring-indigo-400/20">
-            {authUser?.name ? authUser.name.charAt(0).toUpperCase() : "A"}
+          {/* 👇 Renders actual R2 picture if set, or falls back to letter initial */}
+          <div className="w-14 h-14 rounded-2xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white flex items-center justify-center font-black text-xl shadow-md shadow-indigo-500/20 shrink-0 ring-4 ring-indigo-500/20 dark:ring-indigo-400/20 overflow-hidden">
+            {authUser?.avatar || authUser?.avatar ? (
+              <img
+                src={authUser.avatar || authUser.avatar}
+                alt="Profile Avatar"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>
+                {authUser?.name ? authUser.name.charAt(0).toUpperCase() : "A"}
+              </span>
+            )}
           </div>
           <div>
             <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center space-x-1.5">
@@ -172,6 +228,9 @@ export const Profile: React.FC = () => {
             setEditGender(authUser?.gender || "Male");
             setEditPhone(authUser?.phone || "");
             setEditEmail(authUser?.email || "");
+            // 👇 Resets avatar preview state to match latest user data when opening
+            setPreviewUrl(authUser?.avatar || authUser?.avatar || null);
+            setSelectedAvatarFile(null);
             setIsEditModalOpen(true);
           }}
           className="px-4 py-2 border-2 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-black rounded-xl transition cursor-pointer text-center sm:w-auto"
@@ -212,7 +271,7 @@ export const Profile: React.FC = () => {
           Spread the Word
         </h3>
 
-        <Card className="p-4.5 border-2 border-slate-200 dark:border-slate-800 bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent dark:from-orange-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between gap-4">
+        <Card className="p-4.5 border-2 border-slate-200 dark:border-slate-800 bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent dark:from-orange-950/30 dark:via-slate-900 dark:to-slate-900 flex items-center justify-between gap-4">
           <div className="space-y-1 min-w-0">
             <div className="flex items-center space-x-2 text-xs font-black text-slate-900 dark:text-white">
               <Share2 size={16} className="text-primary shrink-0" />
@@ -252,26 +311,34 @@ export const Profile: React.FC = () => {
           {/* Theme setting */}
           <div className="p-4 flex items-center justify-between">
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
-              {isDark ? (
-                <Sun size={17} className="text-amber-400" />
+              {mounted ? (
+                isDark ? (
+                  <Sun size={17} className="text-amber-400" />
+                ) : (
+                  <Moon size={17} />
+                )
               ) : (
-                <Moon size={17} />
+                <div className="w-4.25 h-4.25" /> /* Placeholder layout box during SSR */
               )}
               <span>{t("darkTheme")}</span>
             </div>
-            <button
-              onClick={toggleTheme}
-              className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
-                isDark ? "bg-primary" : "bg-slate-300"
-              }`}
-              aria-label="Toggle dark theme"
-            >
-              <div
-                className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform shadow ${
-                  isDark ? "right-0.5" : "left-0.5"
+            {mounted ? (
+              <button
+                onClick={toggleTheme}
+                className={`w-11 h-6 rounded-full transition-colors relative cursor-pointer ${
+                  isDark ? "bg-primary" : "bg-slate-300"
                 }`}
-              />
-            </button>
+                aria-label="Toggle dark theme"
+              >
+                <div
+                  className={`w-5 h-5 rounded-full bg-white absolute top-0.5 transition-transform shadow ${
+                    isDark ? "right-0.5" : "left-0.5"
+                  }`}
+                />
+              </button>
+            ) : (
+              <div className="w-11 h-6 rounded-full bg-slate-300 opacity-0" />
+            )}
           </div>
         </div>
       </div>
@@ -525,6 +592,45 @@ export const Profile: React.FC = () => {
         title="Update Profile Details"
       >
         <form onSubmit={handleUpdateProfile} className="space-y-4">
+          {/* Avatar Upload Section */}
+          <div className="flex flex-col items-center space-y-3">
+            <div className="relative group">
+              <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-primary/40 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-md">
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Avatar Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <User size={36} className="text-slate-400" />
+                )}
+              </div>
+
+              <label className="absolute inset-0 rounded-full bg-slate-900/50 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition cursor-pointer">
+                {isCompressing ? (
+                  <Loader2 size={20} className="animate-spin text-amber-400" />
+                ) : (
+                  <>
+                    <Camera size={20} />
+                    <span className="text-[9px] font-bold mt-0.5">Change</span>
+                  </>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarChange}
+                  className="sr-only"
+                />
+              </label>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-400">
+              {isCompressing
+                ? "Compressing image to WebP..."
+                : "Tap photo to update"}
+            </span>
+          </div>
+
           <div className="space-y-1.5">
             <label className="text-[11px] font-black text-slate-800 dark:text-slate-200">
               Full Name
@@ -613,12 +719,16 @@ export const Profile: React.FC = () => {
             </div>
           </div>
 
+          {/* 👇 Disabled state protects against submitting during compression */}
           <button
             type="submit"
-            disabled={isSubmitting}
-            className="w-full py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black transition text-xs cursor-pointer shadow-md hover:shadow-lg"
+            disabled={isSubmitting || isCompressing}
+            className="w-full py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black transition text-xs cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center space-x-2"
           >
-            {isSubmitting ? "Updating..." : "Update Profile Details"}
+            {isSubmitting && <Loader2 size={16} className="animate-spin" />}
+            <span>
+              {isSubmitting ? "Updating..." : "Update Profile Details"}
+            </span>
           </button>
         </form>
       </Modal>

@@ -168,7 +168,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div
             className="flex items-center space-x-3 cursor-pointer group"
             onClick={() => {
-              router.push("/");
+              router.push("/dashboard");
               if (onClose) onClose();
             }}
           >
