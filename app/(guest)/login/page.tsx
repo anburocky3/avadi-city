@@ -76,14 +76,20 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
       });
+
       const data = await res.json();
 
       if (!res.ok) {
         throw new Error(data.message || "Invalid credentials provided.");
       }
 
-      // Update React Query auth cache instantly
-      queryClient.setQueryData(["authUser"], data.user);
+      if (data.user) {
+        // Update React Query auth cache instantly
+        queryClient.setQueryData(["authUser"], data.user);
+      } else {
+        await queryClient.invalidateQueries({ queryKey: ["authUser"] });
+      }
+
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
@@ -180,7 +186,8 @@ export default function LoginPage() {
                           setEmail(e.target.value);
                           setApiError("");
                         }}
-                        placeholder="yourname@example.com"
+                        autoFocus
+                        placeholder="your@beautiful.com"
                         className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
                       />
                     </div>
@@ -266,6 +273,7 @@ export default function LoginPage() {
                           setPassword(e.target.value);
                           setApiError("");
                         }}
+                        autoFocus
                         placeholder="••••••••"
                         className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
                       />

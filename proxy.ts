@@ -1,41 +1,36 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifyAuthToken } from "@/lib/auth";
 
-// Define your public guest routes
-const guestRoutes = ["/", "/credits", "/contact", "/login", "/get-started"];
-
-export async function proxy(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+  const session = req.cookies.get("avadi_session")?.value;
 
-  // 1. Check if the requested path matches any guest route exactly or starts with it
-  const isGuestRoute = guestRoutes.some(
-    (route) =>
-      pathname === route || (route !== "/" && pathname.startsWith(`${route}/`)),
-  );
-
-  // 2. Retrieve session token from HTTP-only cookies
-  const token = req.cookies.get("avadi_session")?.value;
-  const session = token ? await verifyAuthToken(token) : null;
-
-  // 3. ZERO-FLICKER GUARD: If accessing a protected route without a valid session -> redirect to /login
-  if (!isGuestRoute && !session) {
-    const loginUrl = new URL("/login", req.url);
-    loginUrl.searchParams.set("callbackUrl", pathname); // Save intended destination
-    return NextResponse.redirect(loginUrl);
+  // 1. Skip system files, Next.js internals, static assets, and API routes to avoid loops
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
   }
 
-  // 4. If logged-in user tries to visit the login/login page -> redirect to /feed
-  if (pathname.startsWith("/login") && session) {
-    return NextResponse.redirect(new URL("/feed", req.url));
+  // 2. Prevent logged-in users from visiting guest-only pages (/login or /get-started)
+  const isAuthRoute =
+    pathname.startsWith("/login") || pathname.startsWith("/get-started");
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // 3. Protect private routes (/dashboard) from unauthenticated users
+  const isProtectedRoute = pathname.startsWith("/dashboard");
+  if (!session && isProtectedRoute) {
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   return NextResponse.next();
 }
 
-// Ensure middleware only runs on page routes, skipping Next.js static assets, images, and APIs
+// Config matcher ensures it only runs on page routes, skipping asset overhead
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|certificates|img|.*\\..*).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };

@@ -124,6 +124,16 @@ export interface AdminModalData {
     phone: string;
     avatar?: string;
   };
+  mp?: {
+    name: string;
+    role: string;
+    avatar?: string;
+    party?: string;
+    partyStyle?: string;
+    jurisdiction?: string;
+    phone?: string;
+    email?: string;
+  };
   party?: string;
   partyStyle?: string;
   department?: string;
@@ -136,6 +146,17 @@ export const OFFICIALS_DIRECTORY: Record<string, AdminModalData> = {
     role: "Avadi Constituency (MLA)",
     name: "Hon. R. Ramesh Kumar",
     avatar: "/img/officials/avadi-mla.jpg",
+    mp: {
+      name: "Hon. Sasikanth Senthil",
+      role: "Member of Parliament (MP)",
+      avatar: "/img/officials/avadi-mp.webp",
+      party: "INC",
+      partyStyle:
+        "bg-gradient-to-r from-[#EE5A1C] via-[#FFFFFF] to-[#166A2F] text-black border border-amber-400/40 shadow-sm",
+      jurisdiction: "Thiruvallur Parliamentary Constituency (TN-002)",
+      phone: "+91 44 2638 5555",
+      email: "mla.avadi@tn.gov.in",
+    },
     party: "TVK",
     partyStyle:
       "bg-linear-to-r from-red-900 to-red-950 text-amber-300 border border-amber-400/40 shadow-sm",
@@ -195,9 +216,9 @@ export const OFFICIALS_DIRECTORY: Record<string, AdminModalData> = {
   corporationHQ: {
     title: "Avadi Municipal Corporation Info",
     role: "Civic Head Office",
-    name: "Grievance Redressal & HQ Portal",
+    name: "Grievance Redressal Point",
     department: "Public Grievance Cell",
-    phone: "1800-425-5111 / +91 44 2638 0222",
+    phone: "044-26554440",
     email: "commr.avadi@tn.gov.in",
     office:
       "Avadi Municipal Corporation Headquarters, New Military Road, Avadi - 600054",
@@ -1611,6 +1632,45 @@ export const Complaints: React.FC = () => {
                 )}
               </div>
             </div>
+
+            {/* MP Summary (show on MLA Office) */}
+            {selectedAdminModal.mp && (
+              <div className="flex items-center space-x-4 p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+                {selectedAdminModal.mp.avatar && (
+                  <img
+                    src={selectedAdminModal.mp.avatar}
+                    alt={selectedAdminModal.mp.name}
+                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md shrink-0 bg-slate-100 dark:bg-slate-800"
+                  />
+                )}
+
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
+                      {selectedAdminModal.mp.role}
+                    </span>
+                    {selectedAdminModal.mp.party && (
+                      <span
+                        className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
+                          selectedAdminModal.mp.partyStyle ||
+                          "bg-red-500/10 text-red-600"
+                        }`}
+                      >
+                        Party: {selectedAdminModal.mp.party}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                    {selectedAdminModal.mp.name}
+                  </h3>
+                  {selectedAdminModal.mp.jurisdiction && (
+                    <p className="text-xs font-semibold text-slate-400 truncate">
+                      📍 {selectedAdminModal.mp.jurisdiction}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
 
             {selectedAdminModal.deputy && (
               <div className="flex items-center space-x-4 p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">

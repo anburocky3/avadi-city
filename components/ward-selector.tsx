@@ -16,6 +16,7 @@ import { motion } from "framer-motion";
 import { useWard } from "@/context/wardContext";
 import { ALL_AVADI_STREETS } from "@/lib/wards";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import toast from "@/utils/toast";
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 
@@ -116,10 +117,14 @@ export const WardSelector: React.FC<WardSelectorProps> = ({ onClose }) => {
       if (onClose) {
         onClose();
       }
+
+      toast.success(`You are in Ward #${confirmedWardId}`, {
+        duration: 4000,
+      });
     },
     onError: (error: any) => {
       console.error("Ward update error:", error);
-      alert(
+      toast.error(
         error?.message ||
           "Could not update your ward selection. Please try again.",
       );

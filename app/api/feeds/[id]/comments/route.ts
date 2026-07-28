@@ -20,6 +20,7 @@ export async function POST(
       data: {
         feedId: id, // Maps to feedId in our updated Prisma schema
         author: body.author || "Avadi Resident",
+        authorId: body.authorId || null,
         text: body.text.trim(),
       },
     });

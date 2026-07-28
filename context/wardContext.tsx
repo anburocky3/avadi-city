@@ -40,6 +40,9 @@ export interface Volunteer {
 export interface Comment {
   id: number | string;
   author: string;
+  authorAvatar?: string;
+  authorId?: string | null;
+  feedId: number | string;
   text: string;
   timestamp: string;
 }
@@ -128,15 +131,31 @@ interface WardContextType {
 const WardContext = createContext<WardContextType | undefined>(undefined);
 
 const fetchAuthUser = async (): Promise<AuthUser | null> => {
-  const res = await fetch("/api/auth/me", { method: "GET" });
-  if (!res.ok) return null;
-  const data = await res.json();
-  return data.user || null;
+  try {
+    const res = await fetch("/api/auth/me", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      // 🟢 Explicitly tell browser to send the avadi_session cookie
+      credentials: "include",
+    });
+
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    return data.user || null;
+  } catch (err) {
+    console.error("Failed to fetch auth user:", err);
+    return null;
+  }
 };
 
 // --- API FETCHER HELPERS ---
 const fetchFeedsFromDB = async (): Promise<Feed[]> => {
-  const res = await fetch("/api/feeds", { method: "GET" });
+  const res = await fetch("/api/feeds", {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+  });
   if (!res.ok) throw new Error("Failed to load community feeds");
   const data = await res.json();
 
@@ -150,7 +169,11 @@ const fetchFeedsFromDB = async (): Promise<Feed[]> => {
 
 const fetchComplaintsFromDB = async (): Promise<Complaint[]> => {
   try {
-    const res = await fetch("/api/complaints", { method: "GET" });
+    const res = await fetch("/api/complaints", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
     if (!res.ok) return [];
     return await res.json();
   } catch {
@@ -189,6 +212,8 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
     const res = await fetch("/api/auth/update-profile", {
       method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
       body: formData,
     });
 
@@ -213,6 +238,8 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
       staleTime: 5 * 60 * 1000, // Cache user session for 5 minutes
       retry: false,
     });
+
+  console.log("authUser in WardProvider:", authUser); // Debugging line to check authUser state
 
   const isAuthenticated = Boolean(authUser);
 
@@ -248,14 +275,24 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
   // Logout Handler
   const logout = async () => {
     try {
+      // 1. Call server API to destroy session cookie
       await fetch("/api/auth/logout", { method: "POST" });
+
+      // 2. Wipe auth and user data from React Query cache instantly
       queryClient.setQueryData(["authUser"], null);
-      queryClient.clear(); // Clear cached feeds/complaints on logout
+      queryClient.removeQueries({ queryKey: ["authUser"] });
+      queryClient.removeQueries({ queryKey: ["feeds"] });
+      queryClient.removeQueries({ queryKey: ["complaints"] });
+
+      // 3. Reset storage
       setOverrideWardId(null);
       if (typeof window !== "undefined") {
         localStorage.removeItem("activeWard");
       }
-      router.push("/"); // Redirect immediately to public guest home
+
+      // 4. Redirect straight to login or home, and refresh router cache
+      router.push("/login"); // 👈 Change to "/login" to prevent guest flash if auth is required
+      router.refresh();
     } catch (error) {
       console.error("Logout failed:", error);
     }
@@ -278,8 +315,16 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
   };
 
   const userProfile = authUser
-    ? { name: authUser.name, wardNumber: authUser.wardNumber }
-    : { name: "Guest", wardNumber: activeWardId };
+    ? {
+        name: authUser.name,
+        wardNumber: authUser.wardNumber,
+        avatar: authUser.avatar,
+      }
+    : {
+        name: "Guest",
+        wardNumber: activeWardId,
+        avatar: "/default-avatar.png",
+      };
 
   // 2. TANSTACK QUERY: FETCH FEEDS
   const {
@@ -339,7 +384,7 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         method: "POST",
       });
       if (!res.ok) throw new Error("Database like sync failed");
-      return res.json();
+      return res.json(); // Returns { success: true, likedByMe: boolean, likes: number }
     },
     onMutate: async (feedId) => {
       await queryClient.cancelQueries({ queryKey: ["feeds"] });
@@ -361,6 +406,21 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
       return { previousFeeds };
     },
+    // 🟢 OPTIONAL UPGRADE: Update cache with actual server response data
+    onSuccess: (data, feedId) => {
+      queryClient.setQueryData<Feed[]>(["feeds"], (old = []) =>
+        old.map((f) => {
+          if (String(f.id) === String(feedId)) {
+            return {
+              ...f,
+              likedByMe: data.likedByMe,
+              likes: data.likes,
+            };
+          }
+          return f;
+        }),
+      );
+    },
     onError: (err, feedId, context) => {
       console.error("Like sync error, reverting:", err);
       if (context?.previousFeeds) {
@@ -368,6 +428,8 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
       }
     },
     onSettled: () => {
+      // Optional: you can remove invalidateQueries if success handles it,
+      // or keep it to ensure fresh data across other tabs/users.
       queryClient.invalidateQueries({ queryKey: ["feeds"] });
     },
   });
@@ -390,6 +452,8 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           author: userProfile.name || "Avadi Resident",
+          authorAvatar: userProfile.avatar || "/default-avatar.png",
+          authorId: authUser?.id || null,
           text,
         }),
       });

@@ -33,6 +33,7 @@ import {
   stepPersonalSchema,
   stepWardSchema,
 } from "@/lib/validations/onboarding";
+import useToast from "@/hooks/useToast";
 
 // --- TYPES ---
 type StepContactData = zod.infer<typeof stepContactSchema>;
@@ -54,6 +55,8 @@ export default function GetStartedClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefilledEmail = searchParams.get("email");
+
+  const toast = useToast();
 
   // 3-Step Flow: "contact" -> "personal" -> "location"
   const [step, setStep] = useState<"contact" | "personal" | "location">(
@@ -202,8 +205,14 @@ export default function GetStartedClient() {
       setFormData((prev) => ({ ...prev, ...data }));
       setOtpSent(true);
       setResendCountdown(30);
+      try {
+        toast.success(`Verification code sent to ${data.email}`);
+      } catch {}
     } catch (err: any) {
       setApiError(err.message || "An unexpected error occurred.");
+      try {
+        toast.error(err.message || "An unexpected error occurred.");
+      } catch {}
     } finally {
       setIsSubmitting(false);
     }
@@ -420,9 +429,50 @@ export default function GetStartedClient() {
         throw new Error(result.error || "Failed to complete registration.");
       }
 
-      router.push("/dashboard");
+      // After successful onboarding, immediately log the user in to set session cookie
+      try {
+        const loginRes = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: payload.email,
+            password: payload.password,
+          }),
+        });
+        const loginResult = await loginRes.json().catch(() => ({}));
+        if (!loginRes.ok) {
+          // If login failed, surface message but still navigate to login page
+          throw new Error(
+            loginResult.message || "Registration succeeded but login failed.",
+          );
+        }
+
+        try {
+          toast.success(
+            `Welcome ${loginResult.user?.name || ""}`.trim() || "Welcome",
+          );
+        } catch {}
+
+        // Login successful — refresh and redirect to dashboard
+        try {
+          router.refresh();
+        } catch {}
+        router.push("/dashboard");
+      } catch (loginErr: any) {
+        // If automatic login fails, send user to login page with error
+        setApiError(loginErr.message || "Please login to continue.");
+        try {
+          toast.error(loginErr.message || "Please login to continue.");
+        } catch {}
+        router.push("/login");
+      }
     } catch (err: any) {
       setApiError(err.message || "An unexpected error occurred while saving.");
+      try {
+        toast.error(
+          err.message || "An unexpected error occurred while saving.",
+        );
+      } catch {}
       setIsSubmitting(false);
     }
   };
@@ -628,11 +678,20 @@ export default function GetStartedClient() {
 
                         setFormData((prev) => ({ ...prev, ...contactData }));
                         setStep("personal");
+                        try {
+                          toast.success("Verification successful");
+                        } catch {}
                       } catch (err: any) {
                         setApiError(
                           err.message ||
                             "Verification failed. Please try again.",
                         );
+                        try {
+                          toast.error(
+                            err.message ||
+                              "Verification failed. Please try again.",
+                          );
+                        } catch {}
                       } finally {
                         setIsSubmitting(false);
                       }
