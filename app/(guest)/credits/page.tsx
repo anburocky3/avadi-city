@@ -68,8 +68,8 @@ const instagramInfluencers = [
   {
     handle: "@anbuden_avadi",
     name: "anbuden_avadi",
-    role: "Civic Awareness Partner",
-    followers: "45K+ Avadians",
+    role: "Awareness Partner",
+    followers: "65K+ Avadians",
     desc: "Helped broadcast emergency SOS features and municipal complaint workflows to the local community.",
     avatarUrl: "/img/supporters/anbuden-avadi.jpg",
     link: "https://instagram.com/anbuden_avadi",
