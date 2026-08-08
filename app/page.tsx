@@ -240,7 +240,7 @@ export default function LandingPage() {
                 </span>
                 ? 🚀
               </h1>
-              <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-350 font-medium tracking-wide leading-relaxed max-w-lg">
+              <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-400 font-medium tracking-wide leading-relaxed max-w-lg">
                 One unified platform for{" "}
                 <span className="underline decoration-white/40 font-bold capitalize">
                   {streetHint.toLocaleLowerCase()}{" "}
@@ -263,7 +263,7 @@ export default function LandingPage() {
                   Smarter Avadi
                 </span>
               </h1>
-              <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-350 font-medium tracking-wide leading-relaxed max-w-lg">
+              <p className="text-sm sm:text-base md:text-lg text-slate-600 dark:text-slate-400 font-medium tracking-wide leading-relaxed max-w-lg">
                 One unified platform for your community news, civic safety, and
                 daily neighborhood needs across our municipality.
               </p>

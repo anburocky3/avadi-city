@@ -170,7 +170,7 @@ export const Notification: React.FC = () => {
             onChange={(e) => setSubscribeMyWard(e.target.checked)}
             className="rounded text-primary focus:ring-primary w-4 h-4"
           />
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-350">
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-400">
             Ward {activeWard.id} Only
           </span>
         </label>
@@ -184,10 +184,10 @@ export const Notification: React.FC = () => {
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-150 cursor-pointer ${
+              className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-200 cursor-pointer ${
                 isSelected
                   ? "bg-primary border-primary text-white shadow-sm"
-                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
               }`}
             >
               {cat.name}
@@ -219,7 +219,7 @@ export const Notification: React.FC = () => {
                       alert.severity,
                     )}`}
                   >
-                    <div className="mr-3 mt-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-850">
+                    <div className="mr-3 mt-1.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800">
                       {getAlertIcon(alert.category)}
                     </div>
 
@@ -241,7 +241,7 @@ export const Notification: React.FC = () => {
                         )}
                       </div>
 
-                      <h3 className="font-extrabold text-xs text-slate-850 dark:text-slate-200 mt-2 leading-snug">
+                      <h3 className="font-extrabold text-xs text-slate-800 dark:text-slate-200 mt-2 leading-snug">
                         {alert.title}
                       </h3>
 
@@ -260,7 +260,7 @@ export const Notification: React.FC = () => {
                         e.stopPropagation();
                         dismissAlert(alert.id);
                       }}
-                      className="p-1 rounded text-slate-350 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-850 transition cursor-pointer self-start"
+                      className="p-1 rounded text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer self-start"
                       title="Dismiss alert"
                     >
                       <EyeOff size={14} />
@@ -307,11 +307,11 @@ export const Notification: React.FC = () => {
               </span>
             </div>
 
-            <h3 className="font-extrabold text-sm text-slate-850 dark:text-white leading-snug">
+            <h3 className="font-extrabold text-sm text-slate-800 dark:text-white leading-snug">
               {selectedAlert.title}
             </h3>
 
-            <p className="text-xs text-slate-650 dark:text-slate-350 leading-relaxed whitespace-pre-line">
+            <p className="text-xs text-slate-700 dark:text-slate-400 leading-relaxed whitespace-pre-line">
               {selectedAlert.description}
             </p>
 

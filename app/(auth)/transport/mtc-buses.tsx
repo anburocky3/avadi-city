@@ -366,7 +366,7 @@ export const MtcBuses: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => setActiveDirection(tab.id as BusDirection)}
-                  className={`py-1.5 px-3 rounded-lg text-xs font-black transition-all duration-150 cursor-pointer ${
+                  className={`py-1.5 px-3 rounded-lg text-xs font-black transition-all duration-200 cursor-pointer ${
                     isSelected
                       ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs border border-slate-200/60 dark:border-slate-700"
                       : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"

@@ -147,7 +147,7 @@ export const BottomTabBar: React.FC = () => {
             <Link
               key={tab.path}
               href={tab.path}
-              className={`flex flex-col items-center justify-center py-1 transition-colors duration-150 focus:outline-none ${
+              className={`flex flex-col items-center justify-center py-1 transition-colors duration-200 focus:outline-none ${
                 isActive
                   ? "text-orange-500 dark:text-orange-400"
                   : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"

@@ -372,7 +372,7 @@ export default function CreditsPage() {
               <span>Want to Contribute to Your Ward?</span>
               <Heart size={18} className="text-rose-500 fill-rose-500" />
             </h4>
-            <p className="text-xs text-slate-600 dark:text-slate-350 font-medium leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
               We are constantly updating local shop directories, bus timings,
               and emergency numbers. If you run an Instagram page or want to
               volunteer in your ward, let us know!

@@ -13,7 +13,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-850 dark:text-slate-100 transition-colors duration-250">
+    <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-250">
       {/* 1. Left Navigation Sidebar: Displayed on Desktop and Tablet */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 

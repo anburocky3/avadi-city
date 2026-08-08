@@ -957,7 +957,7 @@ export const DashboardClient: React.FC = () => {
               <Link
                 key={util.name}
                 href={util.path}
-                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 hover:-translate-y-0.5 active:scale-95 transition-all duration-150 shadow-xs group"
+                className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 hover:-translate-y-0.5 active:scale-95 transition-all duration-200 shadow-xs group"
               >
                 <div
                   className={`p-3 rounded-xl mb-2 ${util.bg} flex items-center justify-center group-hover:scale-110 transition-transform`}

@@ -196,7 +196,7 @@ export const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({
       {Array.from({ length: count }).map((_, i) => (
         <div key={i} className="w-full">
           {type === "card" && (
-            <div className="border border-slate-200 dark:border-slate-850 rounded-2xl p-5 space-y-3 bg-white dark:bg-slate-900">
+            <div className="border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 bg-white dark:bg-slate-900">
               <div className="flex items-center space-x-3">
                 <div className={`w-10 h-10 rounded-full ${pulseClass}`}></div>
                 <div className="space-y-2 flex-1">

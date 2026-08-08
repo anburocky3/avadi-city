@@ -123,7 +123,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
         {/* Right Section: Clean Action Controls */}
         <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Action Icons Pill */}
-          <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/60 rounded-full border border-slate-200/60 dark:border-slate-750 p-1 gap-1 shadow-2xs">
+          <div className="flex items-center bg-slate-100/80 dark:bg-slate-800/60 rounded-full border border-slate-200/60 dark:border-slate-800 p-1 gap-1 shadow-2xs">
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
@@ -200,7 +200,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
 
               {/* Floating Dropdown Menu (Optimized for mobile thumbs) */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2.5 w-60 sm:w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right">
+                <div className="absolute right-0 mt-2.5 w-60 sm:w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 animate-in fade-in zoom-in-95 duration-200 origin-top-right">
                   <div className="p-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70">
                     <p className="text-xs font-black text-slate-900 dark:text-white truncate">
                       {userName}

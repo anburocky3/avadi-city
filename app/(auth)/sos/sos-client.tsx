@@ -364,7 +364,7 @@ export const SosClient: React.FC<SosClientProps> = ({ initialContacts }) => {
 
             <button
               onClick={() => setSelectedCallCard(null)}
-              className="w-full py-3 bg-slate-900 text-white hover:bg-slate-850 rounded-xl font-bold transition text-xs cursor-pointer"
+              className="w-full py-3 bg-slate-900 text-white hover:bg-slate-800 rounded-xl font-bold transition text-xs cursor-pointer"
             >
               {t("cancelCall")}
             </button>

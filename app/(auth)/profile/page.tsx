@@ -353,7 +353,7 @@ export const Profile: React.FC = () => {
           {/* About App */}
           <div
             onClick={() => setIsAboutModalOpen(true)}
-            className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer transition"
+            className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
               <Info size={17} className="text-blue-500" />
@@ -370,7 +370,7 @@ export const Profile: React.FC = () => {
           {/* Terms & Conditions */}
           <div
             onClick={() => setIsTermsModalOpen(true)}
-            className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer transition"
+            className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
               <Scale size={17} className="text-emerald-500" />
@@ -382,7 +382,7 @@ export const Profile: React.FC = () => {
           {/* Privacy & Citizen Protection Policy */}
           <div
             onClick={() => setIsPrivacyModalOpen(true)}
-            className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer transition"
+            className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
               <Lock size={17} className="text-purple-500" />

@@ -212,7 +212,6 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
     const res = await fetch("/api/auth/update-profile", {
       method: "PUT",
-      headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: formData,
     });

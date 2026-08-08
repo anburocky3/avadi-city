@@ -171,7 +171,7 @@ export const SuburbanTrains: React.FC = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as TrainDirection)}
-                className={`py-1.5 px-3 rounded-lg text-xs font-black transition-all duration-150 cursor-pointer ${
+                className={`py-1.5 px-3 rounded-lg text-xs font-black transition-all duration-200 cursor-pointer ${
                   isSelected
                     ? "bg-white dark:bg-slate-900 text-primary shadow-xs border border-slate-200/60 dark:border-slate-700"
                     : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"

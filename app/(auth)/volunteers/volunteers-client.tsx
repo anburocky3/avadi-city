@@ -178,7 +178,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === "donations"
                 ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-350"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-400"
             }`}
           >
             {t("tabDonations")}
@@ -188,7 +188,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
             className={`px-4 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
               activeTab === "volunteers"
                 ? "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 shadow-sm border border-slate-200/50 dark:border-slate-800"
-                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-350"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-400"
             }`}
           >
             {t("tabVolunteers")}
@@ -241,7 +241,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
                   >
                     {t("charityNeed")}
                   </Badge>
-                  <h3 className="font-extrabold text-xs text-slate-850 dark:text-slate-100 mt-1.5 leading-snug">
+                  <h3 className="font-extrabold text-xs text-slate-800 dark:text-slate-100 mt-1.5 leading-snug">
                     {cause.causeName}
                   </h3>
                 </div>
@@ -287,7 +287,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
                   <HeartHandshake size={18} />
                 </div>
                 <div>
-                  <h3 className="font-extrabold text-xs text-slate-850 dark:text-slate-100">
+                  <h3 className="font-extrabold text-xs text-slate-800 dark:text-slate-100">
                     {t("joinTitle")}
                   </h3>
                   <p className="text-[10px] text-slate-400">
@@ -303,25 +303,25 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
                 <div className="grid grid-cols-2 gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-2xl border border-slate-100 dark:border-slate-800 text-[11px] text-slate-500 font-bold">
                   <div>
                     <span>Name: </span>
-                    <span className="text-slate-700 dark:text-slate-350">
+                    <span className="text-slate-700 dark:text-slate-400">
                       {authUser?.name || "Set in profile"}
                     </span>
                   </div>
                   <div>
                     <span>Active Ward: </span>
-                    <span className="text-slate-700 dark:text-slate-350">
+                    <span className="text-slate-700 dark:text-slate-400">
                       Ward {authUser?.wardNumber || activeWard?.id}
                     </span>
                   </div>
                   <div>
                     <span>Date of Birth: </span>
-                    <span className="text-slate-700 dark:text-slate-350">
+                    <span className="text-slate-700 dark:text-slate-400">
                       {authUser?.dob || "Set in profile"}
                     </span>
                   </div>
                   <div>
                     <span>Gender: </span>
-                    <span className="text-slate-700 dark:text-slate-350">
+                    <span className="text-slate-700 dark:text-slate-400">
                       {authUser?.gender || "Set in profile"}
                     </span>
                   </div>
@@ -379,8 +379,8 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
               </form>
             </Card>
           ) : (
-            <Card className="p-4 bg-teal-50/45 dark:bg-teal-950/10 border border-teal-150 dark:border-teal-900 rounded-2xl flex items-center justify-between text-xs">
-              <span className="font-bold text-teal-850 dark:text-teal-400 flex items-center">
+            <Card className="p-4 bg-teal-50/45 dark:bg-teal-950/10 border border-teal-200 dark:border-teal-900 rounded-2xl flex items-center justify-between text-xs">
+              <span className="font-bold text-teal-800 dark:text-teal-400 flex items-center">
                 <Shield size={16} className="text-emerald-500 mr-2" />
                 <span>{t("alreadyRegisteredMsg")}</span>
               </span>
@@ -395,7 +395,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
 
           {/* Volunteer directory filter controls */}
           <div className="space-y-3 pt-2">
-            <h3 className="text-sm font-black text-slate-850 dark:text-slate-200">
+            <h3 className="text-sm font-black text-slate-800 dark:text-slate-200">
               {t("directoryHeader")} ({filteredVolunteers.length} Active)
             </h3>
 
@@ -446,7 +446,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
                 filteredVolunteers.map((volunteer, idx) => (
                   <div
                     key={volunteer.id || idx}
-                    className="p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-850 rounded-2xl flex items-start justify-between"
+                    className="p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start justify-between"
                   >
                     <div className="flex items-start space-x-3">
                       <div className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">
@@ -454,7 +454,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
                       </div>
 
                       <div className="space-y-1">
-                        <span className="font-bold text-xs text-slate-850 dark:text-slate-200 block">
+                        <span className="font-bold text-xs text-slate-800 dark:text-slate-200 block">
                           {volunteer.name}
                         </span>
 

@@ -119,7 +119,7 @@ const CATEGORIES: ServiceCategory[] = [
 
 const PRESET_AVATARS = [
   "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=100&auto=format&fit=crop&q=60",
-  "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
+  "https://images.unsplash.com/photo-2007003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=60",
   "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=100&auto=format&fit=crop&q=60",
   "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=100&auto=format&fit=crop&q=60",
 ];
@@ -387,10 +387,10 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-150 cursor-pointer ${
+              className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-200 cursor-pointer ${
                 isSelected
                   ? "bg-primary border-primary text-white shadow-sm"
-                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800"
+                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
               }`}
             >
               <Icon size={14} />
@@ -403,7 +403,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
       {/* Providers Listings Grid */}
       <div className="space-y-3.5 pt-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-black text-slate-850 dark:text-slate-200 flex items-center">
+          <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center">
             <span>
               {t("listingsFor")}{" "}
               {selectedCategory === "All"
@@ -493,10 +493,10 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
                 {/* Specialty Box */}
                 <div className="mt-3.5 mb-3.5 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/70 text-xs space-y-1.5">
                   <div className="text-slate-700 dark:text-slate-300">
-                    <span className="font-bold text-slate-850 dark:text-slate-100">
+                    <span className="font-bold text-slate-800 dark:text-slate-100">
                       {t("specialtyLabel")}:{" "}
                     </span>
-                    <span className="text-slate-600 dark:text-slate-350">
+                    <span className="text-slate-600 dark:text-slate-400">
                       {getCategorySpecialty(
                         provider.category,
                         provider.description,
@@ -509,7 +509,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
                     <span className="font-semibold text-slate-500 dark:text-slate-400">
                       {t("rateLabel")}:{" "}
                     </span>
-                    <span className="text-slate-600 dark:text-slate-350">
+                    <span className="text-slate-600 dark:text-slate-400">
                       {provider.rate ||
                         provider.serviceCharge ||
                         (locale === "ta"
@@ -583,7 +583,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
               />
               <div className="min-w-0 flex-1">
                 <div className="flex items-center">
-                  <h3 className="font-extrabold text-sm text-slate-850 dark:text-white truncate">
+                  <h3 className="font-extrabold text-sm text-slate-800 dark:text-white truncate">
                     {selectedProvider.name}
                   </h3>
                   {selectedProvider.verified !== false && (
@@ -602,7 +602,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               {selectedProvider.description}
             </p>
 

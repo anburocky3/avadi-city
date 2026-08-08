@@ -164,12 +164,12 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-150 cursor-pointer ${
+              className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-200 cursor-pointer ${
                 isSelected
                   ? "bg-primary border-primary text-white shadow-sm"
                   : cat.isHighlighted
                     ? `${cat.color} font-black animate-pulse-subtle`
-                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-350 hover:bg-slate-50"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
               }`}
             >
               <Icon size={14} />
@@ -356,11 +356,11 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
               </span>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
               {selectedPlace.description}
             </p>
 
-            <div className="bg-slate-100 dark:bg-slate-900 p-3 rounded-xl border dark:border-slate-850 flex items-start space-x-2">
+            <div className="bg-slate-100 dark:bg-slate-900 p-3 rounded-xl border dark:border-slate-800 flex items-start space-x-2">
               <MapPin size={15} className="text-primary shrink-0 mt-0.5" />
               <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-normal">
                 {selectedPlace.address}

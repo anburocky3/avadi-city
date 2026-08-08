@@ -197,7 +197,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3.5 py-2 rounded-2xl text-xs font-black whitespace-nowrap border transition duration-150 cursor-pointer flex items-center space-x-1.5 ${
+              className={`px-3.5 py-2 rounded-2xl text-xs font-black whitespace-nowrap border transition duration-200 cursor-pointer flex items-center space-x-1.5 ${
                 isSelected
                   ? "bg-rose-600 border-rose-600 text-white shadow-md scale-[1.02]"
                   : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800"
