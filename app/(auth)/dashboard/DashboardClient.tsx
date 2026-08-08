@@ -25,6 +25,9 @@ import {
   CloudSun,
   RefreshCw,
   CheckCircle2,
+  Sun,
+  CloudRain,
+  CloudFog,
 } from "lucide-react";
 
 // Shared & Icon components (Adjust import paths to match your project)
@@ -94,7 +97,25 @@ interface WardContextType {
   markAlertAsRead: (id: string | number) => void;
 }
 
-// --- STATIC DATA CONFIGURATIONS (Moved outside to prevent re-render thrashing) ---
+interface HourlyForecast {
+  time: string;
+  rawHour: number;
+  temp: string;
+  desc: string;
+  chanceOfRain: string;
+  code: string;
+}
+
+interface WeatherData {
+  temp: string;
+  desc: string;
+  isHumid: boolean;
+  code: string;
+  hourly: HourlyForecast[];
+  willRainToday: boolean;
+}
+
+// --- STATIC DATA CONFIGURATIONS ---
 
 const PLACE_SLIDES: PlaceSlide[] = [
   {
@@ -282,6 +303,16 @@ const HERITAGE_MILESTONES = [
   },
 ];
 
+// Helper to convert military time (e.g. "1500") to 12-hour format ("3:00 PM")
+const formatMilitaryTime = (timeStr: string) => {
+  if (timeStr === "0") return "12:00 AM";
+  const num = parseInt(timeStr);
+  const hour = num / 100;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const formattedHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${formattedHour}:00 ${ampm}`;
+};
+
 export const DashboardClient: React.FC = () => {
   const t = useTranslations();
   const locale = useLocale();
@@ -305,6 +336,232 @@ export const DashboardClient: React.FC = () => {
     useState<boolean>(false);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
 
+  // Weather States
+  const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [isWeatherDetailsOpen, setIsWeatherDetailsOpen] =
+    useState<boolean>(false);
+  const [isRainAlertOpen, setIsRainAlertOpen] = useState<boolean>(false);
+  const [showPastHours, setShowPastHours] = useState<boolean>(false);
+
+  // Weather API Fetcher (wttr.in) with Hourly JSON extraction
+  const fetchWeather = async (forceUpdate: boolean = false) => {
+    const cacheKey = "avadi_weather_data";
+    const cacheExpiry = 24 * 60 * 60 * 1000; // 24 hours
+    const now = new Date().getTime();
+
+    try {
+      if (!forceUpdate) {
+        const cachedStr = localStorage.getItem(cacheKey);
+        if (cachedStr) {
+          const cached = JSON.parse(cachedStr);
+          if (now - cached.timestamp < cacheExpiry) {
+            setWeather(cached.data);
+            if (cached.data.willRainToday) setIsRainAlertOpen(true);
+            return;
+          }
+        }
+      }
+
+      const res = await fetch("https://wttr.in/Avadi?format=j1");
+      if (!res.ok) throw new Error("Rate limited or network error");
+
+      const data = await res.json();
+      const current = data.current_condition[0];
+      const todayHourly = data.weather[0].hourly;
+
+      // Parse 3-hour interval blocks
+      const hourlyData: HourlyForecast[] = todayHourly.map((h: any) => ({
+        time: formatMilitaryTime(h.time),
+        rawHour: parseInt(h.time) / 100,
+        temp: h.tempC,
+        desc: h.weatherDesc[0].value,
+        chanceOfRain: h.chanceofrain,
+        code: h.weatherCode,
+      }));
+
+      // High Rain Alert Condition: If any hour today has >= 40% chance of rain
+      const willRainToday = todayHourly.some(
+        (h: any) => parseInt(h.chanceofrain) >= 40,
+      );
+
+      const newWeather: WeatherData = {
+        temp: current.temp_C,
+        desc: current.weatherDesc[0].value.toUpperCase(),
+        isHumid: parseInt(current.humidity) > 60,
+        code: current.weatherCode,
+        hourly: hourlyData,
+        willRainToday: willRainToday,
+      };
+
+      localStorage.setItem(
+        cacheKey,
+        JSON.stringify({
+          timestamp: now,
+          data: newWeather,
+        }),
+      );
+
+      setWeather(newWeather);
+      if (willRainToday) setIsRainAlertOpen(true);
+    } catch (error) {
+      console.warn("Weather fetch fallback:", error);
+      // Fallback state if API fails or rate-limits
+      setWeather({
+        temp: "32",
+        desc: "CLOUDY",
+        isHumid: true,
+        code: "119",
+        willRainToday: true,
+        hourly: [
+          {
+            time: "9:00 AM",
+            rawHour: 9,
+            temp: "30",
+            desc: "Cloudy",
+            chanceOfRain: "10",
+            code: "119",
+          },
+          {
+            time: "12:00 PM",
+            rawHour: 12,
+            temp: "33",
+            desc: "Sunny",
+            chanceOfRain: "10",
+            code: "113",
+          },
+          {
+            time: "3:00 PM",
+            rawHour: 15,
+            temp: "34",
+            desc: "Scattered Thunderstorms",
+            chanceOfRain: "50",
+            code: "389",
+          },
+          {
+            time: "6:00 PM",
+            rawHour: 18,
+            temp: "31",
+            desc: "Rain",
+            chanceOfRain: "80",
+            code: "356",
+          },
+        ],
+      });
+      setIsRainAlertOpen(true);
+    }
+  };
+
+  useEffect(() => {
+    fetchWeather();
+  }, []);
+
+  // Weather Dynamic Overlay Animation Renderer
+  const renderWeatherOverlay = () => {
+    if (!weather) return null;
+    const code = parseInt(weather.code);
+
+    // 1. Clear / Sunny (Sun flare effect)
+    if (code === 113) {
+      return (
+        <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none opacity-60">
+          <motion.div
+            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            className="absolute -top-10 -right-10 w-48 h-48 bg-amber-400/30 rounded-full blur-3xl"
+          />
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
+            className="absolute -top-4 -right-4 w-32 h-32 bg-yellow-300/20 rounded-full blur-2xl"
+          />
+        </div>
+      );
+    }
+
+    // 2. Rain / Drizzle (Slanted falling particles)
+    if ([266, 296, 302, 308, 353, 356, 359, 389].includes(code)) {
+      return (
+        <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none overflow-hidden">
+          <div className="absolute inset-0 bg-linear-to-bl from-blue-900/10 to-transparent blur-md" />
+          {[...Array(12)].map((_, i) => (
+            <motion.div
+              key={i}
+              initial={{ y: -50, x: i * 15, opacity: 0 }}
+              animate={{ y: 200, opacity: [0, 0.8, 0] }}
+              transition={{
+                repeat: Infinity,
+                duration: 0.7,
+                delay: (i % 5) * 0.15,
+                ease: "linear",
+              }}
+              className="absolute top-0 w-0.5 h-8 bg-blue-400/40 dark:bg-blue-300/30 rotate-12"
+              style={{ right: `${10 + i * 8}%` }}
+            />
+          ))}
+        </div>
+      );
+    }
+
+    // 3. Fog / Mist (Slow drifting blurred blobs)
+    if ([143, 248, 260].includes(code)) {
+      return (
+        <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none">
+          <motion.div
+            animate={{ x: [-20, 20, -20] }}
+            transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
+            className="absolute top-0 right-0 w-full h-full bg-slate-300/30 dark:bg-slate-500/20 blur-2xl"
+          />
+          <motion.div
+            animate={{ x: [20, -20, 20] }}
+            transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
+            className="absolute bottom-0 right-10 w-3/4 h-3/4 bg-slate-200/20 dark:bg-slate-600/20 blur-3xl"
+          />
+        </div>
+      );
+    }
+
+    // 4. Default / Cloudy (Soft floating horizontal shapes)
+    return (
+      <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none overflow-hidden">
+        <motion.div
+          animate={{ x: [-15, 15, -15] }}
+          transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
+          className="absolute -top-4 right-10 w-40 h-24 bg-slate-300/20 dark:bg-slate-600/20 rounded-full blur-2xl"
+        />
+        <motion.div
+          animate={{ x: [15, -15, 15] }}
+          transition={{ repeat: Infinity, duration: 14, ease: "easeInOut" }}
+          className="absolute top-10 -right-5 w-48 h-20 bg-slate-200/20 dark:bg-slate-700/20 rounded-full blur-2xl"
+        />
+      </div>
+    );
+  };
+
+  // Icon Helper for Hourly Forecast Items
+  const renderHourlyIcon = (codeStr: string) => {
+    const code = parseInt(codeStr);
+    if (code === 113) {
+      return <Sun size={18} className="text-amber-400 shrink-0" />;
+    }
+    if ([266, 296, 302, 308, 353, 356, 359, 389].includes(code)) {
+      return (
+        <CloudRain
+          size={18}
+          className="text-blue-400 dark:text-blue-300 shrink-0"
+        />
+      );
+    }
+    if ([143, 248, 260].includes(code)) {
+      return <CloudFog size={18} className="text-slate-400 shrink-0" />;
+    }
+    return (
+      <CloudSun
+        size={18}
+        className="text-amber-400 dark:text-amber-300 shrink-0"
+      />
+    );
+  };
+
   // Auto-advance carousel
   useEffect(() => {
     const timer = setInterval(() => {
@@ -313,7 +570,6 @@ export const DashboardClient: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Filter urgent alerts for active ward or "All Avadi" that are not dismissed
   const activeAlerts = alerts.filter((alert) => {
     const isWardsMatch =
       alert.affectedWards === "All" ||
@@ -323,7 +579,6 @@ export const DashboardClient: React.FC = () => {
     return isWardsMatch && isNotDismissed && alert.severity === "urgent";
   });
 
-  // Civic Status Calculations
   const openComplaintsCount = complaints.filter(
     (c) => parseInt(c.ward) === activeWard.id && c.status !== "Resolved",
   ).length;
@@ -336,11 +591,12 @@ export const DashboardClient: React.FC = () => {
     return isWardsMatch && !dismissedAlerts.includes(alert.id);
   }).length;
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
+    await fetchWeather(true);
     setTimeout(() => {
       setIsRefreshing(false);
-    }, 800);
+    }, 500);
   };
 
   if (isLoading) {
@@ -369,9 +625,13 @@ export const DashboardClient: React.FC = () => {
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
-      {/* 1. Greeting Hero Card with Integrated Civic Status & Refresh */}
-      <div className="rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-orange-500 bg-linear-to-r from-orange-500/5 via-teal-500/5 to-transparent p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
-        <div className="space-y-2 flex-1">
+      {/* 1. Greeting Hero Card with Integrated Civic Status, Refresh & Weather Overlay */}
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-orange-500 bg-linear-to-r from-orange-500/5 via-teal-500/5 to-transparent p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
+        {/* Animated Background Overlay */}
+        {renderWeatherOverlay()}
+
+        {/* Foreground Content */}
+        <div className="relative z-10 space-y-2 flex-1">
           <div className="flex items-center justify-between sm:justify-start gap-2">
             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-linear-to-r from-orange-500/15 via-amber-500/10 to-teal-500/10 border border-orange-500/25 shadow-xs">
               <span className="bg-linear-to-r from-orange-600 to-amber-600 bg-clip-text text-transparent font-black text-[10px] sm:text-xs uppercase tracking-widest">
@@ -383,7 +643,7 @@ export const DashboardClient: React.FC = () => {
               type="button"
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="sm:hidden p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+              className="sm:hidden p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors relative z-20"
               aria-label="Refresh dashboard data"
             >
               <RefreshCw
@@ -445,28 +705,31 @@ export const DashboardClient: React.FC = () => {
           </div>
         </div>
 
-        {/* Weather & Desktop Refresh Widget */}
-        <div className="flex items-center gap-4 self-stretch sm:self-auto border-t sm:border-t-0 sm:border-l border-slate-200/70 dark:border-slate-800 pt-3 sm:pt-0 sm:pl-6 justify-between sm:justify-end w-full sm:w-auto">
-          <div className="flex flex-col items-start sm:items-center justify-center">
-            <div className="flex items-center gap-1.5">
-              <CloudSun
-                size={28}
-                className="text-amber-400 dark:text-amber-300 shrink-0"
-              />
-              <span className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight">
-                32°C
-              </span>
-            </div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 sm:mt-0.5">
-              CLOUDY • HUMID
+        {/* CLICKABLE Weather & Desktop Refresh Widget */}
+        <div
+          onClick={() => setIsWeatherDetailsOpen(true)}
+          title="Click to view 24-hour weather forecast"
+          className="relative z-20 flex items-center gap-4 self-stretch sm:self-auto border-t sm:border-t-0 sm:border-l border-slate-200/70 dark:border-slate-800 pt-3 sm:pt-0 sm:pl-6 justify-between sm:justify-end w-full sm:w-auto cursor-pointer group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl sm:-mr-2 sm:pr-2 transition-all p-2 -mx-2"
+        >
+          <div className="flex flex-col items-start sm:items-end justify-center text-left sm:text-right group-hover:scale-[1.02] transition-transform">
+            <span className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-sm">
+              {weather ? weather.temp : "--"}°C
+            </span>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:mt-0.5 max-w-[150px] truncate">
+              {weather
+                ? `${weather.desc}${weather.isHumid ? " • HUMID" : ""}`
+                : "LOADING..."}
             </span>
           </div>
 
           <button
             type="button"
-            onClick={handleRefresh}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevents the modal from opening when just clicking refresh
+              handleRefresh();
+            }}
             disabled={isRefreshing}
-            className="hidden sm:flex items-center justify-center p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer"
+            className="hidden sm:flex items-center justify-center p-2.5 rounded-xl bg-slate-100/50 dark:bg-slate-800/50 backdrop-blur-md text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-slate-700 transition-all cursor-pointer shadow-xs"
             title="Refresh feed"
           >
             <RefreshCw
@@ -477,7 +740,7 @@ export const DashboardClient: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Avadi City Places Carousel (Optimized with next/image) */}
+      {/* 2. Avadi City Places Carousel */}
       <div className="relative overflow-hidden rounded-2xl bg-slate-900 text-white shadow-md border border-slate-200/60 dark:border-slate-800 group h-40 sm:h-48">
         <AnimatePresence mode="wait">
           <motion.div
@@ -584,7 +847,7 @@ export const DashboardClient: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* 4. Quick-Access Shortcut Action Tiles (Converted to native Links) */}
+      {/* 4. Quick-Access Shortcut Action Tiles */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3.5">
         {QUICK_SHORTCUTS.map((tile) => {
           const Icon = tile.icon;
@@ -872,6 +1135,140 @@ export const DashboardClient: React.FC = () => {
         </div>
       </div>
 
+      {/* Weather Forecast Details Modal */}
+      <Modal
+        isOpen={isWeatherDetailsOpen}
+        onClose={() => setIsWeatherDetailsOpen(false)}
+        title="Today's Hourly Forecast"
+      >
+        <div className="space-y-3">
+          {weather?.hourly && weather.hourly.length > 0 ? (
+            (() => {
+              const currentHour = new Date().getHours();
+              const hasPastHours = weather.hourly.some(
+                (h) => h.rawHour + 3 <= currentHour,
+              );
+              const displayHourly = weather.hourly.filter(
+                (h) => showPastHours || h.rawHour + 3 > currentHour,
+              );
+
+              return (
+                <>
+                  {hasPastHours && (
+                    <div className="flex justify-end pb-1">
+                      <button
+                        type="button"
+                        onClick={() => setShowPastHours(!showPastHours)}
+                        className="text-xs font-extrabold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
+                      >
+                        {showPastHours
+                          ? "Hide past hours"
+                          : "Show earlier hours today"}
+                      </button>
+                    </div>
+                  )}
+
+                  {displayHourly.length > 0 ? (
+                    displayHourly.map((h, i) => {
+                      const highChance = parseInt(h.chanceOfRain) >= 40;
+                      return (
+                        <div
+                          key={i}
+                          className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-2xl transition shadow-xs"
+                        >
+                          <div className="flex items-center gap-3 w-28 shrink-0">
+                            <Clock size={14} className="text-slate-400" />
+                            <span className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-slate-200">
+                              {h.time}
+                            </span>
+                          </div>
+
+                          <div className="flex-1 flex flex-col pl-2 text-xs sm:text-sm truncate">
+                            <span className="font-bold text-slate-700 dark:text-slate-300 truncate">
+                              {h.desc}
+                            </span>
+                            {parseInt(h.chanceOfRain) > 20 && (
+                              <span
+                                className={`text-[11px] font-black mt-0.5 ${highChance ? "text-blue-600 dark:text-blue-400" : "text-blue-400 dark:text-blue-300/80"}`}
+                              >
+                                ☔ {h.chanceOfRain}% Chance of Rain
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-end gap-1.5 shrink-0 pl-2">
+                            {renderHourlyIcon(h.code)}
+                            <span className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
+                              {h.temp}°C
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-4 text-center text-xs font-bold text-slate-500">
+                      No remaining forecast hours for today.
+                    </div>
+                  )}
+                </>
+              );
+            })()
+          ) : (
+            <div className="p-4 text-center text-sm font-bold text-slate-500">
+              Loading forecast...
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setIsWeatherDetailsOpen(false)}
+          className="w-full mt-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold transition text-xs cursor-pointer shadow-sm"
+        >
+          Close Forecast
+        </button>
+      </Modal>
+
+      {/* Rain & Umbrella Alert Modal */}
+      <Modal
+        isOpen={isRainAlertOpen}
+        onClose={() => setIsRainAlertOpen(false)}
+        title="Weather Advisory"
+      >
+        <div className="space-y-4 text-center pb-2">
+          <div className="flex justify-center mb-2">
+            <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 animate-pulse shadow-inner border border-blue-500/20">
+              <CloudRain size={32} />
+            </div>
+          </div>
+
+          <Badge
+            variant="info"
+            className="uppercase font-black tracking-widest text-[10px]"
+          >
+            High Chance of Rain Today
+          </Badge>
+
+          <h3 className="font-black text-xl text-slate-800 dark:text-white leading-tight">
+            Scattered Showers Expected
+          </h3>
+
+          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
+            Afternoon or evening showers are forecasted for Avadi. Please
+            remember to carry an umbrella or a raincoat if you are stepping out
+            today.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => setIsRainAlertOpen(false)}
+            className="w-full mt-4 py-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition text-xs cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+          >
+            <span>Got it, thanks!</span>
+          </button>
+        </div>
+      </Modal>
+
       {/* Alert Details Modal */}
       {selectedAlert && (
         <Modal
@@ -1046,7 +1443,7 @@ export const DashboardClient: React.FC = () => {
             <div className="relative border-l border-slate-200 dark:border-slate-800 pl-5 ml-2.5 my-4 space-y-4">
               {HERITAGE_MILESTONES.map((milestone, idx) => (
                 <div key={idx} className="relative">
-                  <div className="absolute -left-[27px] top-1 w-3 h-3 rounded-full bg-orange-500 border-2 border-white dark:border-slate-950 shadow-xs" />
+                  <div className="absolute -left-6.75 top-1 w-3 h-3 rounded-full bg-orange-500 border-2 border-white dark:border-slate-950 shadow-xs" />
                   <div className="space-y-0.5">
                     <span className="text-[10px] font-black text-orange-500 uppercase tracking-wider">
                       {milestone.year}
@@ -1101,7 +1498,7 @@ export const DashboardClient: React.FC = () => {
               </li>
               <li>
                 <strong>CVRDE:</strong> Combat Vehicles Research and Development
-                Establishment, the premier DRDO lab driving next-generation
+                Establishement, the premier DRDO lab driving next-generation
                 armored vehicle design.
               </li>
               <li>
