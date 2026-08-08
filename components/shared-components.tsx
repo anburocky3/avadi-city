@@ -104,7 +104,7 @@ export const Modal: React.FC<ModalProps> = ({
           >
             {/* Header */}
             <div className="px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
-              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight w-full">
                 {title}
               </h3>
               <button

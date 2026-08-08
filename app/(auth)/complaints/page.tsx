@@ -8,14 +8,11 @@ import * as zod from "zod";
 import {
   Trash2,
   Lightbulb,
-  HelpCircle,
-  Droplet,
   AlertTriangle,
   MapPin,
   Plus,
   ThumbsUp,
   Camera,
-  Check,
   ArrowLeft,
   ArrowRight,
   Wrench,
@@ -23,22 +20,27 @@ import {
   Building2,
   FileText,
   PlusCircle,
-  Crown,
   UserCheck,
   Phone,
   Mail,
-  Building,
   Zap,
-  Link,
   CheckCircle2,
   Copy,
   Clock,
   ExternalLink,
-  ChevronLeft,
-  ChevronRight,
-  LucideIcon,
-  ShieldCheck,
-  Sparkles,
+  Map as MapIcon,
+  HeartPulse,
+  Droplets,
+  TreePine,
+  Share2,
+  Search,
+  CheckCircle,
+  Circle,
+  HelpCircle,
+  Info,
+  Edit3,
+  Link,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -54,21 +56,14 @@ import { useWardAdminProfile } from "@/hooks/useWardAdminProfile";
 import { OfficialAdminData, OFFICIALS_DIRECTORY } from "@/data/officialsData";
 import { ComplaintGuideSteps } from "./complaint-guide-steps";
 
-// --- TYPESCRIPT INTERFACES & TYPES ---
-export type ComplaintCategory =
-  | "Garbage/Sanitation"
-  | "Streetlights"
-  | "Roads/Potholes"
-  | "Drainage/Sewage"
-  | "Water Supply"
-  | "Others";
-
+// --- TYPESCRIPT INTERFACES ---
 export interface Complaint {
   id: number | string;
   issueId?: string;
   title: string;
   description: string;
-  category: ComplaintCategory | string;
+  category: string;
+  subCategory?: string;
   ward: string | number;
   address?: string;
   status: "Submitted" | "Acknowledged" | "In Progress" | "Resolved" | string;
@@ -79,118 +74,243 @@ export interface Complaint {
   isUserSubmitted?: boolean;
 }
 
-export interface VisualCategoryItem {
-  id: ComplaintCategory;
-  title: string;
-  desc: string;
-  badge: string;
-  image: string;
-  gradient: string;
-  icon: LucideIcon | React.ElementType;
-}
+// --- RICH CATEGORY & GCC DATA MAPPING ---
+export const RICH_CIVIC_CATEGORIES = [
+  {
+    id: "Garbage",
+    title: "Garbage & Sanitation",
+    badge: "SANITATION",
+    desc: "Overflowing bins, uncollected waste & street cleaning",
+    image:
+      "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-emerald-500 to-teal-600",
+    icon: Trash2,
+    issues: [
+      "Removal of Garbage",
+      "Overflowing of Garbage Bin",
+      "Removal of Debris",
+      "Absenteeism of Sweepers",
+      "Absenteeism of Door to door garbage Collector",
+      "Improper Sweeping",
+      "Provison of Garbage Bin",
+      "Broken Bin",
+      "Shifting of Garbage Bin",
+      "Cleaning of Water Table",
+      "Nuisance by Garbage Tractor/Truck",
+      "Burning of Garbage",
+      "Garbage Lorry without Net",
+      "Spilling of Garbage from Lorry",
+      "Burning of Garbage at Dumping Ground",
+    ],
+  },
+  {
+    id: "Street Light",
+    title: "Streetlights & Electrical",
+    badge: "ELECTRICITY",
+    desc: "Non-functional lights, dark stretches & pole damage",
+    image:
+      "https://images.unsplash.com/photo-1517420879524-86d64ac2f339?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-amber-500 to-orange-600",
+    icon: Lightbulb,
+    issues: [
+      "Non burning of Street lights",
+      "Electric shock due to street light",
+      "Damage to the Electric pole",
+      "New Street lights",
+      "Shifting of Street light pole",
+      "Overhead cable wires running in a haphazard manner",
+      "Burning of street light in daytime",
+      "Inadequate light in a particular location or spot/ dark spots",
+    ],
+  },
+  {
+    id: "Water & Sewage",
+    title: "Water Logging & Sewage",
+    badge: "SEWAGE",
+    desc: "Drainage overflow, stagnant water & illegal draining",
+    image:
+      "https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-cyan-500 to-blue-600",
+    icon: Droplets,
+    issues: [
+      "Water entering Home/Shop",
+      "EB wire cut/Spark seen",
+      "Stagnation of Water",
+      "Obstruction of Water Flow",
+      "Desilting of Drain",
+      "Desilting of Canal",
+      "Repairs to Storm Water Drain",
+      "Covering Manholes of Storm Water Drain",
+      "New Drain Construction",
+      "Disposal of Removed Silt on the Road",
+      "Insufficient Barricading",
+    ],
+  },
+  {
+    id: "Road and Footpath",
+    title: "Roads & Potholes",
+    badge: "ROAD WORKS",
+    desc: "Deep potholes, damaged tar roads & broken pavers",
+    image:
+      "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-slate-600 to-slate-800",
+    icon: MapIcon,
+    issues: [
+      "Pot hole fill up / Repairs to the damaged surface",
+      "Relaying of Road",
+      "Formation of New Road",
+      "Repairs to existing Footpath",
+      "Request to provide Footpath",
+      "Removal of Shops in the Footpath",
+      "Illegal Parking on foot path",
+      "Milling/Scraping of Road before Relaying of Road",
+      "Cleanliness in footpath",
+      "Electrical wires/obstruction on footpath",
+      "Unsafe dark spots/ corners",
+    ],
+  },
+  {
+    id: "Public Health",
+    title: "Public Health & Animals",
+    badge: "HEALTH",
+    desc: "Street dogs, mosquito menace & health hazards",
+    image:
+      "https://images.unsplash.com/photo-1534361960057-19889db9621e?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-rose-500 to-red-600",
+    icon: HeartPulse,
+    issues: [
+      "Mosquito Menace",
+      "Street Dogs",
+      "Stray Cattle",
+      "Stray Pigs",
+      "Death of Stray Animals",
+      "Public Health / Dengue / Malaria / Gastro Enteritis",
+      "Open Defecation",
+      "Illegal Draining of Sewage",
+      "Unhygenic Restaurants",
+      "Quality of food in hotels",
+      "Road Side Eateries",
+      "Illegal Slaughtering",
+      "Biomedical waste removal",
+      "Complaints regarding Corporation Hospitals",
+      "Plastics Menace",
+    ],
+  },
+  {
+    id: "Parks and General",
+    title: "Parks & Municipal Fixes",
+    badge: "MUNICIPAL",
+    desc: "Fallen trees, encroachments & park maintenance",
+    image:
+      "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-fuchsia-500 to-purple-600",
+    icon: TreePine,
+    issues: [
+      "Removal of Fallen Trees",
+      "Complaints regarding Park",
+      "Complaints regarding Playground",
+      "Unauthorized Tree Cutting",
+      "Cleanliness in Parks",
+      "Greenary in Parks",
+      "Play Equipment",
+      "Opening and closing hours",
+      "Toilets in parks",
+      "Non functional lights in parks",
+      "Tree Pruning",
+      "Encroachment on the Public Property",
+      "Unauthorized Advertisement Boards",
+    ],
+  },
+  {
+    id: "Revenue & Licensing",
+    title: "Tax, Building & Licensing",
+    badge: "ADMIN",
+    desc: "Property tax, building plan approvals & trade licenses",
+    image:
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-indigo-500 to-blue-700",
+    icon: Building2,
+    issues: [
+      "Building Plan Sanction",
+      "Violation of DCR/Building By laws",
+      "Unauthorized / Illegal Construction",
+      "Property Tax Complaints",
+      "Professional Tax Complaints",
+      "Trade Licence Complaints",
+      "Online Payment Issue",
+      "General Revision Objection",
+      "Issue of Birth and Death Certificate",
+      "Name Error (Spelling Related)",
+      "Change of Address in Electoral Roll",
+      "Issue of Voter ID",
+    ],
+  },
+  {
+    id: "Others",
+    title: "Others / Custom Issue",
+    badge: "MISCELLANEOUS",
+    desc: "Don't see your issue? Enter it manually here.",
+    image:
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-slate-800 to-slate-950",
+    icon: Edit3,
+    issues: [], // Empty implies custom text input
+  },
+];
 
-export interface CategoryConfigItem {
-  bg: string;
-  text: string;
-  border: string;
-  icon: LucideIcon | React.ElementType;
-}
-
-const categoryConfig: Record<string, CategoryConfigItem> = {
-  "Garbage/Sanitation": {
+const categoryConfig: Record<
+  string,
+  { bg: string; text: string; border: string; icon: any }
+> = {
+  Garbage: {
     bg: "bg-emerald-50 dark:bg-emerald-950/20",
     text: "text-emerald-700 dark:text-emerald-400",
     border: "border-emerald-100 dark:border-emerald-900/50",
     icon: Trash2,
   },
-  Streetlights: {
+  "Street Light": {
     bg: "bg-amber-50 dark:bg-amber-950/20",
     text: "text-amber-700 dark:text-amber-400",
     border: "border-amber-100 dark:border-amber-900/50",
     icon: Lightbulb,
   },
-  "Roads/Potholes": {
+  "Road and Footpath": {
     bg: "bg-slate-100 dark:bg-slate-800/80",
     text: "text-slate-700 dark:text-slate-300",
     border: "border-slate-200 dark:border-slate-700/50",
-    icon: AlertTriangle,
+    icon: MapIcon,
   },
-  "Drainage/Sewage": {
-    bg: "bg-orange-50 dark:bg-orange-950/20",
-    text: "text-orange-700 dark:text-orange-400",
-    border: "border-orange-100 dark:border-orange-900/50",
-    icon: AlertTriangle,
+  "Public Health": {
+    bg: "bg-rose-50 dark:bg-rose-950/20",
+    text: "text-rose-700 dark:text-rose-400",
+    border: "border-rose-100 dark:border-rose-900/50",
+    icon: HeartPulse,
   },
-  "Water Supply": {
+  "Water & Sewage": {
     bg: "bg-blue-50 dark:bg-blue-950/20",
     text: "text-blue-700 dark:text-blue-400",
     border: "border-blue-100 dark:border-blue-900/50",
-    icon: Droplet,
+    icon: Droplets,
   },
-  Others: {
+  "Parks and General": {
     bg: "bg-purple-50 dark:bg-purple-950/20",
     text: "text-purple-700 dark:text-purple-400",
     border: "border-purple-100 dark:border-purple-900/50",
-    icon: HelpCircle,
+    icon: TreePine,
+  },
+  "Revenue & Licensing": {
+    bg: "bg-indigo-50 dark:bg-indigo-950/20",
+    text: "text-indigo-700 dark:text-indigo-400",
+    border: "border-indigo-100 dark:border-indigo-900/50",
+    icon: Building2,
+  },
+  Others: {
+    bg: "bg-slate-100 dark:bg-slate-800",
+    text: "text-slate-700 dark:text-slate-300",
+    border: "border-slate-200 dark:border-slate-700",
+    icon: Edit3,
   },
 };
-
-const visualCategories: VisualCategoryItem[] = [
-  {
-    id: "Garbage/Sanitation",
-    title: "Garbage & Sanitation",
-    desc: "Overflowing bins, uncollected waste & street cleaning",
-    badge: "Sanitation",
-    image: "/img/complaints/garbage-sanitation.avif",
-    gradient: "from-emerald-600 to-teal-700",
-    icon: Trash2,
-  },
-  {
-    id: "Streetlights",
-    title: "Streetlights & Electrical",
-    desc: "Non-functional lights, dark stretches & pole damage",
-    badge: "Electricity",
-    image: "/img/complaints/electrical.avif",
-    gradient: "from-amber-500 to-orange-600",
-    icon: Zap,
-  },
-  {
-    id: "Roads/Potholes",
-    title: "Roads & Potholes",
-    desc: "Deep potholes, damaged tar roads & broken pavers",
-    badge: "Road Works",
-    image: "/img/complaints/roads-potholes.avif",
-    gradient: "from-slate-700 to-slate-900",
-    icon: AlertTriangle,
-  },
-  {
-    id: "Drainage/Sewage",
-    title: "Drainage & Sewage",
-    desc: "Blocked storm drains, sewage leaks & manhole repairs",
-    badge: "Sewage",
-    image: "/img/complaints/drainage-sewage.avif",
-    gradient: "from-orange-600 to-amber-700",
-    icon: Droplet,
-  },
-  {
-    id: "Water Supply",
-    title: "Water Supply & Leakage",
-    desc: "Pipeline bursts, low pressure & dirty drinking water",
-    badge: "Water Board",
-    image: "/img/complaints/water-supply.avif",
-    gradient: "from-blue-600 to-cyan-600",
-    icon: Droplet,
-  },
-  {
-    id: "Others",
-    title: "Others / General Civic",
-    desc: "Stray animal issues, park repair & general civic fixes",
-    badge: "Municipal Fixes",
-    image: "/img/complaints/others.avif",
-    gradient: "from-purple-600 to-indigo-700",
-    icon: HelpCircle,
-  },
-];
 
 const sampleIssuePhotos = [
   {
@@ -209,14 +329,10 @@ const sampleIssuePhotos = [
 
 const complaintSchema = zod.object({
   ward: zod.preprocess((val) => Number(val), zod.number().min(1).max(48)),
-  category: zod.enum([
-    "Garbage/Sanitation",
-    "Streetlights",
-    "Roads/Potholes",
-    "Drainage/Sewage",
-    "Water Supply",
-    "Others",
-  ]),
+  category: zod.string(),
+  subCategory: zod
+    .string()
+    .min(3, "Please select or describe the specific issue"),
   address: zod.string().optional(),
   title: zod
     .string()
@@ -243,20 +359,24 @@ export const Complaints: React.FC = () => {
   const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
     null,
   );
+
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
-  const [selectedAdminModal, setSelectedAdminModal] =
-    useState<OfficialAdminData | null>(null);
   const [isGovtServicesModalOpen, setIsGovtServicesModalOpen] =
     useState<boolean>(false);
-  const [isListLoading, setIsListLoading] = useState<boolean>(false);
+  const [selectedAdminModal, setSelectedAdminModal] =
+    useState<OfficialAdminData | null>(null);
 
+  // Wizard States
   const [reportStep, setReportStep] = useState<number>(1);
-  const [selectedCategory, setSelectedCategory] =
-    useState<ComplaintCategory>("Garbage/Sanitation");
+  const [selectedGroup, setSelectedGroup] = useState<
+    (typeof RICH_CIVIC_CATEGORIES)[0] | null
+  >(null);
+  const [subSearchQuery, setSubSearchQuery] = useState<string>("");
+  const [customSubCategory, setCustomSubCategory] = useState<string>("");
+
   const [submittedComplaint, setSubmittedComplaint] =
     useState<Complaint | null>(null);
   const [copiedId, setCopiedId] = useState<boolean>(false);
-
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [upvotingId, setUpvotingId] = useState<number | string | null>(null);
 
@@ -264,6 +384,7 @@ export const Complaints: React.FC = () => {
     register,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors, isValid },
   } = useForm({
@@ -271,31 +392,22 @@ export const Complaints: React.FC = () => {
     mode: "onChange",
     defaultValues: {
       ward: Number(activeWard.id),
-      category: "Garbage/Sanitation" as const,
+      category: "",
+      subCategory: "",
       address: "",
       title: "",
       description: "",
     },
   });
 
-  useEffect(() => {
-    setValue("ward", activeWard.id);
-  }, [activeWard.id, setValue]);
-
-  useEffect(() => {
-    setValue("category", selectedCategory);
-  }, [selectedCategory, setValue]);
+  const watchSubCategory = watch("subCategory");
 
   const myComplaints = (complaints as Complaint[]).filter(
-    (c) =>
-      c.author === (userProfile.name || "Krithik Balan") ||
-      c.author === "Dhanush" ||
-      c.isUserSubmitted === true,
+    (c) => c.author === userProfile.name || c.isUserSubmitted === true,
   );
   const nearbyComplaints = (complaints as Complaint[]).filter(
     (c) => parseInt(String(c.ward), 10) === activeWard.id,
   );
-
   const displayList =
     activeTab === "my-complaints" ? myComplaints : nearbyComplaints;
 
@@ -307,25 +419,25 @@ export const Complaints: React.FC = () => {
   };
 
   const handleSelectSamplePhoto = (url: string) => {
-    if (!imagePreviews.includes(url) && imagePreviews.length < 3) {
+    if (!imagePreviews.includes(url) && imagePreviews.length < 3)
       setImagePreviews((prev) => [...prev, url]);
-    }
   };
 
   const handleRemoveImage = (index: number) => {
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const openReportWizard = (
-    initialCat: ComplaintCategory = "Garbage/Sanitation",
-  ) => {
-    setSelectedCategory(initialCat);
+  const openReportWizard = () => {
+    setSelectedGroup(null);
+    setSubSearchQuery("");
+    setCustomSubCategory("");
     setReportStep(1);
     setSubmittedComplaint(null);
     setImagePreviews([]);
     reset({
       ward: activeWard.id,
-      category: initialCat,
+      category: "",
+      subCategory: "",
       address: `Main Road, Ward ${activeWard.id}, Avadi`,
       title: "",
       description: "",
@@ -335,13 +447,13 @@ export const Complaints: React.FC = () => {
 
   const handleReportSubmit: SubmitHandler<ComplaintFormData> = (data) => {
     const defaultImage =
-      visualCategories.find((c) => c.id === data.category)?.image ||
+      RICH_CIVIC_CATEGORIES.find((c) => c.id === data.category)?.image ||
       "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=60";
-
     const newComplaint = {
       title: data.title,
       description: data.description,
       category: data.category,
+      subCategory: data.subCategory,
       ward: data.ward,
       address: data.address || `Ward ${data.ward}, Avadi Municipality`,
       status: "Submitted" as const,
@@ -351,7 +463,6 @@ export const Complaints: React.FC = () => {
       date: new Date().toISOString(),
       upvotes: 1,
     };
-
     const created = addComplaint(newComplaint);
     setSubmittedComplaint(created as unknown as Complaint);
     setReportStep(3);
@@ -385,39 +496,30 @@ export const Complaints: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Top Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
-                {t("complaintsTitle")}
+                Civic Grievance Redressal
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                {t("complaintsSubtitle")}
+                Log local issues and track resolutions
               </p>
             </div>
             <span className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20 shrink-0 w-fit">
               <MapPin size={14} />
-              <span>
-                {t("ward")} {String(activeWard.id).padStart(2, "0")}
-              </span>
+              <span>Ward {String(activeWard.id).padStart(2, "0")}</span>
             </span>
           </div>
 
-          {/* Reimagined Illustrated Guide Banner */}
           <ComplaintGuideSteps />
 
-          {/* Services Section */}
           <div className="space-y-3">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center">
                 <Wrench size={18} className="text-primary mr-2" />
                 <span>Services & Actions</span>
               </h2>
-              <span className="text-xs font-semibold text-slate-400">
-                Quick civic utilities
-              </span>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {[
                 {
@@ -425,7 +527,7 @@ export const Complaints: React.FC = () => {
                   desc: "Log local problems like garbage, water, roads, or streetlights and get a tracking ID.",
                   icon: PlusCircle,
                   badgeBg: "from-orange-500 to-amber-500",
-                  action: () => openReportWizard("Garbage/Sanitation"),
+                  action: openReportWizard,
                 },
                 {
                   name: "My Complaints",
@@ -451,37 +553,34 @@ export const Complaints: React.FC = () => {
                   badgeBg: "from-blue-500 to-indigo-600",
                   action: () => router.push("/notifications"),
                 },
-              ].map((srv) => {
-                const SrvIcon = srv.icon;
-                return (
-                  <motion.div
-                    key={srv.name}
-                    whileHover={{ y: -2 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={srv.action}
-                    className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-3 flex flex-col justify-between"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div
-                        className={`p-2.5 rounded-2xl bg-linear-to-br ${srv.badgeBg} text-white shadow-md shrink-0`}
-                      >
-                        <SrvIcon size={18} />
-                      </div>
-                      <span className="text-xs font-bold text-primary flex items-center">
-                        Open <ArrowRight size={12} className="ml-1" />
-                      </span>
+              ].map((srv) => (
+                <motion.div
+                  key={srv.name}
+                  whileHover={{ y: -2 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={srv.action}
+                  className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all cursor-pointer space-y-3 flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between">
+                    <div
+                      className={`p-2.5 rounded-2xl bg-gradient-to-br ${srv.badgeBg} text-white shadow-md shrink-0`}
+                    >
+                      <srv.icon size={18} />
                     </div>
-                    <div>
-                      <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
-                        {srv.name}
-                      </h4>
-                      <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-snug mt-1">
-                        {srv.desc}
-                      </p>
-                    </div>
-                  </motion.div>
-                );
-              })}
+                    <span className="text-xs font-bold text-primary flex items-center">
+                      Open <ArrowRight size={12} className="ml-1" />
+                    </span>
+                  </div>
+                  <div>
+                    <h4 className="font-black text-sm sm:text-base text-slate-900 dark:text-white">
+                      {srv.name}
+                    </h4>
+                    <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-snug mt-1">
+                      {srv.desc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
 
@@ -648,7 +747,6 @@ export const Complaints: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           className="space-y-6"
         >
-          {/* Top Navigation & Workspace Header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800 pb-4">
             <div className="space-y-1">
               <button
@@ -661,60 +759,30 @@ export const Complaints: React.FC = () => {
               <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
                 Active Ward Grievances
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Track status updates and upvote community civic fixes.
-              </p>
             </div>
-
-            {/* Tab Switcher */}
             <div className="flex bg-slate-100 dark:bg-slate-950 p-1 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md">
               <button
                 onClick={() => setActiveTab("my-complaints")}
-                className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer ${
-                  activeTab === "my-complaints"
-                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200/60 dark:border-slate-800"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-                }`}
+                className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer ${activeTab === "my-complaints" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
               >
                 My Complaints ({myComplaints.length})
               </button>
               <button
                 onClick={() => setActiveTab("nearby")}
-                className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer ${
-                  activeTab === "nearby"
-                    ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm border border-slate-200/60 dark:border-slate-800"
-                    : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
-                }`}
+                className={`flex-1 px-4 py-2.5 text-xs sm:text-sm font-extrabold rounded-xl transition-all cursor-pointer ${activeTab === "nearby" ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"}`}
               >
                 Nearby W{activeWard.id} ({nearbyComplaints.length})
               </button>
             </div>
           </div>
 
-          {/* List Container */}
-          {isListLoading ? (
-            <SkeletonLoader count={2} type="card" />
-          ) : displayList.length > 0 ? (
+          {displayList.length > 0 ? (
             <div className="space-y-4">
               {displayList.map((complaint) => {
-                const config = categoryConfig[complaint.category] || {
-                  bg: "bg-slate-100",
-                  text: "text-slate-700",
-                  border: "border-slate-200",
-                  icon: HelpCircle,
-                };
+                const config =
+                  categoryConfig[complaint.category] ||
+                  categoryConfig["Others"];
                 const IconComponent = config.icon;
-
-                const statusVariants: Record<
-                  string,
-                  "warning" | "info" | "primary" | "success" | "default"
-                > = {
-                  Submitted: "warning",
-                  Acknowledged: "info",
-                  "In Progress": "primary",
-                  Resolved: "success",
-                };
-
                 const formattedIssueId =
                   complaint.issueId ||
                   `AVD-2026-${1000 + Number(complaint.id)}`;
@@ -739,7 +807,8 @@ export const Complaints: React.FC = () => {
                               {formattedIssueId}
                             </span>
                             <span className="text-xs font-bold text-slate-400">
-                              Ward {complaint.ward} · {complaint.category}
+                              Ward {complaint.ward} ·{" "}
+                              {complaint.subCategory || complaint.category}
                             </span>
                           </div>
                           <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
@@ -747,26 +816,16 @@ export const Complaints: React.FC = () => {
                           </h3>
                         </div>
                       </div>
-
                       <Badge
-                        variant={statusVariants[complaint.status] || "default"}
+                        variant="warning"
                         className="shrink-0 font-extrabold text-xs"
                       >
                         {complaint.status}
                       </Badge>
                     </div>
-
                     <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2 pl-1">
                       {complaint.description}
                     </p>
-
-                    {complaint.address && (
-                      <div className="flex items-center space-x-2 text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
-                        <MapPin size={14} className="text-primary shrink-0" />
-                        <span className="truncate">{complaint.address}</span>
-                      </div>
-                    )}
-
                     <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs font-bold text-slate-500">
                       <button
                         onClick={(e) => handleUpvote(complaint.id, e)}
@@ -782,11 +841,6 @@ export const Complaints: React.FC = () => {
                         />
                         <span>{complaint.upvotes} Upvotes</span>
                       </button>
-                      <span className="text-xs text-slate-400 font-medium">
-                        {complaint.date
-                          ? new Date(complaint.date).toLocaleDateString()
-                          : "Recently"}
-                      </span>
                     </div>
                   </motion.div>
                 );
@@ -795,26 +849,16 @@ export const Complaints: React.FC = () => {
           ) : (
             <EmptyState
               icon={AlertTriangle}
-              title={
-                activeTab === "my-complaints"
-                  ? "No complaints filed by you yet"
-                  : `No complaints in Ward ${activeWard.id}`
-              }
-              description={
-                activeTab === "my-complaints"
-                  ? "Have a broken streetlight, pothole or rubbish pile near your location? Report it in 3 quick steps."
-                  : "All systems look clean! Go ahead and report a local civic issue if you notice one."
-              }
+              title="No complaints found"
+              description="All systems look clean! Go ahead and report a local civic issue if you notice one."
               actionText="File New Issue"
-              onAction={() => openReportWizard("Garbage/Sanitation")}
+              onAction={openReportWizard}
             />
           )}
 
-          {/* Floating "+" Button */}
           <button
-            onClick={() => openReportWizard("Garbage/Sanitation")}
+            onClick={openReportWizard}
             className="fixed bottom-20 right-4 z-40 md:absolute md:bottom-auto md:top-0 md:right-0 md:mt-1 w-14 h-14 rounded-full bg-primary hover:bg-orange-600 text-white flex items-center justify-center shadow-xl hover:shadow-2xl active:scale-95 transition-all cursor-pointer"
-            title="Report New Grievance"
           >
             <Plus size={26} />
           </button>
@@ -825,524 +869,284 @@ export const Complaints: React.FC = () => {
       <Modal
         isOpen={isReportModalOpen}
         onClose={() => setIsReportModalOpen(false)}
+        maxWidth="sm:max-w-2xl md:max-w-4xl xl:max-w-5xl"
         title={
-          reportStep === 1
-            ? "Step 1 of 3: Select Issue Category"
-            : reportStep === 2
-              ? "Step 2 of 3: Describe Issue & Location"
-              : "Step 3 of 3: Grievance Registered"
+          // Casting to `any` allows us to inject a rich ReactNode header while bypassing strict string-type props
+          (
+            <div className="space-y-4 mr-5">
+              <div className="flex items-center gap-3 w-full pr-8">
+                <span className="px-2.5 py-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px] sm:text-xs font-black rounded-lg border border-orange-500/20 uppercase tracking-widest shrink-0">
+                  Step {reportStep} of 3
+                </span>
+                <span className="truncate text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                  {reportStep === 1 &&
+                    !selectedGroup &&
+                    "Select the department that handles your problem:"}
+                  {reportStep === 1 &&
+                    selectedGroup &&
+                    `Select Issue in ${selectedGroup.title}`}
+                  {reportStep === 2 && "Describe Issue Details"}
+                  {reportStep === 3 && "Grievance Registered"}
+                </span>
+
+                {/* <p className="text-sm font-extrabold text-slate-700 dark:text-slate-300 shrink-0 mb-4">
+                  Select the department that handles your civic problem:
+                </p> */}
+              </div>
+              {/* Step Progress Bar (Moved to top of content) */}
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-4 mt-0 shrink-0 overflow-hidden">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full"
+                  style={{
+                    width:
+                      reportStep === 1
+                        ? "33%"
+                        : reportStep === 2
+                          ? "66%"
+                          : "100%",
+                  }}
+                />
+              </div>
+            </div>
+          ) as any
         }
-        maxWidth="sm:max-w-2xl md:max-w-3xl xl:max-w-6xl"
       >
-        {/* Step Progress Bar */}
-        <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-5 overflow-hidden">
-          <div
-            className="bg-primary h-full transition-all duration-300 rounded-full"
-            style={{
-              width:
-                reportStep === 1 ? "33%" : reportStep === 2 ? "66%" : "100%",
-            }}
-          />
-        </div>
-
-        {/* STEP 1: VISUAL CATEGORY SELECTION */}
-        {reportStep === 1 && (
-          <div className="space-y-4">
-            <p className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200">
-              Select the category below that best describes your civic problem:
-            </p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5 max-h-110 overflow-y-auto pr-1">
-              {visualCategories.map((cat) => {
-                const CatIcon = cat.icon;
-                const isSelected = selectedCategory === cat.id;
-
-                return (
+        <div className="flex flex-col min-h-[75dvh] lg:min-h-[70vh] h-full bg-white dark:bg-slate-900 rounded-b-3xl">
+          {/* STEP 1: DRILL-DOWN CATEGORY SELECTION */}
+          {reportStep === 1 && (
+            <div className="flex flex-col flex-1 min-h-0 relative overflow-hidden">
+              <AnimatePresence mode="wait">
+                {/* VIEW A: MASTER RICH CATEGORY GRID */}
+                {!selectedGroup ? (
                   <motion.div
-                    key={cat.id}
-                    whileHover={{ scale: 1.01 }}
-                    whileTap={{ scale: 0.99 }}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`rounded-3xl overflow-hidden border-2 transition-all cursor-pointer group flex flex-col justify-between bg-white dark:bg-slate-900 ${
-                      isSelected
-                        ? "border-primary ring-4 ring-primary/20 shadow-xl bg-orange-500/5 dark:bg-orange-500/10"
-                        : "border-slate-200 dark:border-slate-800 hover:border-slate-400 shadow-xs"
-                    }`}
+                    key="master-grid"
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: -20, opacity: 0 }}
+                    className="flex flex-col flex-1 h-full"
                   >
-                    <div className="relative h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                      <img
-                        src={cat.image}
-                        alt={cat.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                        <div
-                          className={`p-1.5 rounded-xl bg-linear-to-br ${cat.gradient} text-white shadow-md flex items-center space-x-2 px-3 border border-white/20`}
-                        >
-                          <CatIcon size={16} />
-                          <span className="text-xs font-black tracking-wider uppercase">
-                            {cat.badge}
-                          </span>
-                        </div>
-                        {isSelected && (
-                          <span className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-xs font-black shadow-lg border border-white/40">
-                            <CheckCircle2 size={15} />
-                            <span>SELECTED</span>
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="p-4 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex-1 flex flex-col justify-between">
-                      <div>
-                        <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight">
-                          {cat.title}
-                        </h3>
-                        <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
-                          {cat.desc}
-                        </p>
-                      </div>
-                      <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 mt-2">
-                        <span
-                          className={`text-xs font-extrabold ${
-                            isSelected
-                              ? "text-primary dark:text-orange-400"
-                              : "text-slate-400"
-                          }`}
-                        >
-                          {isSelected
-                            ? "✓ Ready for Next Step"
-                            : "Tap to select"}
-                        </span>
-                        <span
-                          className={`px-3 py-1 rounded-xl text-xs font-black border ${
-                            isSelected
-                              ? "bg-primary text-white border-primary shadow-xs"
-                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-                          }`}
-                        >
-                          {isSelected ? "CHOSEN" : "SELECT"}
-                        </span>
-                      </div>
+                    {/* Restored Rich Visual Grid Layout */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 flex-1 overflow-y-auto pr-2 custom-scrollbar content-start pb-4">
+                      {RICH_CIVIC_CATEGORIES.map((cat) => {
+                        const CatIcon = cat.icon;
+                        return (
+                          <motion.div
+                            key={cat.id}
+                            whileHover={{ scale: 1.01 }}
+                            whileTap={{ scale: 0.99 }}
+                            onClick={() => {
+                              setSelectedGroup(cat);
+                              setValue("category", cat.id);
+                              setValue("subCategory", "");
+                              setSubSearchQuery("");
+                              setCustomSubCategory("");
+                            }}
+                            className="rounded-3xl overflow-hidden border-2 border-slate-200 dark:border-slate-800 hover:border-primary shadow-xs hover:shadow-md transition-all cursor-pointer group flex flex-col bg-white dark:bg-slate-900"
+                          >
+                            <div className="relative h-32 md:h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
+                              <img
+                                src={cat.image}
+                                alt={cat.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                                <div
+                                  className={`p-1.5 rounded-xl bg-gradient-to-br ${cat.gradient} text-white shadow-md flex items-center space-x-2 px-3 border border-white/20`}
+                                >
+                                  <CatIcon size={14} />
+                                  <span className="text-[10px] font-black tracking-wider uppercase">
+                                    {cat.badge}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="p-4 space-y-1 border-t border-slate-200 dark:border-slate-800 flex-1 flex flex-col justify-between">
+                              <div>
+                                <h3 className="font-black text-base text-slate-900 dark:text-white leading-tight group-hover:text-primary transition-colors">
+                                  {cat.title}
+                                </h3>
+                                <p className="text-[11px] font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+                                  {cat.desc}
+                                </p>
+                              </div>
+                              <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-2 flex justify-between items-center">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                                  {cat.issues.length > 0
+                                    ? `${cat.issues.length} Issues`
+                                    : "Custom"}
+                                </span>
+                                <span className="px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-[10px] font-black text-slate-700 dark:text-slate-300 group-hover:bg-primary group-hover:text-white transition-colors">
+                                  SELECT
+                                </span>
+                              </div>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </motion.div>
-                );
-              })}
-            </div>
-
-            <button
-              type="button"
-              onClick={() => setReportStep(2)}
-              className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer mt-3 tracking-wider uppercase active:scale-98"
-            >
-              <span>NEXT STEP</span>
-              <ArrowRight size={18} />
-            </button>
-          </div>
-        )}
-
-        {/* STEP 2: ISSUE DETAILS & MEDIA */}
-        {reportStep === 2 && (
-          <form
-            onSubmit={handleSubmit(handleReportSubmit)}
-            className="space-y-4"
-          >
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <button
-                type="button"
-                onClick={() => setReportStep(1)}
-                className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer"
-              >
-                <ArrowLeft size={16} />
-                <span>Change Category</span>
-              </button>
-
-              <span className="px-3 py-1 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20">
-                {selectedCategory}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Ward Number
-                </label>
-                <input
-                  type="number"
-                  required
-                  {...register("ward")}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                {errors.ward && (
-                  <p className="text-xs text-rose-500 font-medium">
-                    {errors.ward.message}
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Address / Spot Landmark
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Near Pattabiram Railway Station"
-                  {...register("address")}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Issue Summary Title
-              </label>
-              <input
-                type="text"
-                placeholder="Brief summary (e.g. Streetlight broken for past 4 days)"
-                {...register("title")}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
-              {errors.title && (
-                <p className="text-xs text-rose-500 font-medium">
-                  {errors.title.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                Detailed Problem Description
-              </label>
-              <textarea
-                placeholder="Describe what needs fixing, how long it has been broken, or safety concerns..."
-                rows={3}
-                {...register("description")}
-                className="w-full p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400"
-              />
-              {errors.description && (
-                <p className="text-xs text-rose-500 font-medium">
-                  {errors.description.message}
-                </p>
-              )}
-            </div>
-
-            <div className="space-y-2 pt-1">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                  Issue Photos
-                </label>
-                <span className="text-xs text-slate-400 font-medium">
-                  Upload or select sample photo below
-                </span>
-              </div>
-
-              <div className="flex gap-2 pb-1 overflow-x-auto">
-                {sampleIssuePhotos.map((sample, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => handleSelectSamplePhoto(sample.url)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 transition"
+                ) : (
+                  /* VIEW B: SUB-CATEGORY LIST OR CUSTOM INPUT */
+                  <motion.div
+                    key="sub-list"
+                    initial={{ x: 20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    exit={{ x: 20, opacity: 0 }}
+                    className="flex flex-col flex-1 h-full"
                   >
-                    + {sample.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="flex flex-wrap gap-3 items-center pt-1">
-                {imagePreviews.map((url, i) => (
-                  <div
-                    key={i}
-                    className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 shadow-sm"
-                  >
-                    <img
-                      src={url}
-                      alt="Attached issue"
-                      className="w-full h-full object-cover"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveImage(i)}
-                      className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-slate-900/80 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-900 cursor-pointer"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-                {imagePreviews.length < 3 && (
-                  <label className="w-20 h-20 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
-                    <Camera size={20} />
-                    <span className="text-[10px] font-extrabold mt-1">
-                      Upload
-                    </span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="sr-only"
-                    />
-                  </label>
-                )}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={!isValid}
-              className="w-full py-3.5 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer mt-2 tracking-wider uppercase active:scale-98"
-            >
-              Submit Grievance Report
-            </button>
-          </form>
-        )}
-
-        {/* STEP 3: SUCCESS ACKNOWLEDGEMENT */}
-        {reportStep === 3 && submittedComplaint && (
-          <div className="space-y-5 text-center py-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-md animate-bounce">
-              <CheckCircle2 size={36} />
-            </div>
-
-            <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white">
-                Grievance Submitted Successfully!
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Your report has been logged with Avadi Municipal Corporation &
-                Zonal Officer.
-              </p>
-            </div>
-
-            <div className="p-4 sm:p-5 rounded-3xl bg-orange-500/10 border border-orange-500/20 space-y-2">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                Official Grievance Issue ID
-              </span>
-              <div className="flex items-center justify-center space-x-2">
-                <span className="font-mono text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-widest">
-                  {submittedComplaint.issueId ||
-                    `AVD-2026-${1000 + Number(submittedComplaint.id)}`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    copyToClipboard(
-                      submittedComplaint.issueId ||
-                        `AVD-2026-${1000 + Number(submittedComplaint.id)}`,
-                    )
-                  }
-                  className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-primary transition text-xs font-extrabold flex items-center space-x-1.5 shadow-2xs"
-                  title="Copy Issue ID"
-                >
-                  <Copy size={14} />
-                  <span>{copiedId ? "Copied!" : "Copy"}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left space-y-2.5 text-xs sm:text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-400 font-semibold">Category:</span>
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {submittedComplaint.category}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 font-semibold">
-                  Ward & Spot:
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 truncate max-w-50 sm:max-w-xs">
-                  Ward {submittedComplaint.ward} · {submittedComplaint.address}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400 font-semibold">
-                  Initial Status:
-                </span>
-                <span className="font-extrabold text-amber-600 dark:text-amber-400">
-                  Submitted (Logged)
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2.5 pt-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab("my-complaints");
-                  setViewMode("workspace");
-                  setIsReportModalOpen(false);
-                }}
-                className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md transition text-xs sm:text-sm cursor-pointer flex items-center justify-center space-x-2 active:scale-98"
-              >
-                <FileText size={16} />
-                <span>View in My Complaints</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setIsReportModalOpen(false)}
-                className="w-full py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-xs sm:text-sm cursor-pointer"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* DETAILED GRIEVANCE VIEW WITH STEPPER */}
-      {selectedComplaint && (
-        <Modal
-          isOpen={isReportModalOpen}
-          onClose={() => setIsReportModalOpen(false)}
-          maxWidth="sm:max-w-2xl md:max-w-3xl xl:max-w-5xl" // <-- WIDER RESPONSIVE WIDTH
-          title={
-            reportStep === 1
-              ? "Step 1 of 3: Select Issue Category"
-              : reportStep === 2
-                ? "Step 2 of 3: Describe Issue & Location"
-                : "Step 3 of 3: Grievance Registered"
-          }
-        >
-          <div className="flex flex-col min-h-[75dvh] lg:min-h-[70vh] h-full">
-            {/* Step Progress Bar */}
-            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-5 sm:mb-6 overflow-hidden">
-              <div
-                className="bg-primary h-full transition-all duration-300 rounded-full"
-                style={{
-                  width:
-                    reportStep === 1
-                      ? "33%"
-                      : reportStep === 2
-                        ? "66%"
-                        : "100%",
-                }}
-              />
-            </div>
-
-            {/* STEP 1: VISUAL CATEGORY SELECTION */}
-            {reportStep === 1 && (
-              <div className="space-y-4">
-                <p className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200">
-                  Select the category below that best describes your civic
-                  problem:
-                </p>
-
-                {/* UPGRADED GRID: 1 col (Mobile) -> 2 col (Tablet) -> 3 col (Desktop) */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-                  {visualCategories.map((cat) => {
-                    const CatIcon = cat.icon;
-                    const isSelected = selectedCategory === cat.id;
-
-                    return (
-                      <motion.div
-                        key={cat.id}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className={`rounded-3xl overflow-hidden border-2 transition-all cursor-pointer group flex flex-col justify-between bg-white dark:bg-slate-900 ${
-                          isSelected
-                            ? "border-primary ring-4 ring-primary/20 shadow-xl bg-orange-500/5 dark:bg-orange-500/10"
-                            : "border-slate-200 dark:border-slate-800 hover:border-slate-400 shadow-xs"
-                        }`}
+                    <div className="shrink-0 space-y-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                      <button
+                        onClick={() => setSelectedGroup(null)}
+                        className="flex items-center text-xs font-black text-slate-500 hover:text-primary transition cursor-pointer"
                       >
-                        <div className="relative h-36 md:h-40 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-                          <img
-                            src={cat.image}
-                            alt={cat.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        <ArrowLeft size={14} className="mr-1" /> Back to
+                        Departments
+                      </button>
+
+                      {/* Search Bar (Only if it's not "Others") */}
+                      {selectedGroup.id !== "Others" && (
+                        <div className="relative">
+                          <Search
+                            className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                            size={18}
                           />
-                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
-                            <div
-                              className={`p-1.5 rounded-xl bg-gradient-to-br ${cat.gradient} text-white shadow-md flex items-center space-x-2 px-3 border border-white/20`}
-                            >
-                              <CatIcon size={16} />
-                              <span className="text-[11px] font-black tracking-wider uppercase">
-                                {cat.badge}
-                              </span>
-                            </div>
-                            {isSelected && (
-                              <span className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-lg border border-white/40">
-                                <CheckCircle2 size={14} />
-                                <span className="hidden sm:inline">
-                                  SELECTED
+                          <input
+                            type="text"
+                            placeholder={`Search inside ${selectedGroup.title}...`}
+                            value={subSearchQuery}
+                            onChange={(e) => setSubSearchQuery(e.target.value)}
+                            className="w-full pl-11 pr-4 py-3.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto py-4 pr-2 space-y-2 custom-scrollbar">
+                      {selectedGroup.id === "Others" ? (
+                        /* Custom Text Input for "Others" */
+                        <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                          <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 block">
+                            Please describe the exact nature of your issue:
+                          </label>
+                          <input
+                            type="text"
+                            autoFocus
+                            placeholder="E.g., Abandoned vehicle blocking the road"
+                            value={customSubCategory}
+                            onChange={(e) => {
+                              setCustomSubCategory(e.target.value);
+                              setValue("subCategory", e.target.value);
+                              setValue(
+                                "title",
+                                `Request regarding ${e.target.value}`,
+                              );
+                            }}
+                            className="w-full p-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          />
+                        </div>
+                      ) : (
+                        /* Standard GCC Sub-Category List */
+                        selectedGroup.issues
+                          .filter((sub) =>
+                            sub
+                              .toLowerCase()
+                              .includes(subSearchQuery.toLowerCase()),
+                          )
+                          .map((sub, i) => {
+                            const isSelected = watchSubCategory === sub;
+                            return (
+                              <button
+                                key={i}
+                                onClick={() => {
+                                  setValue("subCategory", sub);
+                                  setValue("title", `Request for ${sub}`); // Auto-Draft
+                                }}
+                                className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all cursor-pointer ${
+                                  isSelected
+                                    ? "bg-orange-500/10 border-primary ring-1 ring-primary shadow-sm scale-[1.01]"
+                                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600"
+                                }`}
+                              >
+                                <span
+                                  className={`text-sm font-bold ${isSelected ? "text-primary dark:text-orange-400" : "text-slate-700 dark:text-slate-200"}`}
+                                >
+                                  {sub}
                                 </span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                                {isSelected ? (
+                                  <CheckCircle
+                                    className="text-primary"
+                                    size={20}
+                                  />
+                                ) : (
+                                  <Circle
+                                    className="text-slate-300 dark:text-slate-700"
+                                    size={20}
+                                  />
+                                )}
+                              </button>
+                            );
+                          })
+                      )}
 
-                        <div className="p-4 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex-1 flex flex-col justify-between">
-                          <div>
-                            <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight">
-                              {cat.title}
-                            </h3>
-                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
-                              {cat.desc}
-                            </p>
+                      {selectedGroup.id !== "Others" &&
+                        selectedGroup.issues.filter((sub) =>
+                          sub
+                            .toLowerCase()
+                            .includes(subSearchQuery.toLowerCase()),
+                        ).length === 0 && (
+                          <div className="text-center py-10 text-slate-500 text-sm font-bold">
+                            No matching issues found. Try a different keyword.
                           </div>
-                          <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 mt-2">
-                            <span
-                              className={`text-xs font-extrabold ${
-                                isSelected
-                                  ? "text-primary dark:text-orange-400"
-                                  : "text-slate-400"
-                              }`}
-                            >
-                              {isSelected ? "✓ Ready" : "Tap to select"}
-                            </span>
-                            <span
-                              className={`px-3 py-1.5 rounded-xl text-[11px] font-black border ${
-                                isSelected
-                                  ? "bg-primary text-white border-primary shadow-xs"
-                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
-                              }`}
-                            >
-                              {isSelected ? "CHOSEN" : "SELECT"}
-                            </span>
-                          </div>
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
+                        )}
+                    </div>
 
+                    {/* Bottom Action */}
+                    <div className="shrink-0 pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setReportStep(2)}
+                        disabled={!watchSubCategory}
+                        className="w-full sm:w-auto sm:float-right sm:min-w-[280px] py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer tracking-wider uppercase active:scale-98"
+                      >
+                        <span>NEXT STEP</span>
+                        <ArrowRight size={18} />
+                      </button>
+                      <div className="clear-both" />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* STEP 2: ISSUE DETAILS & MEDIA */}
+          {reportStep === 2 && (
+            <form
+              onSubmit={handleSubmit(handleReportSubmit)}
+              className="flex flex-col flex-1 min-h-0"
+            >
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 sm:pb-4 shrink-0">
                 <button
                   type="button"
-                  onClick={() => setReportStep(2)}
-                  className="w-full sm:w-auto sm:min-w-[250px] mx-auto py-3.5 sm:py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer mt-5 tracking-wider uppercase active:scale-98"
+                  onClick={() => setReportStep(1)}
+                  className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer"
                 >
-                  <span>NEXT STEP</span>
-                  <ArrowRight size={18} />
+                  <ArrowLeft size={16} />
+                  <span>Change Issue</span>
                 </button>
-              </div>
-            )}
 
-            {/* STEP 2: ISSUE DETAILS & MEDIA */}
-            {reportStep === 2 && (
-              <form
-                onSubmit={handleSubmit(handleReportSubmit)}
-                className="space-y-5"
-              >
-                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 sm:pb-4">
-                  <button
-                    type="button"
-                    onClick={() => setReportStep(1)}
-                    className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer"
-                  >
-                    <ArrowLeft size={16} />
-                    <span>Change Category</span>
-                  </button>
-
-                  <span className="px-3 py-1.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20">
-                    {selectedCategory}
+                <div className="flex items-center gap-2">
+                  <span className="hidden sm:inline-block px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-black border border-slate-200 dark:border-slate-700 truncate max-w-[150px]">
+                    {selectedGroup?.title}
+                  </span>
+                  <span className="px-3 py-1.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-[10px] font-black border border-orange-500/20 truncate max-w-[180px]">
+                    {watchSubCategory}
                   </span>
                 </div>
+              </div>
 
-                {/* UPGRADED GRID: Inputs span perfectly on desktop */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-5 custom-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div className="space-y-1.5">
                     <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
                       Ward Number
@@ -1351,90 +1155,61 @@ export const Complaints: React.FC = () => {
                       type="number"
                       required
                       {...register("ward")}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
-                    {errors.ward && (
-                      <p className="text-xs text-rose-500 font-medium">
-                        {errors.ward.message}
-                      </p>
-                    )}
                   </div>
-
                   <div className="space-y-1.5">
                     <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Address / Spot Landmark
+                      Street Name & Landmark
                     </label>
                     <input
                       type="text"
                       placeholder="e.g. Near Pattabiram Railway Station"
                       {...register("address")}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                      className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
-                    Issue Summary Title
-                  </label>
+                  <div className="flex justify-between">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Issue Summary Title
+                    </label>
+                    <span className="text-[10px] text-orange-500 font-extrabold px-2 py-0.5 bg-orange-500/10 rounded-md">
+                      Auto-Drafted
+                    </span>
+                  </div>
                   <input
                     type="text"
-                    placeholder="Brief summary (e.g. Streetlight broken for past 4 days)"
                     {...register("title")}
-                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-black shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
-                  {errors.title && (
-                    <p className="text-xs text-rose-500 font-medium">
-                      {errors.title.message}
-                    </p>
-                  )}
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 flex-1 flex flex-col">
                   <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
                     Detailed Problem Description
                   </label>
                   <textarea
                     placeholder="Describe what needs fixing, how long it has been broken, or safety concerns..."
-                    rows={4}
+                    rows={5}
                     {...register("description")}
-                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400 resize-none"
+                    className="w-full flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400 resize-none min-h-[120px]"
                   />
-                  {errors.description && (
-                    <p className="text-xs text-rose-500 font-medium">
-                      {errors.description.message}
-                    </p>
-                  )}
                 </div>
 
                 <div className="space-y-3 pt-2">
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                     <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Issue Photos
+                      Issue Photos (Max 3)
                     </label>
-                    <span className="text-xs text-slate-400 font-medium">
-                      Upload or select sample photo below
-                    </span>
                   </div>
-
-                  <div className="flex gap-2.5 pb-2 overflow-x-auto custom-scrollbar">
-                    {sampleIssuePhotos.map((sample, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => handleSelectSamplePhoto(sample.url)}
-                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 transition"
-                      >
-                        + {sample.label}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="flex flex-wrap gap-4 items-center pt-2">
                     {imagePreviews.map((url, i) => (
                       <div
                         key={i}
-                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 shadow-sm"
+                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm"
                       >
                         <img
                           src={url}
@@ -1444,7 +1219,7 @@ export const Complaints: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(i)}
-                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-slate-900/80 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-900 cursor-pointer shadow-md"
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-slate-950/80 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-950 cursor-pointer shadow-md"
                         >
                           ✕
                         </button>
@@ -1467,116 +1242,240 @@ export const Complaints: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
 
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="submit"
-                    disabled={!isValid}
-                    className="w-full sm:w-auto sm:float-right sm:min-w-[250px] py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase active:scale-98"
-                  >
-                    Submit Grievance Report
-                  </button>
-                  <div className="clear-both"></div>
-                </div>
-              </form>
-            )}
+              <div className="shrink-0 pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="submit"
+                  disabled={!isValid}
+                  className="w-full sm:w-auto sm:float-right sm:min-w-[280px] py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase active:scale-98"
+                >
+                  Submit Grievance Report
+                </button>
+                <div className="clear-both" />
+              </div>
+            </form>
+          )}
 
-            {/* STEP 3: SUCCESS ACKNOWLEDGEMENT */}
-            {reportStep === 3 && submittedComplaint && (
-              <div className="space-y-6 text-center py-6 sm:py-8 max-w-lg mx-auto">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-md animate-bounce">
-                  <CheckCircle2 size={48} />
-                </div>
+          {/* STEP 3: SUCCESS ACKNOWLEDGEMENT & SOCIAL SHARE */}
+          {reportStep === 3 && submittedComplaint && (
+            <div className="flex flex-col flex-1 items-center justify-center space-y-6 text-center py-6 sm:py-8 w-full max-w-2xl mx-auto">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-md animate-bounce">
+                <CheckCircle2 size={48} />
+              </div>
 
-                <div>
-                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                    Grievance Submitted Successfully!
-                  </h3>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                    Your report has been securely logged and dispatched to the
-                    Avadi Municipal Corporation & Zonal Officer.
-                  </p>
-                </div>
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                  Grievance Submitted Successfully!
+                </h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed max-w-md mx-auto">
+                  Your report has been securely logged and dispatched to the
+                  Municipal Corporation & Zonal Officer.
+                </p>
+              </div>
 
-                <div className="p-5 sm:p-6 rounded-3xl bg-orange-500/10 border border-orange-500/20 space-y-3">
-                  <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                    Official Grievance ID
+              <div className="w-full p-5 sm:p-6 rounded-3xl bg-orange-500/10 border border-orange-500/20 space-y-3">
+                <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
+                  Official Grievance ID
+                </span>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                  <span className="font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-widest">
+                    {submittedComplaint.issueId ||
+                      `AVD-2026-${1000 + Number(submittedComplaint.id)}`}
                   </span>
-                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                    <span className="font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-widest">
-                      {submittedComplaint.issueId ||
-                        `AVD-2026-${1000 + Number(submittedComplaint.id)}`}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        copyToClipboard(
-                          submittedComplaint.issueId ||
-                            `AVD-2026-${1000 + Number(submittedComplaint.id)}`,
-                        )
-                      }
-                      className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-primary transition text-xs font-extrabold flex items-center space-x-1.5 shadow-xs cursor-pointer"
-                      title="Copy Issue ID"
-                    >
-                      <Copy size={16} />
-                      <span>{copiedId ? "Copied!" : "Copy"}</span>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left space-y-3.5 text-sm">
-                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-                    <span className="text-slate-500 font-semibold">
-                      Category:
-                    </span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {submittedComplaint.category}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
-                    <span className="text-slate-500 font-semibold">
-                      Ward & Spot:
-                    </span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 text-right truncate max-w-[200px] sm:max-w-xs">
-                      Ward {submittedComplaint.ward} ·{" "}
-                      {submittedComplaint.address}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-semibold">
-                      Initial Status:
-                    </span>
-                    <span className="font-extrabold text-amber-600 dark:text-amber-400 flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse" />
-                      Submitted (Logged)
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setIsReportModalOpen(false)}
-                    className="w-full py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm cursor-pointer order-2 sm:order-1"
+                    onClick={() =>
+                      copyToClipboard(
+                        submittedComplaint.issueId ||
+                          `AVD-2026-${1000 + Number(submittedComplaint.id)}`,
+                      )
+                    }
+                    className="px-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-primary transition text-xs font-extrabold flex items-center space-x-1.5 shadow-xs cursor-pointer"
                   >
-                    Close Window
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveTab("my-complaints");
-                      setViewMode("workspace");
-                      setIsReportModalOpen(false);
-                    }}
-                    className="w-full py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md transition text-sm cursor-pointer flex items-center justify-center space-x-2 active:scale-98 order-1 sm:order-2"
-                  >
-                    <FileText size={18} />
-                    <span>Track Status</span>
+                    <Copy size={16} />
+                    <span>{copiedId ? "Copied!" : "Copy"}</span>
                   </button>
                 </div>
               </div>
-            )}
+
+              {/* Social Sharing Network */}
+              <div className="w-full space-y-3 pt-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-center gap-2">
+                  <Share2 size={14} /> Share to Escalate Visibility
+                </span>
+                <div className="flex items-center justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(
+                        `https://wa.me/?text=${encodeURIComponent(`I have registered a civic grievance (ID: ${submittedComplaint.issueId || `AVD-2026-${1000 + Number(submittedComplaint.id)}`}) regarding ${watchSubCategory} via the Avadi City Portal. Let's build a better city! 🏙️`)}`,
+                        "_blank",
+                      )
+                    }
+                    className="flex-1 max-w-[140px] py-3 bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366] hover:text-white border border-[#25D366]/30 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  >
+                    WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(
+                        `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I have registered a civic grievance (ID: ${submittedComplaint.issueId || `AVD-2026-${1000 + Number(submittedComplaint.id)}`}) regarding ${watchSubCategory} via the Avadi City Portal. @AvadiCorp`)}`,
+                        "_blank",
+                      )
+                    }
+                    className="flex-1 max-w-[140px] py-3 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 border border-slate-700 rounded-xl font-bold transition text-xs flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                  >
+                    X (Twitter)
+                  </button>
+                </div>
+              </div>
+
+              <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsReportModalOpen(false)}
+                  className="w-full py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm cursor-pointer order-2 sm:order-1"
+                >
+                  Close Window
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab("my-complaints");
+                    setViewMode("workspace");
+                    setIsReportModalOpen(false);
+                  }}
+                  className="w-full py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md transition text-sm cursor-pointer flex items-center justify-center space-x-2 active:scale-98 order-1 sm:order-2"
+                >
+                  <FileText size={18} />
+                  <span>Track Status</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {selectedComplaint && (
+        <Modal
+          isOpen={!!selectedComplaint}
+          onClose={() => setSelectedComplaint(null)}
+          title="Track Grievance"
+        >
+          <div className="space-y-5">
+            <div className="flex items-start space-x-3.5">
+              <img
+                src={selectedComplaint.imageUrl}
+                alt={selectedComplaint.title}
+                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shrink-0 shadow-sm"
+              />
+              <div className="min-w-0 flex-1 space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="font-mono text-[10px] sm:text-xs font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
+                    {selectedComplaint.issueId ||
+                      `AVD-2026-${1000 + Number(selectedComplaint.id)}`}
+                  </span>
+                  <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                    Ward {selectedComplaint.ward}
+                  </span>
+                </div>
+                <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
+                  {selectedComplaint.title}
+                </h3>
+                {selectedComplaint.address && (
+                  <p className="text-xs font-medium text-slate-500 flex items-center pt-0.5">
+                    <MapPin size={12} className="mr-1 text-primary shrink-0" />
+                    <span className="truncate">
+                      {selectedComplaint.address}
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-900/80 p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 rounded-3xl">
+              <h4 className="text-xs font-extrabold tracking-wider text-slate-400 dark:text-slate-500 uppercase mb-5">
+                Resolution Stepper Tracker
+              </h4>
+
+              <div className="flex items-center justify-between relative px-2">
+                {["Submitted", "Acknowledged", "In Progress", "Resolved"].map(
+                  (stage, idx) => {
+                    const currentStageIdx = [
+                      "Submitted",
+                      "Acknowledged",
+                      "In Progress",
+                      "Resolved",
+                    ].indexOf(selectedComplaint.status);
+                    const isCompleted =
+                      idx <= (currentStageIdx === -1 ? 0 : currentStageIdx);
+                    const isCurrent = idx === currentStageIdx;
+
+                    return (
+                      <div
+                        key={stage}
+                        className="flex flex-col items-center relative z-10"
+                      >
+                        <div
+                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
+                            isCompleted
+                              ? "bg-primary text-white shadow-md shadow-primary/30"
+                              : "bg-slate-200 dark:bg-slate-800 text-slate-400"
+                          } ${isCurrent ? "ring-4 ring-primary/20 scale-110" : ""}`}
+                        >
+                          {isCompleted ? <Check size={16} /> : idx + 1}
+                        </div>
+                        <span
+                          className={`text-[10px] sm:text-xs font-extrabold mt-2 text-center max-w-16 sm:max-w-none ${
+                            isCurrent
+                              ? "text-primary font-black"
+                              : isCompleted
+                                ? "text-slate-700 dark:text-slate-300"
+                                : "text-slate-400"
+                          }`}
+                        >
+                          {stage}
+                        </span>
+                      </div>
+                    );
+                  },
+                )}
+                <div className="absolute top-4 left-8 right-8 h-0.5 bg-slate-200 dark:bg-slate-800 z-0" />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                Issue Description
+              </h4>
+              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800">
+                {selectedComplaint.description}
+              </p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-between text-xs sm:text-sm">
+              <div>
+                <span className="text-xs font-bold text-slate-400 block">
+                  Assigned Officer
+                </span>
+                <span className="font-black text-slate-800 dark:text-slate-200">
+                  Er. K. Ramesh (Ward {selectedComplaint.ward} Zonal Admin)
+                </span>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/20 shrink-0">
+                Tracking Active
+              </span>
+            </div>
+
+            <button
+              onClick={() => setSelectedComplaint(null)}
+              className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black transition text-xs sm:text-sm cursor-pointer"
+            >
+              Done
+            </button>
           </div>
         </Modal>
       )}
@@ -1599,7 +1498,7 @@ export const Complaints: React.FC = () => {
                 />
               ) : (
                 <div
-                  className={`w-16 h-16 rounded-2xl bg-linear-to-br ${selectedAdminModal.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${selectedAdminModal.badgeBg} text-white flex items-center justify-center shadow-md shrink-0`}
                 >
                   <selectedAdminModal.icon size={30} />
                 </div>
@@ -1631,58 +1530,6 @@ export const Complaints: React.FC = () => {
                 )}
               </div>
             </div>
-
-            {/* MP Summary (show on MLA Office) */}
-            {selectedAdminModal.mp && (
-              <div className="flex items-center space-x-4 p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-                {selectedAdminModal.mp.avatar && (
-                  <img
-                    src={selectedAdminModal.mp.avatar}
-                    alt={selectedAdminModal.mp.name}
-                    className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl object-cover border-2 border-white dark:border-slate-800 shadow-md shrink-0 bg-slate-100 dark:bg-slate-800"
-                  />
-                )}
-
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-1.5">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-                      {selectedAdminModal.mp.role}
-                    </span>
-                    {selectedAdminModal.mp.party && (
-                      <span
-                        className={`text-[10px] font-black uppercase px-2.5 py-0.5 rounded-full ${
-                          selectedAdminModal.mp.partyStyle ||
-                          "bg-red-500/10 text-red-600"
-                        }`}
-                      >
-                        Party: {selectedAdminModal.mp.party}
-                      </span>
-                    )}
-                  </div>
-                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
-                    {selectedAdminModal.mp.name}
-                  </h3>
-                  {selectedAdminModal.mp.jurisdiction && (
-                    <p className="text-xs font-semibold text-slate-400 truncate">
-                      📍 {selectedAdminModal.mp.jurisdiction}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {selectedAdminModal.deputy && (
-              <div className="flex items-center space-x-4 p-4 sm:p-5 rounded-3xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-                <div className="space-y-1 min-w-0 flex-1">
-                  {selectedAdminModal.deputy.name}{" "}
-                  <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
-                      Deputy MAYOR
-                    </span>
-                  </h3>
-                </div>
-              </div>
-            )}
 
             {/* Contact Action Tiles */}
             <div className="space-y-3">

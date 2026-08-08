@@ -1,9 +1,9 @@
 import { UserCheck } from "lucide-react";
-import { AdminModalData } from "@/app/(auth)/complaints/page";
 import { useWard } from "@/context/wardContext";
 import { wardMembersData } from "@/data/wards/wardMemberListData";
+import { OfficialAdminData } from "@/data/officialsData";
 
-export function useWardAdminProfile(): AdminModalData {
+export function useWardAdminProfile(): OfficialAdminData {
   const { activeWard } = useWard();
 
   const wardMember = wardMembersData.find(
