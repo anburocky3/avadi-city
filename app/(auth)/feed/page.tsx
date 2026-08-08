@@ -209,7 +209,7 @@ export const FeedPage: React.FC = () => {
       text.includes("🩸")
     )
       return "Blood Request";
-    if (text.includes("complaint") || text.includes("civic"))
+    if (text.includes("complaint") || text.includes("complaints"))
       return "Complaint";
     if (text.includes("traffic") || text.includes("news")) return "News";
     return "General";
@@ -251,6 +251,10 @@ export const FeedPage: React.FC = () => {
         (f) =>
           getFeedCategory(f).toLowerCase() === "news" ||
           (f.text || "").toLowerCase().includes("news"),
+      );
+    } else if (feedMode === "complaints") {
+      list = list.filter((f) =>
+        ["complaint"].includes(getFeedCategory(f).toLowerCase()),
       );
     } else if (feedMode === "blood-feed") {
       list = list.filter(
@@ -815,7 +819,7 @@ export const FeedPage: React.FC = () => {
                                     {getRelativeTime(comment.timestamp)}
                                   </span>
                                 </div>
-                                <p className="text-slate-600 dark:text-slate-300 font-normal leading-snug break-words mt-0.5">
+                                <p className="text-slate-600 dark:text-slate-300 font-normal leading-snug wrap-break-word mt-0.5">
                                   {comment.text}
                                 </p>
                               </div>
