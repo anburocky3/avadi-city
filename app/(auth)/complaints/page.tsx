@@ -42,8 +42,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
-
-// Adjust path aliases according to your Next.js project structure
 import { useWard } from "@/context/wardContext";
 import {
   Card,
@@ -53,9 +51,10 @@ import {
   SkeletonLoader,
 } from "@/components/shared-components";
 import { useWardAdminProfile } from "@/hooks/useWardAdminProfile";
+import { OfficialAdminData, OFFICIALS_DIRECTORY } from "@/data/officialsData";
+import { ComplaintGuideSteps } from "./complaint-guide-steps";
 
 // --- TYPESCRIPT INTERFACES & TYPES ---
-
 export type ComplaintCategory =
   | "Garbage/Sanitation"
   | "Streetlights"
@@ -80,14 +79,6 @@ export interface Complaint {
   isUserSubmitted?: boolean;
 }
 
-export interface GuideStep {
-  stepTag: string;
-  title: string;
-  desc: string;
-  icon: LucideIcon | React.ElementType;
-  illustrationBg: string;
-}
-
 export interface VisualCategoryItem {
   id: ComplaintCategory;
   title: string;
@@ -104,129 +95,6 @@ export interface CategoryConfigItem {
   border: string;
   icon: LucideIcon | React.ElementType;
 }
-
-// --- STATIC DATA & DIRECTORIES ---
-
-// MLA should have political info but others are administrators with official contact details. This directory can be expanded as needed.
-export interface AdminModalData {
-  title: string;
-  role: string;
-  name: string;
-  phone: string;
-  email: string;
-  office: string;
-  timings: string;
-  badgeBg: string;
-  icon: LucideIcon | React.ElementType;
-  avatar?: string;
-  deputy?: {
-    name: string;
-    phone: string;
-    avatar?: string;
-  };
-  mp?: {
-    name: string;
-    role: string;
-    avatar?: string;
-    party?: string;
-    partyStyle?: string;
-    jurisdiction?: string;
-    phone?: string;
-    email?: string;
-  };
-  party?: string;
-  partyStyle?: string;
-  department?: string;
-  jurisdiction?: string;
-}
-
-export const OFFICIALS_DIRECTORY: Record<string, AdminModalData> = {
-  mla: {
-    title: "MLA of Avadi Constituency",
-    role: "Avadi Constituency (MLA)",
-    name: "Hon. R. Ramesh Kumar",
-    avatar: "/img/officials/avadi-mla.jpg",
-    mp: {
-      name: "Hon. Sasikanth Senthil",
-      role: "Member of Parliament (MP)",
-      avatar: "/img/officials/avadi-mp.webp",
-      party: "INC",
-      partyStyle:
-        "bg-gradient-to-r from-[#EE5A1C] via-[#FFFFFF] to-[#166A2F] text-black border border-amber-400/40 shadow-sm",
-      jurisdiction: "Thiruvallur Parliamentary Constituency (TN-002)",
-      phone: "+91 44 2638 5555",
-      email: "mla.avadi@tn.gov.in",
-    },
-    party: "TVK",
-    partyStyle:
-      "bg-linear-to-r from-red-900 to-red-950 text-amber-300 border border-amber-400/40 shadow-sm",
-    jurisdiction: "Avadi Assembly Constituency (TN-006)",
-    phone: "+91 44 2638 5555",
-    email: "mla.avadi@tn.gov.in",
-    office: "Avadi MLA Constituency Office, NM Road, Avadi, Chennai - 600054",
-    timings: "Mon - Sat: 10:00 AM - 6:00 PM",
-    badgeBg: "from-emerald-600 to-teal-700",
-    icon: Building,
-  },
-  mayor: {
-    title: "Mayor of Avadi Corporation",
-    role: "Mayor",
-    name: "Thiru.G.Udhayakumar",
-    avatar: "/img/officials/avadi-mayor.jpeg",
-    deputy: {
-      name: "Thiru.S.Suryakumar",
-      phone: "+919382222323",
-      avatar: "/img/officials/avadi-deputy-mayor.jpeg",
-    },
-    department: "Avadi Corporation Office",
-    jurisdiction: "All 48 Wards · Avadi Corporation",
-    phone: "+919710086560",
-    email: "commr.avadi@tn.gov.in",
-    office: "Avadi Corporation Building, NM Road, Avadi, Chennai - 600054",
-    timings: "Mon - Fri: 10:00 AM - 5:00 PM",
-    badgeBg: "from-amber-500 to-orange-600",
-    icon: Building2,
-  },
-  commissioner: {
-    title: "Corporation Commissioner",
-    role: "Commissioner",
-    name: "Tmt.R.SARANYA, IAS",
-    avatar: "/img/officials/avadi-comissioner.jpeg",
-    department: "Avadi Corporation Office",
-    jurisdiction: "All 48 Wards · Avadi Corporation",
-    phone: "+91 044-26554440",
-    email: "commr.avadi@tn.gov.in",
-    office: "Avadi Corporation Building, NM Road, Avadi, Chennai - 600054",
-    timings: "Mon - Fri: 10:00 AM - 5:00 PM",
-    badgeBg: "from-amber-500 to-orange-600",
-    icon: Crown,
-  },
-  eb: {
-    title: "TANGEDCO / EB Electricity Board",
-    role: "Power & Electricity Utility",
-    name: "Avadi EB Executive Engineer Office",
-    department: "TANGEDCO West Zone",
-    phone: "1912 / +91 44 2638 0111",
-    email: "ae.eb.avadi@tnebltd.gov.in",
-    office: "TNEB Sub-Station Office, CTH Road, Avadi, Chennai - 600054",
-    timings: "24x7 Power Emergency / Helpline 1912",
-    badgeBg: "from-yellow-500 to-amber-600",
-    icon: Zap,
-  },
-  corporationHQ: {
-    title: "Avadi Municipal Corporation Info",
-    role: "Civic Head Office",
-    name: "Grievance Redressal Point",
-    department: "Public Grievance Cell",
-    phone: "044-26554440",
-    email: "commr.avadi@tn.gov.in",
-    office:
-      "Avadi Municipal Corporation Headquarters, New Military Road, Avadi - 600054",
-    timings: "Mon - Sat: 9:00 AM - 5:30 PM (Toll-Free 24x7)",
-    badgeBg: "from-cyan-600 to-blue-700",
-    icon: Building2,
-  },
-};
 
 const categoryConfig: Record<string, CategoryConfigItem> = {
   "Garbage/Sanitation": {
@@ -267,45 +135,13 @@ const categoryConfig: Record<string, CategoryConfigItem> = {
   },
 };
 
-const complaintGuideSteps: GuideStep[] = [
-  {
-    stepTag: "STEP 1 OF 4 · SELECT",
-    title: "Choose Issue Category",
-    desc: "Pick from Sanitation, Roads, Electricity, Water or Streetlights.",
-    icon: PlusCircle,
-    illustrationBg: "from-orange-500 to-amber-500",
-  },
-  {
-    stepTag: "STEP 2 OF 4 · EVIDENCE",
-    title: "Provide Location & Photos",
-    desc: "Attach up to 3 photos and a clear spot landmark description.",
-    icon: Camera,
-    illustrationBg: "from-blue-600 to-cyan-600",
-  },
-  {
-    stepTag: "STEP 3 OF 4 · TRACKING",
-    title: "Instant Grievance ID",
-    desc: "Receive a unique Tracking ID to monitor resolution status.",
-    icon: ShieldCheck,
-    illustrationBg: "from-purple-600 to-indigo-600",
-  },
-  {
-    stepTag: "STEP 4 OF 4 · ACTION",
-    title: "Zonal Action & Proof",
-    desc: "Ward Officer resolves the problem and logs completion proof.",
-    icon: CheckCircle2,
-    illustrationBg: "from-emerald-600 to-teal-600",
-  },
-];
-
 const visualCategories: VisualCategoryItem[] = [
   {
     id: "Garbage/Sanitation",
     title: "Garbage & Sanitation",
     desc: "Overflowing bins, uncollected waste & street cleaning",
     badge: "Sanitation",
-    image:
-      "https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=800&auto=format&fit=crop&q=80",
+    image: "/img/complaints/garbage-sanitation.avif",
     gradient: "from-emerald-600 to-teal-700",
     icon: Trash2,
   },
@@ -314,8 +150,7 @@ const visualCategories: VisualCategoryItem[] = [
     title: "Streetlights & Electrical",
     desc: "Non-functional lights, dark stretches & pole damage",
     badge: "Electricity",
-    image:
-      "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?w=800&auto=format&fit=crop&q=80",
+    image: "/img/complaints/electrical.avif",
     gradient: "from-amber-500 to-orange-600",
     icon: Zap,
   },
@@ -324,8 +159,7 @@ const visualCategories: VisualCategoryItem[] = [
     title: "Roads & Potholes",
     desc: "Deep potholes, damaged tar roads & broken pavers",
     badge: "Road Works",
-    image:
-      "https://images.unsplash.com/photo-1590674899484-d5640e854abe?w=800&auto=format&fit=crop&q=80",
+    image: "/img/complaints/roads-potholes.avif",
     gradient: "from-slate-700 to-slate-900",
     icon: AlertTriangle,
   },
@@ -334,8 +168,7 @@ const visualCategories: VisualCategoryItem[] = [
     title: "Drainage & Sewage",
     desc: "Blocked storm drains, sewage leaks & manhole repairs",
     badge: "Sewage",
-    image:
-      "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?w=800&auto=format&fit=crop&q=80",
+    image: "/img/complaints/drainage-sewage.avif",
     gradient: "from-orange-600 to-amber-700",
     icon: Droplet,
   },
@@ -344,8 +177,7 @@ const visualCategories: VisualCategoryItem[] = [
     title: "Water Supply & Leakage",
     desc: "Pipeline bursts, low pressure & dirty drinking water",
     badge: "Water Board",
-    image:
-      "https://images.unsplash.com/photo-1548839140-29a749e1cf4e?w=800&auto=format&fit=crop&q=80",
+    image: "/img/complaints/water-supply.avif",
     gradient: "from-blue-600 to-cyan-600",
     icon: Droplet,
   },
@@ -354,8 +186,7 @@ const visualCategories: VisualCategoryItem[] = [
     title: "Others / General Civic",
     desc: "Stray animal issues, park repair & general civic fixes",
     badge: "Municipal Fixes",
-    image:
-      "https://images.unsplash.com/photo-1577495508048-b635879837f1?w=800&auto=format&fit=crop&q=80",
+    image: "/img/complaints/others.avif",
     gradient: "from-purple-600 to-indigo-700",
     icon: HelpCircle,
   },
@@ -406,7 +237,6 @@ export const Complaints: React.FC = () => {
   const [viewMode, setViewMode] = useState<"overview" | "workspace">(
     "overview",
   );
-  const [howSlideIndex, setHowSlideIndex] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<"my-complaints" | "nearby">(
     "my-complaints",
   );
@@ -415,7 +245,7 @@ export const Complaints: React.FC = () => {
   );
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
   const [selectedAdminModal, setSelectedAdminModal] =
-    useState<AdminModalData | null>(null);
+    useState<OfficialAdminData | null>(null);
   const [isGovtServicesModalOpen, setIsGovtServicesModalOpen] =
     useState<boolean>(false);
   const [isListLoading, setIsListLoading] = useState<boolean>(false);
@@ -455,13 +285,6 @@ export const Complaints: React.FC = () => {
   useEffect(() => {
     setValue("category", selectedCategory);
   }, [selectedCategory, setValue]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setHowSlideIndex((prev) => (prev + 1) % complaintGuideSteps.length);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
 
   const myComplaints = (complaints as Complaint[]).filter(
     (c) =>
@@ -581,99 +404,7 @@ export const Complaints: React.FC = () => {
           </div>
 
           {/* Reimagined Illustrated Guide Banner */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center space-x-2 text-slate-900 dark:text-white">
-                <Sparkles
-                  size={18}
-                  className="text-amber-500 shrink-0 animate-pulse"
-                />
-                <h2 className="text-sm sm:text-base font-extrabold tracking-tight">
-                  How Complaint Reporting Works
-                </h2>
-              </div>
-
-              <div className="flex items-center space-x-1.5">
-                {complaintGuideSteps.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setHowSlideIndex(i)}
-                    className={`h-2 rounded-full transition-all duration-300 cursor-pointer ${
-                      i === howSlideIndex
-                        ? "w-6 bg-primary"
-                        : "w-2 bg-slate-300 dark:bg-slate-700 hover:bg-slate-400"
-                    }`}
-                    aria-label={`Go to guide step ${i + 1}`}
-                  />
-                ))}
-              </div>
-            </div>
-
-            <div className="relative rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-linear-to-br from-slate-900 via-slate-900 to-slate-950 text-white shadow-xl min-h-40 sm:min-h-45 flex items-center">
-              <div className="absolute -right-12 -top-12 w-48 h-48 bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute right-20 -bottom-12 w-40 h-40 bg-orange-500/10 rounded-full blur-2xl pointer-events-none" />
-
-              <button
-                onClick={() =>
-                  setHowSlideIndex((prev) =>
-                    prev === 0 ? complaintGuideSteps.length - 1 : prev - 1,
-                  )
-                }
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center cursor-pointer absolute left-3 sm:left-4 z-20 transition active:scale-90"
-                title="Previous Step"
-              >
-                <ChevronLeft size={18} />
-              </button>
-
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={howSlideIndex}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  className="w-full flex flex-col sm:flex-row items-center justify-between px-14 sm:px-16 py-6 gap-4 z-10"
-                >
-                  <div className="space-y-1.5 text-center sm:text-left flex-1 min-w-0">
-                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-amber-400 block">
-                      {complaintGuideSteps[howSlideIndex].stepTag}
-                    </span>
-                    <h3 className="font-black text-base sm:text-xl text-white leading-tight">
-                      {complaintGuideSteps[howSlideIndex].title}
-                    </h3>
-                    <p className="text-xs sm:text-sm font-medium text-slate-300 leading-relaxed max-w-lg">
-                      {complaintGuideSteps[howSlideIndex].desc}
-                    </p>
-                  </div>
-
-                  <div className="shrink-0 hidden xs:flex">
-                    <div
-                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-linear-to-br ${complaintGuideSteps[howSlideIndex].illustrationBg} text-white flex items-center justify-center shadow-lg shadow-black/30 border border-white/20`}
-                    >
-                      {React.createElement(
-                        complaintGuideSteps[howSlideIndex].icon,
-                        {
-                          size: 28,
-                        },
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
-
-              <button
-                onClick={() =>
-                  setHowSlideIndex(
-                    (prev) => (prev + 1) % complaintGuideSteps.length,
-                  )
-                }
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 text-white border border-white/15 flex items-center justify-center cursor-pointer absolute right-3 sm:right-4 z-20 transition active:scale-90"
-                title="Next Step"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
+          <ComplaintGuideSteps />
 
           {/* Services Section */}
           <div className="space-y-3">
@@ -1101,6 +832,7 @@ export const Complaints: React.FC = () => {
               ? "Step 2 of 3: Describe Issue & Location"
               : "Step 3 of 3: Grievance Registered"
         }
+        maxWidth="sm:max-w-2xl md:max-w-3xl xl:max-w-6xl"
       >
         {/* Step Progress Bar */}
         <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-5 overflow-hidden">
@@ -1120,7 +852,7 @@ export const Complaints: React.FC = () => {
               Select the category below that best describes your civic problem:
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 max-h-110 overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3.5 max-h-110 overflow-y-auto pr-1">
               {visualCategories.map((cat) => {
                 const CatIcon = cat.icon;
                 const isSelected = selectedCategory === cat.id;
@@ -1463,121 +1195,388 @@ export const Complaints: React.FC = () => {
       {/* DETAILED GRIEVANCE VIEW WITH STEPPER */}
       {selectedComplaint && (
         <Modal
-          isOpen={!!selectedComplaint}
-          onClose={() => setSelectedComplaint(null)}
-          title="Track Grievance"
+          isOpen={isReportModalOpen}
+          onClose={() => setIsReportModalOpen(false)}
+          maxWidth="sm:max-w-2xl md:max-w-3xl xl:max-w-5xl" // <-- WIDER RESPONSIVE WIDTH
+          title={
+            reportStep === 1
+              ? "Step 1 of 3: Select Issue Category"
+              : reportStep === 2
+                ? "Step 2 of 3: Describe Issue & Location"
+                : "Step 3 of 3: Grievance Registered"
+          }
         >
-          <div className="space-y-5">
-            <div className="flex items-start space-x-3.5">
-              <img
-                src={selectedComplaint.imageUrl}
-                alt={selectedComplaint.title}
-                className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shrink-0 shadow-sm"
+          <div className="flex flex-col min-h-[75dvh] lg:min-h-[70vh] h-full">
+            {/* Step Progress Bar */}
+            <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mb-5 sm:mb-6 overflow-hidden">
+              <div
+                className="bg-primary h-full transition-all duration-300 rounded-full"
+                style={{
+                  width:
+                    reportStep === 1
+                      ? "33%"
+                      : reportStep === 2
+                        ? "66%"
+                        : "100%",
+                }}
               />
-              <div className="min-w-0 flex-1 space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span className="font-mono text-[10px] sm:text-xs font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
-                    {selectedComplaint.issueId ||
-                      `AVD-2026-${1000 + Number(selectedComplaint.id)}`}
-                  </span>
-                  <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                    Ward {selectedComplaint.ward}
-                  </span>
-                </div>
-                <h3 className="font-black text-sm sm:text-base text-slate-900 dark:text-white leading-snug">
-                  {selectedComplaint.title}
-                </h3>
-                {selectedComplaint.address && (
-                  <p className="text-xs font-medium text-slate-500 flex items-center pt-0.5">
-                    <MapPin size={12} className="mr-1 text-primary shrink-0" />
-                    <span className="truncate">
-                      {selectedComplaint.address}
-                    </span>
-                  </p>
-                )}
-              </div>
             </div>
 
-            <div className="bg-slate-50 dark:bg-slate-900/80 p-4 sm:p-5 border border-slate-200/80 dark:border-slate-800 rounded-3xl">
-              <h4 className="text-xs font-extrabold tracking-wider text-slate-400 dark:text-slate-500 uppercase mb-5">
-                Resolution Stepper Tracker
-              </h4>
+            {/* STEP 1: VISUAL CATEGORY SELECTION */}
+            {reportStep === 1 && (
+              <div className="space-y-4">
+                <p className="text-xs sm:text-sm font-extrabold text-slate-700 dark:text-slate-200">
+                  Select the category below that best describes your civic
+                  problem:
+                </p>
 
-              <div className="flex items-center justify-between relative px-2">
-                {["Submitted", "Acknowledged", "In Progress", "Resolved"].map(
-                  (stage, idx) => {
-                    const currentStageIdx = [
-                      "Submitted",
-                      "Acknowledged",
-                      "In Progress",
-                      "Resolved",
-                    ].indexOf(selectedComplaint.status);
-                    const isCompleted =
-                      idx <= (currentStageIdx === -1 ? 0 : currentStageIdx);
-                    const isCurrent = idx === currentStageIdx;
+                {/* UPGRADED GRID: 1 col (Mobile) -> 2 col (Tablet) -> 3 col (Desktop) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2">
+                  {visualCategories.map((cat) => {
+                    const CatIcon = cat.icon;
+                    const isSelected = selectedCategory === cat.id;
 
                     return (
-                      <div
-                        key={stage}
-                        className="flex flex-col items-center relative z-10"
+                      <motion.div
+                        key={cat.id}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={() => setSelectedCategory(cat.id)}
+                        className={`rounded-3xl overflow-hidden border-2 transition-all cursor-pointer group flex flex-col justify-between bg-white dark:bg-slate-900 ${
+                          isSelected
+                            ? "border-primary ring-4 ring-primary/20 shadow-xl bg-orange-500/5 dark:bg-orange-500/10"
+                            : "border-slate-200 dark:border-slate-800 hover:border-slate-400 shadow-xs"
+                        }`}
                       >
-                        <div
-                          className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all ${
-                            isCompleted
-                              ? "bg-primary text-white shadow-md shadow-primary/30"
-                              : "bg-slate-200 dark:bg-slate-800 text-slate-400"
-                          } ${isCurrent ? "ring-4 ring-primary/20 scale-110" : ""}`}
-                        >
-                          {isCompleted ? <Check size={16} /> : idx + 1}
+                        <div className="relative h-36 md:h-40 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                          <img
+                            src={cat.image}
+                            alt={cat.title}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                            <div
+                              className={`p-1.5 rounded-xl bg-gradient-to-br ${cat.gradient} text-white shadow-md flex items-center space-x-2 px-3 border border-white/20`}
+                            >
+                              <CatIcon size={16} />
+                              <span className="text-[11px] font-black tracking-wider uppercase">
+                                {cat.badge}
+                              </span>
+                            </div>
+                            {isSelected && (
+                              <span className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-emerald-600 text-white text-[10px] font-black shadow-lg border border-white/40">
+                                <CheckCircle2 size={14} />
+                                <span className="hidden sm:inline">
+                                  SELECTED
+                                </span>
+                              </span>
+                            )}
+                          </div>
                         </div>
-                        <span
-                          className={`text-[10px] sm:text-xs font-extrabold mt-2 text-center max-w-16 sm:max-w-none ${
-                            isCurrent
-                              ? "text-primary font-black"
-                              : isCompleted
-                                ? "text-slate-700 dark:text-slate-300"
-                                : "text-slate-400"
-                          }`}
-                        >
-                          {stage}
-                        </span>
-                      </div>
+
+                        <div className="p-4 space-y-2 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex-1 flex flex-col justify-between">
+                          <div>
+                            <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-tight">
+                              {cat.title}
+                            </h3>
+                            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-1">
+                              {cat.desc}
+                            </p>
+                          </div>
+                          <div className="pt-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800/80 mt-2">
+                            <span
+                              className={`text-xs font-extrabold ${
+                                isSelected
+                                  ? "text-primary dark:text-orange-400"
+                                  : "text-slate-400"
+                              }`}
+                            >
+                              {isSelected ? "✓ Ready" : "Tap to select"}
+                            </span>
+                            <span
+                              className={`px-3 py-1.5 rounded-xl text-[11px] font-black border ${
+                                isSelected
+                                  ? "bg-primary text-white border-primary shadow-xs"
+                                  : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
+                              }`}
+                            >
+                              {isSelected ? "CHOSEN" : "SELECT"}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
                     );
-                  },
-                )}
-                <div className="absolute top-4 left-8 right-8 h-0.5 bg-slate-200 dark:bg-slate-800 z-0" />
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setReportStep(2)}
+                  className="w-full sm:w-auto sm:min-w-[250px] mx-auto py-3.5 sm:py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer mt-5 tracking-wider uppercase active:scale-98"
+                >
+                  <span>NEXT STEP</span>
+                  <ArrowRight size={18} />
+                </button>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
-                Issue Description
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                {selectedComplaint.description}
-              </p>
-            </div>
+            {/* STEP 2: ISSUE DETAILS & MEDIA */}
+            {reportStep === 2 && (
+              <form
+                onSubmit={handleSubmit(handleReportSubmit)}
+                className="space-y-5"
+              >
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 sm:pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setReportStep(1)}
+                    className="inline-flex items-center space-x-1.5 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer"
+                  >
+                    <ArrowLeft size={16} />
+                    <span>Change Category</span>
+                  </button>
 
-            <div className="p-4 rounded-2xl bg-orange-500/5 border border-orange-500/20 flex items-center justify-between text-xs sm:text-sm">
-              <div>
-                <span className="text-xs font-bold text-slate-400 block">
-                  Assigned Officer
-                </span>
-                <span className="font-black text-slate-800 dark:text-slate-200">
-                  Er. K. Ramesh (Ward {selectedComplaint.ward} Zonal Admin)
-                </span>
+                  <span className="px-3 py-1.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20">
+                    {selectedCategory}
+                  </span>
+                </div>
+
+                {/* UPGRADED GRID: Inputs span perfectly on desktop */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Ward Number
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      {...register("ward")}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                    {errors.ward && (
+                      <p className="text-xs text-rose-500 font-medium">
+                        {errors.ward.message}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Address / Spot Landmark
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Near Pattabiram Railway Station"
+                      {...register("address")}
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Issue Summary Title
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Brief summary (e.g. Streetlight broken for past 4 days)"
+                    {...register("title")}
+                    className="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  {errors.title && (
+                    <p className="text-xs text-rose-500 font-medium">
+                      {errors.title.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                    Detailed Problem Description
+                  </label>
+                  <textarea
+                    placeholder="Describe what needs fixing, how long it has been broken, or safety concerns..."
+                    rows={4}
+                    {...register("description")}
+                    className="w-full p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400 resize-none"
+                  />
+                  {errors.description && (
+                    <p className="text-xs text-rose-500 font-medium">
+                      {errors.description.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Issue Photos
+                    </label>
+                    <span className="text-xs text-slate-400 font-medium">
+                      Upload or select sample photo below
+                    </span>
+                  </div>
+
+                  <div className="flex gap-2.5 pb-2 overflow-x-auto custom-scrollbar">
+                    {sampleIssuePhotos.map((sample, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => handleSelectSamplePhoto(sample.url)}
+                        className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary/10 hover:text-primary text-xs font-bold text-slate-600 dark:text-slate-300 shrink-0 transition"
+                      >
+                        + {sample.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-4 items-center pt-2">
+                    {imagePreviews.map((url, i) => (
+                      <div
+                        key={i}
+                        className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-100 shadow-sm"
+                      >
+                        <img
+                          src={url}
+                          alt="Attached issue"
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveImage(i)}
+                          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-slate-900/80 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-900 cursor-pointer shadow-md"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    {imagePreviews.length < 3 && (
+                      <label className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
+                        <Camera size={24} className="mb-1" />
+                        <span className="text-[11px] sm:text-xs font-extrabold mt-1">
+                          Upload
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          multiple
+                          onChange={handleImageUpload}
+                          className="sr-only"
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="submit"
+                    disabled={!isValid}
+                    className="w-full sm:w-auto sm:float-right sm:min-w-[250px] py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase active:scale-98"
+                  >
+                    Submit Grievance Report
+                  </button>
+                  <div className="clear-both"></div>
+                </div>
+              </form>
+            )}
+
+            {/* STEP 3: SUCCESS ACKNOWLEDGEMENT */}
+            {reportStep === 3 && submittedComplaint && (
+              <div className="space-y-6 text-center py-6 sm:py-8 max-w-lg mx-auto">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-md animate-bounce">
+                  <CheckCircle2 size={48} />
+                </div>
+
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+                    Grievance Submitted Successfully!
+                  </h3>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    Your report has been securely logged and dispatched to the
+                    Avadi Municipal Corporation & Zonal Officer.
+                  </p>
+                </div>
+
+                <div className="p-5 sm:p-6 rounded-3xl bg-orange-500/10 border border-orange-500/20 space-y-3">
+                  <span className="text-xs sm:text-sm font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
+                    Official Grievance ID
+                  </span>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+                    <span className="font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-widest">
+                      {submittedComplaint.issueId ||
+                        `AVD-2026-${1000 + Number(submittedComplaint.id)}`}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        copyToClipboard(
+                          submittedComplaint.issueId ||
+                            `AVD-2026-${1000 + Number(submittedComplaint.id)}`,
+                        )
+                      }
+                      className="px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-primary transition text-xs font-extrabold flex items-center space-x-1.5 shadow-xs cursor-pointer"
+                      title="Copy Issue ID"
+                    >
+                      <Copy size={16} />
+                      <span>{copiedId ? "Copied!" : "Copy"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-5 sm:p-6 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left space-y-3.5 text-sm">
+                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <span className="text-slate-500 font-semibold">
+                      Category:
+                    </span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      {submittedComplaint.category}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center border-b border-slate-200 dark:border-slate-800 pb-3">
+                    <span className="text-slate-500 font-semibold">
+                      Ward & Spot:
+                    </span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200 text-right truncate max-w-[200px] sm:max-w-xs">
+                      Ward {submittedComplaint.ward} ·{" "}
+                      {submittedComplaint.address}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-semibold">
+                      Initial Status:
+                    </span>
+                    <span className="font-extrabold text-amber-600 dark:text-amber-400 flex items-center">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 mr-2 animate-pulse" />
+                      Submitted (Logged)
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsReportModalOpen(false)}
+                    className="w-full py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm cursor-pointer order-2 sm:order-1"
+                  >
+                    Close Window
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab("my-complaints");
+                      setViewMode("workspace");
+                      setIsReportModalOpen(false);
+                    }}
+                    className="w-full py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md transition text-sm cursor-pointer flex items-center justify-center space-x-2 active:scale-98 order-1 sm:order-2"
+                  >
+                    <FileText size={18} />
+                    <span>Track Status</span>
+                  </button>
+                </div>
               </div>
-              <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-extrabold text-xs border border-emerald-500/20 shrink-0">
-                Tracking Active
-              </span>
-            </div>
-
-            <button
-              onClick={() => setSelectedComplaint(null)}
-              className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black transition text-xs sm:text-sm cursor-pointer"
-            >
-              Done
-            </button>
+            )}
           </div>
         </Modal>
       )}

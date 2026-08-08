@@ -17,6 +17,7 @@ export interface ModalProps {
   onClose: () => void;
   title: string;
   children: React.ReactNode;
+  maxWidth?: string;
 }
 
 export interface BadgeProps {
@@ -76,6 +77,7 @@ export const Modal: React.FC<ModalProps> = ({
   onClose,
   title,
   children,
+  maxWidth = "sm:max-w-lg",
 }) => {
   return (
     <AnimatePresence>
@@ -98,7 +100,7 @@ export const Modal: React.FC<ModalProps> = ({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="w-full sm:max-w-lg bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90svh] sm:max-h-[85vh]"
+            className={`w-full ${maxWidth} bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl border border-slate-200 dark:border-slate-700 shadow-2xl overflow-hidden z-10 flex flex-col max-h-[90svh] sm:max-h-[85vh]`}
           >
             {/* Header */}
             <div className="px-6 py-4 flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
