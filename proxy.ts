@@ -14,9 +14,11 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Prevent logged-in users from visiting guest-only pages (/login or /get-started)
+  // 2. Prevent logged-in users from visiting guest-only pages (/login or /get-started or /forgot-password)
   const isAuthRoute =
-    pathname.startsWith("/login") || pathname.startsWith("/get-started");
+    pathname.startsWith("/login") ||
+    pathname.startsWith("/get-started") ||
+    pathname.startsWith("/forgot-password");
   if (session && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
