@@ -18,6 +18,8 @@ import {
   Search,
   AlertCircle,
   Check,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -69,6 +71,8 @@ export default function GetStartedClient() {
   // API & Network States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // Step 1 Inline OTP States
   const [otpSent, setOtpSent] = useState(false);
@@ -149,8 +153,8 @@ export default function GetStartedClient() {
       name: "",
       password: "",
       gender: "Male",
-      dob: getEighteenYearsAgoDate(),
-      bloodGroup: "O+",
+      dob: "",
+      bloodGroup: "",
     },
   });
 
@@ -845,11 +849,19 @@ export default function GetStartedClient() {
                         <Key size={18} />
                       </span>
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         placeholder="Create a password (min 6 chars)"
                         {...registerPersonal("password")}
-                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                        className="w-full h-12 pl-11 pr-11 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-r-2xl transition"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                     </div>
                     {errorsPersonal.password && (
                       <p className="text-xs text-rose-500 font-bold pl-1">
@@ -865,9 +877,10 @@ export default function GetStartedClient() {
                     <div className="w-full max-w-full overflow-hidden mt-2">
                       <input
                         type="date"
+                        placeholder="DD-MM-YYYY"
                         max={new Date().toISOString().split("T")[0]}
                         {...registerPersonal("dob")}
-                        className="w-full max-w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-border appearance-none block"
+                        className="w-full max-w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-sm font-medium cursor-pointer transition box-border appearance-none block [&:not(:invalid)]:text-slate-900 [&:not(:invalid)]:dark:text-white"
                       />
                     </div>
                     {errorsPersonal.dob && (
@@ -885,6 +898,9 @@ export default function GetStartedClient() {
                       {...registerPersonal("bloodGroup")}
                       className="mt-2 w-full h-12 px-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium cursor-pointer transition"
                     >
+                      <option value="" disabled>
+                        Select Blood Group
+                      </option>
                       {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
                         (bg) => (
                           <option key={bg} value={bg}>
