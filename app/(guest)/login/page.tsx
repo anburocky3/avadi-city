@@ -280,6 +280,15 @@ export default function LoginPage() {
                     </div>
                   </div>
 
+                  <div className="flex justify-end pt-1">
+                    <Link
+                      href={`/forgot-password${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+                      className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      Forgot Password?
+                    </Link>
+                  </div>
+
                   <div className="flex space-x-3 pt-4">
                     <button
                       type="button"
