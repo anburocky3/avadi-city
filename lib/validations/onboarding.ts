@@ -17,9 +17,11 @@ export const stepPersonalSchema = zod.object({
     .refine((date) => new Date(date) <= new Date(), {
       message: "Date of birth cannot be in the future",
     }),
-  bloodGroup: zod.enum(["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"], {
-    error: () => ({ message: "Please select your blood group" }),
-  }),
+  bloodGroup: zod
+    .string()
+    .refine((v) => ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].includes(v), {
+      message: "Please select your blood group",
+    }),
 });
 
 export const stepContactSchema = zod.object({

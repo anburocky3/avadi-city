@@ -10,6 +10,8 @@ import {
   AlertCircle,
   X,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
@@ -28,6 +30,8 @@ export default function LoginPage() {
   // API & Network States
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
+
+  const [showPassword, setShowPassword] = useState(false);
 
   // STEP 1: CHECK IF EMAIL EXISTS
   const handleCheckEmail = async (e: FormEvent) => {
@@ -266,7 +270,7 @@ export default function LoginPage() {
                         <Key size={18} />
                       </span>
                       <input
-                        type="password"
+                        type={showPassword ? "text" : "password"}
                         required
                         value={password}
                         onChange={(e) => {
@@ -275,8 +279,16 @@ export default function LoginPage() {
                         }}
                         autoFocus
                         placeholder="••••••••"
-                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                        className="w-full h-12 pl-11 pr-11 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-r-2xl transition"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
                     </div>
                   </div>
 
