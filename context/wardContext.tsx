@@ -250,10 +250,14 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
       "/",
       "/login",
       "/get-started",
+      "/forgot-password",
       "/credits",
       "/contact",
     ];
-    const isProtectedRoute = !publicRoutes.includes(pathname);
+    const isPublicRoute = publicRoutes.some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`),
+    );
+    const isProtectedRoute = !isPublicRoute;
 
     // Once auth check finishes, if there is no valid user on a protected page -> redirect
     if (!isLoadingAuth && !authUser && isProtectedRoute) {
