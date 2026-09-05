@@ -33,6 +33,7 @@ import useToast from "@/hooks/useToast";
 
 import { useWard, Feed as FeedData } from "@/context/wardContext";
 import { Card, Modal, EmptyState } from "@/components/shared-components";
+import ComplaintFeedCard from "./ComplaintFeedCard";
 
 export interface Complaint {
   id: number | string;
@@ -518,6 +519,32 @@ export const FeedPage: React.FC = () => {
         {paginatedFeeds.length > 0 ? (
           <div className="space-y-4 mb-10">
             {paginatedFeeds.map((feed) => {
+              if (feed.category === "complaint" || feed.complaint) {
+                const formattedFeedProps = {
+                  id: String(feed.id),
+                  text: feed.text,
+                  imageUrl: feed.imageUrl,
+                  timestamp: feed.timestamp || new Date().toISOString(),
+                  likesCount: feed.likes,
+                  author: {
+                    name: feed.authorName,
+                    avatar: feed.authorAvatar,
+                  },
+                  complaint: feed.complaint || null,
+                };
+
+                return (
+                  <ComplaintFeedCard
+                    key={feed.id}
+                    feed={formattedFeedProps}
+                    onUpvote={(feedId) => upvoteComplaint(feedId)}
+                    onComment={(feedId) => {}}
+                    // onComment={(feedId) => setSelectedFeed(feed)}
+                    onShare={(feedId) => handleShare(feed)}
+                  />
+                );
+              }
+
               const isAuthor =
                 authUser?.id === feed.authorId ||
                 authUser?.name === feed.authorName;

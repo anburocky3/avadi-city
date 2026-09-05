@@ -1,0 +1,51 @@
+model Complaint {
+  id            String      @id @default(cuid())
+  issueId         String   @unique // Formatted tracking ID (e.g., AVD-2026-482910)
+  title         String
+  description   String   @db.Text // Allows for longer detailed descriptions
+  category      String
+  subCategory   String
+
+  incidentWard    Int      // Where the issue is located
+  userWard        Int      // The user's home ward at the time of reporting
+  
+  address       String
+  lat           Float
+  lng           Float
+  status        String   @default("Submitted") // "Submitted", "Acknowledged", "In Progress", "Resolved"
+  
+  imageUrl      String?  // Primary thumbnail image
+  imageUrls     Json?    // Array of up to 3 image URLs. (Use String[] if you are on PostgreSQL)
+  
+  author        String   // Snapshot of user's name at the time of submission
+  userId        String?  // Change this to Int? if your User.id is an Int
+  user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  feeds           Feed[]
+  shareOnFeed     Boolean  @default(true)
+  devicePlatform  String?  @default("Web") // Future-proofing
+
+  upvotesList ComplaintUpvote[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([incidentWard])
+  @@index([status])
+  @@index([issueId])
+}
+
+model ComplaintUpvote {
+  id          String   @id @default(cuid())
+  complaintId String   // Foreign key to Complaint
+  userId      String   // Foreign key to User
+  createdAt   DateTime @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([complaintId, userId]) // Enforces 1 upvote per user per complaint
+  @@index([complaintId])
+  @@index([userId])
+  @@map("complaint_upvotes")
+}

@@ -1,13 +1,16 @@
 model Feed {
   id           String     @id @default(cuid())
   authorId     String    // Foreign key to User
-  ward         String
+  ward         Int
   text         String     @db.LongText // Use LongText for MySQL base64 images
   imageUrl     String?    @db.LongText
   isEmergency  Boolean    @default(false)
   category     String     @default("general")
   likesCount   Int        @default(0) @map("likes_count")
   timestamp    DateTime   @default(now())
+
+  complaintId  String?    @map("complaint_id") // Change to Int? if Complaint.id is an Int
+  complaint    Complaint? @relation(fields: [complaintId], references: [id], onDelete: SetNull)
 
   // Relations
   author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
@@ -17,6 +20,7 @@ model Feed {
   @@index([authorId])
   @@index([ward])
   @@index([category, timestamp])
+  @@index([complaintId])
   @@map("feeds")
 }
 

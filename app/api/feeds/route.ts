@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 
     const feeds = await prisma.feed.findMany({
       where: {
-        ...(ward && ward !== "all" ? { ward: String(ward) } : {}),
+        ...(ward && ward !== "all" ? { ward: Number(ward) } : {}),
         ...(category ? { category: { equals: category } } : {}),
       },
       include: {
@@ -39,6 +39,7 @@ export async function GET(request: Request) {
             isVerified: true,
           },
         },
+        complaint: true,
         comments: {
           include: {
             user: {
@@ -68,6 +69,7 @@ export async function GET(request: Request) {
       likes: feed.likesCount,
       // If feed.likes returned an array with at least 1 item, YOU liked this post!
       likedByMe: Array.isArray(feed.likes) && feed.likes.length > 0,
+      complaint: feed.complaint || null,
       comments: feed.comments.map((c: any) => ({
         ...c,
         author: c.user?.name || c.author || "Resident",
@@ -139,7 +141,7 @@ export async function POST(request: Request) {
       data: {
         text: text?.trim() || "",
         category: category || "General",
-        ward: ward?.toString() || "all",
+        ward: Number(ward) || 0,
         isEmergency: Boolean(isEmergency),
         imageUrl: r2ImageUrl,
         authorId: payload.userId,

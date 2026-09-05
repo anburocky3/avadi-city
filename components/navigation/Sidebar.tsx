@@ -8,7 +8,6 @@ import {
   Home,
   MessageSquare,
   Compass,
-  ShieldAlert,
   User,
   AlertTriangle,
   Bell,
@@ -24,7 +23,6 @@ import {
   LogOut,
   HeartPulse,
   LucideIcon,
-  Sparkles,
   ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,6 +63,7 @@ interface WardContextType {
   readAlerts: (string | number)[];
   dismissedAlerts: (string | number)[];
   resetOnboarding: () => void;
+  logout: () => Promise<void>;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
@@ -98,11 +97,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
   // --- Ward Context ---
   const {
+    logout,
     activeWard,
     alerts = [],
     readAlerts = [],
     dismissedAlerts = [],
-    resetOnboarding = () => {},
   } = useWard() as unknown as WardContextType;
 
   // Safe Guard Return AFTER all hooks have been declared
@@ -134,6 +133,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: t("volunteers.title"), path: "/volunteers", icon: HeartHandshake },
     { name: t("transport"), path: "/transport", icon: Train },
   ];
+
+  // Helper function to reliably check if a route is active (handles nested routing)
+  const isItemActive = (itemPath: string) => {
+    if (pathname === itemPath) return true;
+    // Appending '/' ensures that '/complaints' matches '/complaints/report'
+    // but doesn't accidentally match '/complaints-history'
+    if (pathname.startsWith(`${itemPath}/`)) return true;
+    return false;
+  };
 
   return (
     <>
@@ -172,7 +180,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               if (onClose) onClose();
             }}
           >
-            <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 shadow-md flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 shadow-md flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
               <img
                 src="/logo.png"
                 alt="AVADI CITY Official Logo"
@@ -206,7 +214,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             setIsWardModalOpen(true);
             if (onClose) onClose();
           }}
-          className="w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-xs group overflow-hidden box-border"
+          className="w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border"
         >
           <div className="flex items-center space-x-3 min-w-0 flex-1 pr-2">
             <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-md shadow-orange-500/20 shrink-0">
@@ -222,25 +230,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-0.5 text-primary shrink-0 group-hover:translate-x-0.5 transition-transform pl-1">
+          <div className="flex items-center space-x-0.5 text-primary shrink-0 group-hover:translate-x-1 transition-transform pl-1">
             <span className="text-[11px] font-extrabold">{t("edit")}</span>
             <ChevronRight size={14} />
           </div>
         </motion.button>
 
         {/* Navigation - Main Group */}
-        <div className="flex-1 space-y-6 overflow-y-auto pr-1 scrollbar-thin">
+        <div className="flex-1 space-y-6 overflow-y-auto pr-1 custom-scrollbar">
           <div>
             <nav className="mt-2.5 space-y-1.5">
               {mainNav.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.path;
+                const isActive = isItemActive(item.path);
+
                 return (
                   <Link
                     key={item.path}
                     href={item.path}
                     onClick={onClose}
-                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-98 ${
+                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${
                       item.isSOS
                         ? isActive
                           ? "bg-rose-600 text-white shadow-lg shadow-rose-600/30"
@@ -268,13 +277,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <nav className="mt-2.5 space-y-1.5">
               {quickModules.map((item) => {
                 const Icon = item.icon;
-                const isActive = pathname === item.path;
+                const isActive = isItemActive(item.path);
+
                 return (
                   <Link
                     key={item.path}
                     href={item.path}
                     onClick={onClose}
-                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-98 ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${
                       isActive
                         ? "bg-teal-700 text-white shadow-lg shadow-teal-700/25"
                         : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
@@ -285,7 +295,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       <span>{item.name}</span>
                     </div>
                     {item.badge && (
-                      <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center animate-pulse shadow-xs">
+                      <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center animate-pulse shadow-sm">
                         {item.badge}
                       </span>
                     )}
@@ -297,12 +307,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
           <div className="pt-2 border-t border-slate-100 dark:border-slate-900">
             <button
-              onClick={() => {
-                resetOnboarding();
+              onClick={async () => {
+                await logout();
                 if (onClose) onClose();
-                router.push("/");
               }}
-              className="w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer text-left active:scale-98"
+              className="w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer text-left active:scale-95"
             >
               <LogOut size={18} className="shrink-0" />
               <span>{t("logout")}</span>
@@ -313,7 +322,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Footer Settings / Theme Toggle */}
         <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80 mt-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200 uppercase shadow-xs">
+            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200 uppercase shadow-sm">
               {activeWard.name ? activeWard.name[0] : "A"}
             </div>
             <div className="flex flex-col">
@@ -330,7 +339,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={toggleTheme}
-              className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition cursor-pointer shadow-xs"
+              className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition cursor-pointer shadow-sm"
               aria-label="Toggle theme"
             >
               {isDark ? (
