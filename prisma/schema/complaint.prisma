@@ -25,7 +25,8 @@ model Complaint {
   shareOnFeed     Boolean  @default(true)
   devicePlatform  String?  @default("Web") // Future-proofing
 
-  upvotesList ComplaintUpvote[]
+  upvotes         Int      @default(0)
+  upvotesList     ComplaintUpvote[]
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
