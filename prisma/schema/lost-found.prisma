@@ -1,0 +1,38 @@
+model LostFoundItem {
+  id          String    @id @default(cuid())
+  itemId      String    @unique // Formatted tracking ID (e.g., LF-2026-482910)
+  type        String    // "lost" | "found"
+  title       String
+  description String    @db.Text
+  category    String    // "Wallet" | "Phone" | "Keys" | "Pet" | "Bag" | "Documents" | "Jewellery" | "Other"
+  ward        Int       // Avadi municipal ward number (1–48)
+  location    String    // Human-readable area/street description
+
+  lostFoundDate String  // ISO date string of when item was lost or found
+  lostFoundTime String? // Optional time string
+
+  imageUrl    String?   // Primary image URL (R2)
+  imageUrls   Json?     // Array of up to 3 image URLs
+
+  status      String    @default("Active") // "Active" | "Resolved"
+  resolvedAt  DateTime?
+
+  // Contact — never returned in public listing; only via controlled reveal
+  contactPhone String   // Stored server-side; never exposed in listing API
+
+  // Author
+  contactName String    // Snapshot of user's display name at the time of submission
+  userId      String    // FK to User — every report must be authenticated
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([ward])
+  @@index([type])
+  @@index([status])
+  @@index([userId])
+  @@index([itemId])
+  @@index([ward, type, status])
+  @@map("lost_found_items")
+}
