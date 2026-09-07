@@ -16,6 +16,7 @@ import {
   Building2,
   Navigation,
   HelpCircle,
+  PawPrint,
   LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -69,6 +70,8 @@ const CATEGORIES: FilterCategory[] = [
   { id: "Pharmacies", nameKey: "pharmacies", icon: Pill },
   { id: "Clinics", nameKey: "clinics", icon: Stethoscope },
   { id: "Diagnostics", nameKey: "diagnostics", icon: Building2 },
+  { id: "Pet Hospitals", nameKey: "petHospitals", icon: PawPrint },
+  { id: "Pet Clinics", nameKey: "petClinics", icon: PawPrint },
 ];
 
 export const HealthcareClient: React.FC<HealthcareClientProps> = ({
