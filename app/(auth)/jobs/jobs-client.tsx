@@ -16,6 +16,7 @@ import {
   Building,
   Send,
   DollarSign,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -198,6 +199,32 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
         </button>
       </div>
 
+      {/* Search Bar */}
+      <div className="relative">
+        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <Search size={18} />
+        </span>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setSearchQuery(e.target.value)
+          }
+          placeholder={t("searchPlaceholder")}
+          className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition shadow-sm"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            aria-label="Clear search"
+          >
+            <X size={16} />
+          </button>
+        )}
+      </div>
+
       {/* Type Filter Chips */}
       <div className="flex items-center space-x-2 overflow-x-auto pb-1 no-scrollbar">
         {["All", "Full-Time", "Part-Time", "Contract"].map((type) => (
@@ -213,22 +240,6 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
             {type === "All" ? t("types.all") : type}
           </button>
         ))}
-      </div>
-
-      {/* Search Bar */}
-      <div className="relative">
-        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <Search size={18} />
-        </span>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSearchQuery(e.target.value)
-          }
-          placeholder={t("searchPlaceholder")}
-          className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition shadow-sm"
-        />
       </div>
 
       {/* Toast Action Msg */}
@@ -366,10 +377,10 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
         )}
       </div>
 
-      {/* Floating Action Button */}
+      {/* Floating Action Button - Desktop only to prevent keyboard overlap on mobile where top button already exists */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-20 right-4 z-40 md:fixed md:bottom-8 md:right-8 px-4 py-3 rounded-full bg-primary hover:bg-primary/90 text-white flex items-center space-x-1.5 shadow-2xl hover:shadow-primary/30 active:scale-95 transition-all cursor-pointer border-2 border-white dark:border-slate-800 text-xs font-black"
+        className="hidden md:flex md:fixed md:bottom-8 md:right-8 px-4 py-3 rounded-full bg-primary hover:bg-primary/90 text-white items-center space-x-1.5 shadow-2xl hover:shadow-primary/30 active:scale-95 transition-all cursor-pointer border-2 border-white dark:border-slate-800 text-xs font-black z-40"
         title={t("postJobBtn")}
       >
         <Plus size={18} className="stroke-3" />
