@@ -4,14 +4,11 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 
-// GET — Controlled phone reveal for authenticated users.
-// Returns the phone number only if:
-//   1. The requester is authenticated
-//   2. The item exists
-//   3. The item is Active (no reason to contact about resolved items)
-//   4. The requester is NOT the owner (owners already know their phone)
+// GET — Privacy-protected contact reveal.
+// A phone number is ONLY returned when the requesting user has an ACCEPTED claim
+// on this item. This replaces the old direct-reveal endpoint.
 //
-// The raw phone is never returned in list or detail endpoints.
+// The owner can still see their own contactPhone via the /my endpoint — not via here.
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
@@ -54,7 +51,37 @@ export async function GET(
       );
     }
 
-    // Return the phone. Auth is enforced above. The owner can also see their own.
+    // Owners do not need to use this endpoint — they have their own phone
+    if (item.userId === session.userId) {
+      return NextResponse.json(
+        { message: "Use your profile or My Reports to view your own contact" },
+        { status: 400 },
+      );
+    }
+
+    // Check that the requester has an ACCEPTED claim on this item
+    const acceptedClaim = await prisma.lostFoundClaim.findUnique({
+      where: {
+        lostFoundItemId_requesterId: {
+          lostFoundItemId: id,
+          requesterId: session.userId,
+        },
+      },
+      select: { status: true },
+    });
+
+    if (!acceptedClaim || acceptedClaim.status !== "ACCEPTED") {
+      return NextResponse.json(
+        {
+          message:
+            "Contact information is only available after the item owner accepts your claim request.",
+          requiresClaim: true,
+        },
+        { status: 403 },
+      );
+    }
+
+    // Claim is ACCEPTED — safe to reveal owner's phone
     return NextResponse.json(
       {
         contactName: item.contactName,
