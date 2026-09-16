@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -20,6 +20,48 @@ export const BottomTabBar: React.FC = () => {
   const t = useTranslations();
   const pathname = usePathname();
   const { authUser } = useWard();
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    // 1. Detect focus on input/textarea elements
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        setIsKeyboardOpen(true);
+      }
+    };
+
+    const handleFocusOut = () => {
+      setIsKeyboardOpen(false);
+    };
+
+    // 2. Detect visual viewport height shrink (mobile virtual keyboard open)
+    const handleViewportResize = () => {
+      if (typeof window !== "undefined" && window.visualViewport) {
+        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.85;
+        setIsKeyboardOpen(isKeyboard);
+      }
+    };
+
+    window.addEventListener("focusin", handleFocusIn);
+    window.addEventListener("focusout", handleFocusOut);
+    if (typeof window !== "undefined" && window.visualViewport) {
+      window.visualViewport.addEventListener("resize", handleViewportResize);
+    }
+
+    return () => {
+      window.removeEventListener("focusin", handleFocusIn);
+      window.removeEventListener("focusout", handleFocusOut);
+      if (typeof window !== "undefined" && window.visualViewport) {
+        window.visualViewport.removeEventListener("resize", handleViewportResize);
+      }
+    };
+  }, []);
 
   // Strict single-word labels prevent mobile text truncation
   const tabs: TabItem[] = [
@@ -111,7 +153,11 @@ export const BottomTabBar: React.FC = () => {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] pb-[max(0.25rem,env(safe-area-inset-bottom))]"
+      className={`fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] pb-[max(0.25rem,env(safe-area-inset-bottom))] transition-all duration-200 ease-in-out ${
+        isKeyboardOpen
+          ? "translate-y-full opacity-0 pointer-events-none"
+          : "translate-y-0 opacity-100"
+      }`}
     >
       <div className="grid grid-cols-5 items-center w-full max-w-md mx-auto h-16 px-1">
         {tabs.map((tab) => {
