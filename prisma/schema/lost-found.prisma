@@ -25,6 +25,9 @@ model LostFoundItem {
   userId      String    // FK to User — every report must be authenticated
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  // Privacy-first contact: claims must be accepted before any phone is revealed
+  claims      LostFoundClaim[]
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -35,4 +38,39 @@ model LostFoundItem {
   @@index([itemId])
   @@index([ward, type, status])
   @@map("lost_found_items")
+}
+
+// Claim / Match Request — requester must send a message; owner must accept before phones are shared
+model LostFoundClaim {
+  id          String        @id @default(cuid())
+
+  // Item being claimed
+  lostFoundItemId String
+  item            LostFoundItem @relation(fields: [lostFoundItemId], references: [id], onDelete: Cascade)
+
+  // The person sending the claim (e.g., finder claiming a lost item, or owner claiming a found item)
+  requesterId String
+  requester   User   @relation("ClaimRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+
+  // The item poster (owner)
+  ownerId     String
+  owner       User   @relation("ClaimOwnership", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  // Mandatory proof / identification note
+  message     String @db.Text
+
+  // PENDING | ACCEPTED | REJECTED
+  status      String @default("PENDING")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Prevent duplicate claims from same requester on same item
+  @@unique([lostFoundItemId, requesterId])
+
+  @@index([lostFoundItemId])
+  @@index([requesterId])
+  @@index([ownerId])
+  @@index([status])
+  @@map("lost_found_claims")
 }
