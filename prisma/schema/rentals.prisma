@@ -1,0 +1,24 @@
+model RentalListing {
+  id              String         @id @default(cuid())
+  title           String
+  type            String         // "Residential" | "Commercial"
+  propertyTypeTag String?
+  rent            Int
+  advance         Int
+  contact         String
+  ownerName       String?
+  location        String?
+  ward            Int
+  imageUrl        String?        @db.LongText
+  details         String         @db.Text
+  features        String?        @db.Text   // JSON-serialised string[]
+  status          ApprovalStatus @default(PENDING)
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([ward])
+  @@index([status])
+  @@index([type])
+  @@map("rental_listings")
+}

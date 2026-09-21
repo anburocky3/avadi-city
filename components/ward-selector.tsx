@@ -47,7 +47,10 @@ const wardSelectionSchema = zod.object({
 
 type WardSelectionFormData = zod.infer<typeof wardSelectionSchema>;
 
-export const WardSelector: React.FC<WardSelectorProps> = ({ onClose }) => {
+export const WardSelector: React.FC<WardSelectorProps> = ({
+  onClose,
+  onCustomSelect,
+}) => {
   const { wards, selectWard } = useWard();
 
   const queryClient = useQueryClient();
@@ -165,6 +168,11 @@ export const WardSelector: React.FC<WardSelectorProps> = ({ onClose }) => {
   };
 
   const handleWardSelectSubmit = (data: WardSelectionFormData) => {
+    if (onCustomSelect) {
+      onCustomSelect(Number(data.wardNumber), data.streetName);
+      if (onClose) onClose();
+      return;
+    }
     updateWard(data);
   };
 

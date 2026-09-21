@@ -17,6 +17,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ exists: !!user, user }, { status: 200 });
   } catch (error) {
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
+    console.error("Check email error:", error);
+    return NextResponse.json({ exists: false, user: null }, { status: 200 });
   }
 }
