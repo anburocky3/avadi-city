@@ -260,6 +260,7 @@ export function RegisterClient({
     Record<string, string[]>
   >({});
   const [photoConsent, setPhotoConsent] = useState<boolean>(false);
+  const [reviewConsent, setReviewConsent] = useState<boolean>(false);
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
 
   // Photo & Camera State
@@ -794,6 +795,15 @@ export function RegisterClient({
   const handleSubmitRegistration = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
+      return;
+    }
+
+    if (!reviewConsent) {
+      setRegError(
+        locale === "ta"
+          ? "தயவுசெய்து சமர்ப்பிக்கும் முன் உங்கள் விவரங்கள் சரியாக உள்ளதை உறுதிப்படுத்தும் அறிவிப்பை ஏற்கவும்."
+          : "Please confirm that your details are correct before submitting.",
+      );
       return;
     }
 
@@ -1764,6 +1774,24 @@ export function RegisterClient({
                     : "Your profile will be verified by municipal administration and published to your active ward directory."}
                 </span>
               </div>
+
+              {/* Review Confirmation & Ready to Submit Checkbox */}
+              <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={reviewConsent}
+                  onChange={(e) => {
+                    setReviewConsent(e.target.checked);
+                    if (e.target.checked) setRegError(null);
+                  }}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary focus:ring-primary accent-primary cursor-pointer shrink-0"
+                />
+                <span className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                  {locale === "ta"
+                    ? "எனது விவரங்களைச் சரிபார்த்து அனைத்தும் சரியாக இருப்பதை உறுதிப்படுத்துகிறேன். எனது சுயவிவரத்தை மதிப்பாய்வுக்குச் சமர்ப்பிக்கத் தயாராக உள்ளேன்."
+                    : "I’ve reviewed my details and confirm that everything looks correct. I’m ready to submit my profile for review."}
+                </span>
+              </label>
             </div>
           )}
 
@@ -1799,7 +1827,8 @@ export function RegisterClient({
               <button
                 type="button"
                 onClick={handleSubmitRegistration}
-                className="px-5 py-2.5 bg-linear-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 ml-auto active:scale-[0.98]"
+                disabled={!reviewConsent}
+                className="px-5 py-2.5 bg-linear-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 ml-auto active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <CheckCircle2 size={16} />
                 <span>{t("submitForReview")}</span>
