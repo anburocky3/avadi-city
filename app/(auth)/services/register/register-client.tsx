@@ -22,6 +22,7 @@ import {
   Edit3,
   Plus,
   Check,
+  X,
   User,
   AlertCircle,
   Bell,
@@ -255,6 +256,9 @@ export function RegisterClient({
   const [regError, setRegError] = useState<string | null>(null);
   const [isStreetWardModalOpen, setIsStreetWardModalOpen] = useState<boolean>(false);
   const [customSkillInput, setCustomSkillInput] = useState<string>("");
+  const [customSkillsByCategory, setCustomSkillsByCategory] = useState<
+    Record<string, string[]>
+  >({});
   const [photoConsent, setPhotoConsent] = useState<boolean>(false);
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
 
@@ -693,10 +697,11 @@ export function RegisterClient({
 
   const handleSelectCategory = (catId: string) => {
     const defaultSkills = SERVICE_SKILLS[catId] ? SERVICE_SKILLS[catId].slice(0, 2) : [];
+    const savedCustom = customSkillsByCategory[catId] || [];
     setRegData((prev) => ({
       ...prev,
       category: catId,
-      services: defaultSkills,
+      services: [...defaultSkills, ...savedCustom],
     }));
     setRegError(null);
   };
@@ -717,14 +722,38 @@ export function RegisterClient({
   const handleAddCustomSkill = () => {
     const trimmed = customSkillInput.trim();
     if (!trimmed) return;
+
+    // Track in custom skills for current category
+    setCustomSkillsByCategory((prev) => {
+      const existing = prev[regData.category] || [];
+      if (existing.includes(trimmed)) return prev;
+      return {
+        ...prev,
+        [regData.category]: [...existing, trimmed],
+      };
+    });
+
+    // Also select it in regData.services
     if (!regData.services.includes(trimmed)) {
       setRegData((prev) => ({
         ...prev,
         services: [...prev.services, trimmed],
       }));
     }
+
     setCustomSkillInput("");
     setRegError(null);
+  };
+
+  const handleRemoveCustomSkill = (skill: string) => {
+    setCustomSkillsByCategory((prev) => ({
+      ...prev,
+      [regData.category]: (prev[regData.category] || []).filter((s) => s !== skill),
+    }));
+    setRegData((prev) => ({
+      ...prev,
+      services: prev.services.filter((s) => s !== skill),
+    }));
   };
 
   // Push notification trigger
@@ -1379,31 +1408,60 @@ export function RegisterClient({
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {(SERVICE_SKILLS[regData.category] || []).map((skill) => {
-                    const isChecked = regData.services.includes(skill);
-                    return (
-                      <label
-                        key={skill}
-                        onClick={() => handleToggleService(skill)}
-                        className={`p-2.5 rounded-xl border flex items-center gap-2.5 cursor-pointer transition select-none ${
-                          isChecked
-                            ? "bg-primary/5 border-primary/50 text-slate-900 dark:text-slate-100 font-bold"
-                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
-                        }`}
-                      >
+                  {(() => {
+                    const categoryDefaultSkills = SERVICE_SKILLS[regData.category] || [];
+                    const categoryCustomSkills = customSkillsByCategory[regData.category] || [];
+                    const allCategorySkills = Array.from(
+                      new Set([
+                        ...categoryDefaultSkills,
+                        ...categoryCustomSkills,
+                        ...regData.services.filter((s) => !categoryDefaultSkills.includes(s)),
+                      ]),
+                    );
+
+                    return allCategorySkills.map((skill) => {
+                      const isChecked = regData.services.includes(skill);
+                      const isCustom = !categoryDefaultSkills.includes(skill);
+                      return (
                         <div
-                          className={`w-4 h-4 rounded-md border flex items-center justify-center transition shrink-0 ${
+                          key={skill}
+                          onClick={() => handleToggleService(skill)}
+                          className={`p-2.5 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer transition select-none ${
                             isChecked
-                              ? "bg-primary border-primary text-white"
-                              : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                              ? "bg-primary/5 border-primary/50 text-slate-900 dark:text-slate-100 font-bold"
+                              : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           }`}
                         >
-                          {isChecked && <Check size={11} className="stroke-[3]" />}
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-4 h-4 rounded-md border flex items-center justify-center transition shrink-0 ${
+                                isChecked
+                                  ? "bg-primary border-primary text-white"
+                                  : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
+                              }`}
+                            >
+                              {isChecked && <Check size={11} className="stroke-[3]" />}
+                            </div>
+                            <span className="text-xs truncate">{skill}</span>
+                          </div>
+
+                          {isCustom && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveCustomSkill(skill);
+                              }}
+                              title={locale === "ta" ? "நீக்குக" : "Delete"}
+                              className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 cursor-pointer"
+                            >
+                              <X size={13} />
+                            </button>
+                          )}
                         </div>
-                        <span className="text-xs truncate">{skill}</span>
-                      </label>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
 
                 {/* Add Custom Skill */}
@@ -1628,7 +1686,7 @@ export function RegisterClient({
                   {regData.address && (
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-slate-400 shrink-0">
-                        {locale === "ta" ? "முகவரி:" : "Address:"}
+                        {locale === "ta" ? "சேவை பகுதி:" : "Service Area:"}
                       </span>
                       <span className="font-semibold text-slate-700 dark:text-slate-300 text-right">
                         {regData.address}
