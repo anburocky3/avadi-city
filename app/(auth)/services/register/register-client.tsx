@@ -262,12 +262,14 @@ export function RegisterClient({
   const [isCompressingImage, setIsCompressingImage] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
+  const [isCameraReady, setIsCameraReady] = useState<boolean>(false);
   const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
   const [isCameraStarting, setIsCameraStarting] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const [regData, setRegData] = useState({
     profilePhoto: "",
@@ -277,6 +279,7 @@ export function RegisterClient({
     servingWard: activeWard?.id || 14,
     streetName: "",
     phone: "",
+    email: "",
     address: "",
     lat: 13.1169,
     lng: 80.0972,
@@ -289,13 +292,16 @@ export function RegisterClient({
 
   // Stop camera stream cleanly
   const stopCameraStream = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach((track) => track.stop());
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setIsCameraOpen(false);
     setIsCameraStarting(false);
+    setIsCameraReady(false);
   };
 
   useEffect(() => {
@@ -304,17 +310,48 @@ export function RegisterClient({
     };
   }, []);
 
-  // Start Live Camera
+  // When live camera opens, attach the stream to videoRef once mounted
+  useEffect(() => {
+    if (isCameraOpen && videoRef.current && streamRef.current) {
+      const video = videoRef.current;
+      video.srcObject = streamRef.current;
+      const playVideo = async () => {
+        try {
+          await video.play();
+          setIsCameraReady(true);
+        } catch (e) {
+          console.warn("video.play error", e);
+        }
+      };
+
+      if (video.readyState >= 2) {
+        playVideo();
+      } else {
+        video.onloadeddata = playVideo;
+      }
+    }
+  }, [isCameraOpen, cameraFacing]);
+
+  // Start Live Camera or trigger native mobile camera
   const startCameraStream = async (facing: "user" | "environment" = "user") => {
     setIsCameraStarting(true);
+    setIsCameraReady(false);
     setUploadError(null);
-    stopCameraStream();
 
-    if (
-      typeof navigator === "undefined" ||
-      !navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia
-    ) {
+    // Stop existing stream if any
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    const isMobile =
+      typeof navigator !== "undefined" &&
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const hasMediaDevices =
+      typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+
+    // On mobile devices, native camera input provides a much superior UX
+    if (!hasMediaDevices || isMobile) {
       setIsCameraStarting(false);
       if (cameraInputRef.current) {
         cameraInputRef.current.click();
@@ -332,19 +369,33 @@ export function RegisterClient({
         audio: false,
       });
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+      streamRef.current = stream;
       setCameraFacing(facing);
       setIsCameraOpen(true);
       setIsCameraStarting(false);
+
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current
+          .play()
+          .then(() => {
+            setIsCameraReady(true);
+          })
+          .catch(console.warn);
+      }
     } catch (err: any) {
       console.warn("getUserMedia failed, fallback to native camera input:", err);
       setIsCameraStarting(false);
       setIsCameraOpen(false);
+      setIsCameraReady(false);
       if (cameraInputRef.current) {
         cameraInputRef.current.click();
+      } else {
+        setUploadError(
+          locale === "ta"
+            ? "கேமரா அணுகல் மறுக்கப்பட்டது அல்லது கிடைக்கவில்லை. கோப்புகளிலிருந்து பதிவேற்றவும்."
+            : "Camera access was denied or not available. Please upload from files.",
+        );
       }
     }
   };
@@ -353,69 +404,62 @@ export function RegisterClient({
   const capturePhotoFromCamera = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
+    if (!video.videoWidth || !video.videoHeight) {
+      setUploadError(
+        locale === "ta"
+          ? "கேமரா இன்னும் தயாராகவில்லை. தயவுசெய்து ஒரு வினாடி காத்திருக்கவும்."
+          : "Camera is still initializing. Please wait a moment.",
+      );
+      return;
+    }
+
     const canvas = document.createElement("canvas");
-    const size = Math.min(video.videoWidth, video.videoHeight);
-    canvas.width = size;
-    canvas.height = size;
+    const minDim = Math.min(video.videoWidth, video.videoHeight);
+    const targetSize = Math.min(minDim, 500);
+    canvas.width = targetSize;
+    canvas.height = targetSize;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
     if (cameraFacing === "user") {
-      ctx.translate(size, 0);
+      ctx.translate(targetSize, 0);
       ctx.scale(-1, 1);
     }
 
-    const startX = (video.videoWidth - size) / 2;
-    const startY = (video.videoHeight - size) / 2;
-    ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
+    const startX = (video.videoWidth - minDim) / 2;
+    const startY = (video.videoHeight - minDim) / 2;
+    ctx.drawImage(
+      video,
+      startX,
+      startY,
+      minDim,
+      minDim,
+      0,
+      0,
+      targetSize,
+      targetSize,
+    );
 
     stopCameraStream();
-    setIsCompressingImage(true);
 
-    canvas.toBlob(
-      async (blob) => {
-        if (!blob) {
-          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-          setRegData((prev) => ({ ...prev, profilePhoto: dataUrl }));
-          setRegError(null);
-          setIsCompressingImage(false);
-          return;
-        }
-        try {
-          const file = new File([blob], "camera-capture.webp", {
-            type: "image/webp",
-          });
-          const options = {
-            maxSizeMB: 0.3,
-            maxWidthOrHeight: 500,
-            useWebWorker: true,
-            fileType: "image/webp",
-          };
-          const compressed = await imageCompression(file, options);
-          const dataUrl = await imageCompression.getDataUrlFromFile(compressed);
-          setRegData((prev) => ({ ...prev, profilePhoto: dataUrl }));
-          setRegError(null);
-        } catch {
-          const fallbackDataUrl = canvas.toDataURL("image/jpeg", 0.85);
-          setRegData((prev) => ({ ...prev, profilePhoto: fallbackDataUrl }));
-          setRegError(null);
-        } finally {
-          setIsCompressingImage(false);
-        }
-      },
-      "image/jpeg",
-      0.9,
-    );
+    const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+    if (dataUrl && dataUrl.startsWith("data:image/jpeg") && dataUrl.length > 100) {
+      setRegData((prev) => ({ ...prev, profilePhoto: dataUrl }));
+      setRegError(null);
+      setUploadError(null);
+    } else {
+      setUploadError("Could not capture photo. Please try uploading from files.");
+    }
   };
 
-  // Process File Upload
-  const processImageFile = async (file: File) => {
+  // Process File Upload or Native Camera input
+  const processImageFile = (file: File) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setUploadError(
         locale === "ta"
-          ? "தயவுசெய்து ஒரு படத்தை (JPG, PNG, WebP) பதிவேற்றவும்."
-          : "Please upload an image file (JPG, PNG, WebP).",
+          ? "தயவுசெய்து ஒரு படக் கோப்பைத் தேர்ந்தெடுக்கவும் (JPG, PNG, WebP)."
+          : "Please select a valid image file (JPG, PNG, WebP).",
       );
       return;
     }
@@ -423,33 +467,88 @@ export function RegisterClient({
     setIsCompressingImage(true);
     setUploadError(null);
 
-    try {
-      const options = {
-        maxSizeMB: 0.3,
-        maxWidthOrHeight: 500,
-        useWebWorker: true,
-        fileType: "image/webp",
+    const reader = new FileReader();
+    reader.onerror = () => {
+      setIsCompressingImage(false);
+      setUploadError(
+        locale === "ta"
+          ? "படத்தைப் படிக்க முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்."
+          : "Failed to read image file. Please try again.",
+      );
+    };
+
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => {
+        setIsCompressingImage(false);
+        setUploadError(
+          locale === "ta"
+            ? "படத்தை ஏற்ற முடியவில்லை. தயவுசெய்து வேறு படத்தைப் பயன்படுத்தவும்."
+            : "Failed to load image. Please use another photo.",
+        );
       };
-      const compressedFile = await imageCompression(file, options);
-      const dataUrl = await imageCompression.getDataUrlFromFile(compressedFile);
-      setRegData((prev) => ({ ...prev, profilePhoto: dataUrl }));
-      setRegError(null);
-    } catch (err: any) {
-      console.error("Compression error:", err);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target?.result) {
-          setRegData((prev) => ({
-            ...prev,
-            profilePhoto: event.target!.result as string,
-          }));
-          setRegError(null);
+
+      img.onload = () => {
+        try {
+          const canvas = document.createElement("canvas");
+          const minDim = Math.min(img.width, img.height);
+          const targetSize = Math.min(minDim, 500);
+          canvas.width = targetSize;
+          canvas.height = targetSize;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            setIsCompressingImage(false);
+            return;
+          }
+
+          const startX = (img.width - minDim) / 2;
+          const startY = (img.height - minDim) / 2;
+          ctx.drawImage(
+            img,
+            startX,
+            startY,
+            minDim,
+            minDim,
+            0,
+            0,
+            targetSize,
+            targetSize,
+          );
+
+          const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+          if (
+            dataUrl &&
+            dataUrl.startsWith("data:image/jpeg") &&
+            dataUrl.length > 100
+          ) {
+            setRegData((prev) => ({ ...prev, profilePhoto: dataUrl }));
+            setRegError(null);
+            setUploadError(null);
+          } else if (typeof e.target?.result === "string") {
+            setRegData((prev) => ({
+              ...prev,
+              profilePhoto: e.target!.result as string,
+            }));
+            setRegError(null);
+          }
+        } catch (err) {
+          console.error("Image resize error:", err);
+          if (typeof e.target?.result === "string") {
+            setRegData((prev) => ({
+              ...prev,
+              profilePhoto: e.target!.result as string,
+            }));
+            setRegError(null);
+          }
+        } finally {
+          setIsCompressingImage(false);
         }
       };
-      reader.readAsDataURL(file);
-    } finally {
-      setIsCompressingImage(false);
-    }
+
+      img.src = e.target?.result as string;
+    };
+
+    reader.readAsDataURL(file);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -466,7 +565,11 @@ export function RegisterClient({
   const validateStep = (step: 1 | 2 | 3): boolean => {
     // Step 1: Profile & Serving Ward
     if (step === 1) {
-      if (!regData.profilePhoto) {
+      if (
+        !regData.profilePhoto ||
+        !regData.profilePhoto.startsWith("data:image") ||
+        regData.profilePhoto.length < 100
+      ) {
         setRegError(
           locale === "ta"
             ? "சுயவிவரப் படம் அவசியம். படம் எடுக்கவும் அல்லது கோப்பிலிருந்து பதிவேற்றவும்."
@@ -490,6 +593,17 @@ export function RegisterClient({
             : "Please enter a valid 10-digit phone number.",
         );
         return false;
+      }
+      if (regData.email.trim()) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(regData.email.trim())) {
+          setRegError(
+            locale === "ta"
+              ? "தயவுசெய்து சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்."
+              : "Please enter a valid email address.",
+          );
+          return false;
+        }
       }
       if (!regData.servingWard) {
         setRegError(
@@ -710,10 +824,13 @@ export function RegisterClient({
           {/* Structured Worker Preview Card */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 text-left text-xs space-y-3 shadow-xs">
             <div className="flex items-center gap-3 pb-3 border-b border-slate-200/70 dark:border-slate-800/70">
-              {regData.profilePhoto ? (
+              {regData.profilePhoto &&
+              regData.profilePhoto.startsWith("data:image") &&
+              regData.profilePhoto.length > 100 ? (
                 <img
                   src={regData.profilePhoto}
                   alt={regData.fullName}
+                  onError={() => setRegData((prev) => ({ ...prev, profilePhoto: "" }))}
                   className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
                 />
               ) : (
@@ -870,12 +987,20 @@ export function RegisterClient({
                         autoPlay
                         playsInline
                         muted
+                        onLoadedData={() => {
+                          if (videoRef.current) {
+                            videoRef.current.play().catch(console.warn);
+                            setIsCameraReady(true);
+                          }
+                        }}
                         className={`w-full h-full object-cover ${cameraFacing === "user" ? "scale-x-[-1]" : ""}`}
                       />
-                      {isCameraStarting && (
-                        <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white gap-2">
-                          <Loader2 size={22} className="animate-spin text-white" />
-                          <span className="text-xs">Starting camera...</span>
+                      {(!isCameraReady || isCameraStarting) && (
+                        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white gap-2 z-10">
+                          <Loader2 size={24} className="animate-spin text-white" />
+                          <span className="text-xs font-medium">
+                            {locale === "ta" ? "கேமரா தயாராகிறது..." : "Starting camera..."}
+                          </span>
                         </div>
                       )}
                     </div>
@@ -884,7 +1009,7 @@ export function RegisterClient({
                       <button
                         type="button"
                         onClick={capturePhotoFromCamera}
-                        disabled={isCompressingImage || isCameraStarting}
+                        disabled={isCompressingImage || isCameraStarting || !isCameraReady}
                         className="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {isCompressingImage ? (
@@ -923,11 +1048,16 @@ export function RegisterClient({
                   /* Clean Minimalist Photo Dropzone */
                   <div className="flex flex-col sm:flex-row items-center gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-transparent">
                     <div className="shrink-0">
-                      {regData.profilePhoto ? (
+                      {regData.profilePhoto &&
+                      regData.profilePhoto.startsWith("data:image") &&
+                      regData.profilePhoto.length > 100 ? (
                         <div className="relative w-16 h-16 rounded-full overflow-hidden border border-slate-200 dark:border-slate-700 shadow-xs">
                           <img
                             src={regData.profilePhoto}
                             alt="Profile"
+                            onError={() => {
+                              setRegData((prev) => ({ ...prev, profilePhoto: "" }));
+                            }}
                             className="w-full h-full object-cover"
                           />
                         </div>
@@ -960,7 +1090,7 @@ export function RegisterClient({
                           <span>{locale === "ta" ? "படம் எடுக்கவும்" : "Take Photo"}</span>
                         </button>
 
-                        {regData.profilePhoto && (
+                        {regData.profilePhoto && regData.profilePhoto.length > 100 && (
                           <button
                             type="button"
                             onClick={() => {
@@ -1034,7 +1164,7 @@ export function RegisterClient({
                 />
               </div>
 
-              {/* Phone & Primary Serving Ward */}
+              {/* Phone & Email (Optional) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* Phone */}
                 <div>
@@ -1056,34 +1186,51 @@ export function RegisterClient({
                   />
                 </div>
 
-                {/* Primary Serving Ward (with Interactive Find Your Street Search) */}
+                {/* Email (Optional) */}
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                    {locale === "ta" ? "முதன்மை சேவை வார்டு *" : "Primary Serving Ward *"}
+                    {locale === "ta" ? "மின்னஞ்சல் (விருப்பத்தேர்வு)" : "Email (Optional)"}
                   </label>
-                  <div
-                    onClick={() => setIsStreetWardModalOpen(true)}
-                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-xs"
-                  >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
-                        W{regData.servingWard}
-                      </div>
-                      <div className="min-w-0">
-                        <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
-                          Ward {regData.servingWard}
-                          {regData.streetName && ` • ${regData.streetName}`}
-                        </span>
-                        <span className="text-[10px] text-slate-400 block truncate">
-                          {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
-                        </span>
-                      </div>
+                  <input
+                    type="email"
+                    value={regData.email}
+                    onChange={(e) => {
+                      setRegData({ ...regData, email: e.target.value });
+                      setRegError(null);
+                    }}
+                    placeholder="name@example.com"
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:ring-2 focus:ring-primary focus:outline-none text-xs sm:text-sm font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Primary Serving Ward (with Interactive Find Your Street Search) */}
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                  {locale === "ta" ? "முதன்மை சேவை வார்டு *" : "Primary Serving Ward *"}
+                </label>
+                <div
+                  onClick={() => setIsStreetWardModalOpen(true)}
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
+                      W{regData.servingWard}
                     </div>
-                    <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
-                      <Search size={13} />
-                      <span>{locale === "ta" ? "தேடு" : "Find"}</span>
-                    </span>
+                    <div className="min-w-0">
+                      <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
+                        Ward {regData.servingWard}
+                        {regData.streetName && ` • ${regData.streetName}`}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
+                      </span>
+                    </div>
                   </div>
+                  <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
+                    <Search size={13} />
+                    <span>{locale === "ta" ? "தேடு" : "Find"}</span>
+                  </span>
                 </div>
               </div>
 
@@ -1423,10 +1570,13 @@ export function RegisterClient({
                 {/* Header Preview */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                   <div className="flex items-center gap-3">
-                    {regData.profilePhoto ? (
+                    {regData.profilePhoto &&
+                    regData.profilePhoto.startsWith("data:image") &&
+                    regData.profilePhoto.length > 100 ? (
                       <img
                         src={regData.profilePhoto}
                         alt={regData.fullName}
+                        onError={() => setRegData((prev) => ({ ...prev, profilePhoto: "" }))}
                         className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
                       />
                     ) : (
@@ -1467,6 +1617,14 @@ export function RegisterClient({
                       {regData.phone}
                     </span>
                   </div>
+                  {regData.email && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">{locale === "ta" ? "மின்னஞ்சல்:" : "Email:"}</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {regData.email}
+                      </span>
+                    </div>
+                  )}
                   {regData.address && (
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-slate-400 shrink-0">
