@@ -275,6 +275,41 @@ export function RegisterClient({
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const topRef = useRef<HTMLDivElement>(null);
+
+  // Smoothly scroll to the very top across all container types (<main>, window, html, body)
+  const scrollToTop = () => {
+    if (topRef.current) {
+      try {
+        topRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      } catch {
+        topRef.current.scrollIntoView();
+      }
+    }
+    const scrollParent =
+      topRef.current?.closest("main") || document.querySelector("main");
+    if (scrollParent) {
+      scrollParent.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (document.documentElement) {
+      document.documentElement.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (document.body) {
+      document.body.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Automatically scroll to top whenever step changes or form is submitted
+  useEffect(() => {
+    scrollToTop();
+    const t1 = setTimeout(() => scrollToTop(), 50);
+    const t2 = setTimeout(() => scrollToTop(), 150);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [regStep, regSubmitted]);
 
   const [regData, setRegData] = useState({
     profilePhoto: "",
@@ -683,7 +718,7 @@ export function RegisterClient({
       if (validateStep(regStep as 1 | 2 | 3)) {
         setRegError(null);
         setRegStep((prev) => (prev + 1) as 1 | 2 | 3 | 4);
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        scrollToTop();
       }
     }
   };
@@ -692,7 +727,7 @@ export function RegisterClient({
     setRegError(null);
     if (regStep > 1) {
       setRegStep((prev) => (prev - 1) as 1 | 2 | 3 | 4);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      scrollToTop();
     }
   };
 
@@ -810,7 +845,7 @@ export function RegisterClient({
     // Trigger device push notification
     triggerPushNotification();
     setRegSubmitted(true);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToTop();
   };
 
   const handleFinishAndReturn = () => {
@@ -818,7 +853,7 @@ export function RegisterClient({
   };
 
   return (
-    <div className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-2xl mx-auto space-y-4">
+    <div ref={topRef} className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-2xl mx-auto space-y-4">
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
         <Link
