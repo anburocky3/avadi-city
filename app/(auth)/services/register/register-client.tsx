@@ -372,7 +372,7 @@ export function RegisterClient({
     }
   }, [isCameraOpen, cameraFacing]);
 
-  // Start Live Camera or trigger native mobile camera
+  // Start Live Camera
   const startCameraStream = async (facing: "user" | "environment" = "user") => {
     setIsCameraStarting(true);
     setIsCameraReady(false);
@@ -384,30 +384,36 @@ export function RegisterClient({
       streamRef.current = null;
     }
 
-    const isMobile =
-      typeof navigator !== "undefined" &&
-      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasMediaDevices =
-      typeof navigator !== "undefined" && !!navigator.mediaDevices?.getUserMedia;
+      typeof navigator !== "undefined" &&
+      !!navigator.mediaDevices &&
+      typeof navigator.mediaDevices.getUserMedia === "function";
 
-    // On mobile devices, native camera input provides a much superior UX
-    if (!hasMediaDevices || isMobile) {
+    if (!hasMediaDevices) {
       setIsCameraStarting(false);
       if (cameraInputRef.current) {
         cameraInputRef.current.click();
+      } else {
+        setUploadError(
+          locale === "ta"
+            ? "கேமரா இந்த உலாவியில் ஆதரிக்கப்படவில்லை. கோப்புகளிலிருந்து பதிவேற்றவும்."
+            : "Camera is not supported on this browser. Please upload from files.",
+        );
       }
       return;
     }
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const constraints: MediaStreamConstraints = {
         video: {
-          facingMode: facing,
+          facingMode: { ideal: facing },
           width: { ideal: 640 },
           height: { ideal: 640 },
         },
         audio: false,
-      });
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
       streamRef.current = stream;
       setCameraFacing(facing);
@@ -424,18 +430,33 @@ export function RegisterClient({
           .catch(console.warn);
       }
     } catch (err: any) {
-      console.warn("getUserMedia failed, fallback to native camera input:", err);
+      console.warn("getUserMedia failed:", err);
       setIsCameraStarting(false);
       setIsCameraOpen(false);
       setIsCameraReady(false);
-      if (cameraInputRef.current) {
-        cameraInputRef.current.click();
-      } else {
+
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
         setUploadError(
           locale === "ta"
-            ? "கேமரா அணுகல் மறுக்கப்பட்டது அல்லது கிடைக்கவில்லை. கோப்புகளிலிருந்து பதிவேற்றவும்."
-            : "Camera access was denied or not available. Please upload from files.",
+            ? "கேமரா அனுமதி மறுக்கப்பட்டது. உலாவியில் கேமரா அனுமதியை அனுமதிக்கவும் அல்லது கோப்புகளிலிருந்து பதிவேற்றவும்."
+            : "Camera permission denied. Please allow camera access in browser settings or upload from files.",
         );
+      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+        setUploadError(
+          locale === "ta"
+            ? "கேமரா சாதனம் எதுவும் கண்டறியப்படவில்லை. கோப்புகளிலிருந்து பதிவேற்றவும்."
+            : "No camera device found. Please upload from files.",
+        );
+      } else {
+        if (cameraInputRef.current) {
+          cameraInputRef.current.click();
+        } else {
+          setUploadError(
+            locale === "ta"
+              ? "கேமராவைத் தொடங்க முடியவில்லை. கோப்புகளிலிருந்து பதிவேற்றவும்."
+              : "Could not open camera. Please upload from files.",
+          );
+        }
       }
     }
   };
