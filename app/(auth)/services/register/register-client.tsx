@@ -1765,15 +1765,6 @@ export function RegisterClient({
                 </div>
               </div>
 
-              {/* Municipal Verification Advisory */}
-              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-start gap-2.5 text-slate-600 dark:text-slate-400 text-[11px] leading-relaxed">
-                <ShieldCheck size={15} className="shrink-0 text-primary mt-0.5" />
-                <span>
-                  {locale === "ta"
-                    ? "உங்கள் விவரங்கள் சரிபார்க்கப்பட்ட பின் வார்டு சேவை பட்டியலில் அதிகாரப்பூர்வமாக வெளியிடப்படும்."
-                    : "Your profile will be verified by municipal administration and published to your active ward directory."}
-                </span>
-              </div>
 
               {/* Review Confirmation & Ready to Submit Checkbox */}
               <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer select-none">
