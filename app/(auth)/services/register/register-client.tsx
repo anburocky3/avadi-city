@@ -1299,36 +1299,6 @@ export function RegisterClient({
                 </div>
               </div>
 
-              {/* Primary Serving Ward (with Interactive Find Your Street Search) */}
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                  {locale === "ta" ? "முதன்மை சேவை வார்டு *" : "Primary Serving Ward *"}
-                </label>
-                <div
-                  onClick={() => setIsStreetWardModalOpen(true)}
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-xs"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
-                      W{regData.servingWard}
-                    </div>
-                    <div className="min-w-0">
-                      <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
-                        Ward {regData.servingWard}
-                        {regData.streetName && ` • ${regData.streetName}`}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block truncate">
-                        {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
-                    <Search size={13} />
-                    <span>{locale === "ta" ? "தேடு" : "Find"}</span>
-                  </span>
-                </div>
-              </div>
-
               {/* Street Name & Landmark */}
               <div className="space-y-2 relative">
                 <label className="flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">
@@ -1401,6 +1371,36 @@ export function RegisterClient({
                     </motion.ul>
                   )}
                 </AnimatePresence>
+              </div>
+
+              {/* Primary Serving Ward (with Interactive Find Your Street Search) */}
+              <div>
+                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                  {locale === "ta" ? "முதன்மை சேவை வார்டு *" : "Primary Serving Ward *"}
+                </label>
+                <div
+                  onClick={() => setIsStreetWardModalOpen(true)}
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-xs"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
+                      W{regData.servingWard}
+                    </div>
+                    <div className="min-w-0">
+                      <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
+                        Ward {regData.servingWard}
+                        {regData.streetName && ` • ${regData.streetName}`}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">
+                        {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
+                    <Search size={13} />
+                    <span>{locale === "ta" ? "தேடு" : "Find"}</span>
+                  </span>
+                </div>
               </div>
             </div>
           )}
