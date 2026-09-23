@@ -21,6 +21,7 @@ import {
   Loader2,
   Edit3,
   Plus,
+  Minus,
   Check,
   X,
   User,
@@ -259,6 +260,7 @@ export function RegisterClient({
   const [customSkillsByCategory, setCustomSkillsByCategory] = useState<
     Record<string, string[]>
   >({});
+  const [serviceRates, setServiceRates] = useState<Record<string, number>>({});
   const [photoConsent, setPhotoConsent] = useState<boolean>(false);
   const [reviewConsent, setReviewConsent] = useState<boolean>(false);
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
@@ -811,6 +813,26 @@ export function RegisterClient({
       ...prev,
       services: prev.services.filter((s) => s !== skill),
     }));
+  };
+
+  const getSkillRate = (skill: string): number => {
+    return serviceRates[skill] ?? 100;
+  };
+
+  const handleUpdateSkillRate = (skill: string, delta: number) => {
+    setServiceRates((prev) => {
+      const current = prev[skill] ?? 100;
+      const next = Math.max(50, current + delta);
+      return { ...prev, [skill]: next };
+    });
+    // Auto-select the skill if not already selected
+    if (!regData.services.includes(skill)) {
+      setRegData((prev) => ({
+        ...prev,
+        services: [...prev.services, skill],
+      }));
+    }
+    setRegError(null);
   };
 
   // Push notification trigger
@@ -1464,7 +1486,9 @@ export function RegisterClient({
                       {locale === "ta" ? `நீங்கள் வழங்கும் ${regData.category} வேலைகள் *` : `What ${regData.category} work do you provide? *`}
                     </label>
                     <span className="text-[11px] text-slate-400">
-                      {locale === "ta" ? "பொருந்தும் வேலைகளைத் தேர்ந்தெடுக்கவும்" : "Select all skills that apply to your work"}
+                      {locale === "ta"
+                        ? "பொருந்தும் வேலைகளைத் தேர்ந்தெடுத்து கட்டணத்தை அமைக்கவும் (அடிப்படை ₹100)"
+                        : "Select skills and set your base price per service (Default ₹100)"}
                     </span>
                   </div>
                   <span className="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full">
@@ -1487,17 +1511,19 @@ export function RegisterClient({
                     return allCategorySkills.map((skill) => {
                       const isChecked = regData.services.includes(skill);
                       const isCustom = !categoryDefaultSkills.includes(skill);
+                      const rate = getSkillRate(skill);
+
                       return (
                         <div
                           key={skill}
                           onClick={() => handleToggleService(skill)}
-                          className={`p-2.5 rounded-xl border flex items-center justify-between gap-2.5 cursor-pointer transition select-none ${
+                          className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition select-none ${
                             isChecked
                               ? "bg-primary/5 border-primary/50 text-slate-900 dark:text-slate-100 font-bold"
                               : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           }`}
                         >
-                          <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="flex items-center gap-2 min-w-0 pr-1">
                             <div
                               className={`w-4 h-4 rounded-md border flex items-center justify-center transition shrink-0 ${
                                 isChecked
@@ -1510,19 +1536,85 @@ export function RegisterClient({
                             <span className="text-xs truncate">{skill}</span>
                           </div>
 
-                          {isCustom && (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleRemoveCustomSkill(skill);
-                              }}
-                              title={locale === "ta" ? "நீக்குக" : "Delete"}
-                              className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 cursor-pointer"
+                          <div
+                            className="flex items-center gap-1.5 shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Price Stepper (Default ₹100, with increase/decrease) */}
+                            <div
+                              className={`flex items-center rounded-lg p-0.5 border transition ${
+                                isChecked
+                                  ? "bg-white dark:bg-slate-900 border-primary/30 dark:border-primary/40 shadow-2xs"
+                                  : "bg-slate-50 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-800"
+                              }`}
                             >
-                              <X size={13} />
-                            </button>
-                          )}
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateSkillRate(skill, -50)}
+                                disabled={rate <= 50}
+                                title={locale === "ta" ? "விலையைக் குறைக்கவும்" : "Decrease price"}
+                                className={`w-5 h-5 flex items-center justify-center rounded transition cursor-pointer ${
+                                  isChecked
+                                    ? "text-slate-600 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary disabled:opacity-25"
+                                    : "text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-25"
+                                }`}
+                              >
+                                <Minus size={10} className="stroke-[2.5]" />
+                              </button>
+
+                              <div className="flex items-center px-1">
+                                <span className={`text-[10px] font-semibold ${isChecked ? "text-primary dark:text-orange-400" : "text-slate-400"}`}>₹</span>
+                                <input
+                                  type="number"
+                                  min={10}
+                                  step={50}
+                                  value={rate}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value, 10);
+                                    setServiceRates((prev) => ({
+                                      ...prev,
+                                      [skill]: isNaN(val) ? 0 : Math.max(0, val),
+                                    }));
+                                    if (!regData.services.includes(skill)) {
+                                      setRegData((prev) => ({
+                                        ...prev,
+                                        services: [...prev.services, skill],
+                                      }));
+                                    }
+                                  }}
+                                  className={`w-9 text-center bg-transparent border-0 p-0 text-xs font-extrabold focus:outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
+                                    isChecked
+                                      ? "text-primary dark:text-orange-400"
+                                      : "text-slate-600 dark:text-slate-400"
+                                  }`}
+                                />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateSkillRate(skill, 50)}
+                                title={locale === "ta" ? "விலையை உயர்த்தவும்" : "Increase price"}
+                                className={`w-5 h-5 flex items-center justify-center rounded transition cursor-pointer ${
+                                  isChecked
+                                    ? "text-slate-600 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary"
+                                    : "text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                }`}
+                              >
+                                <Plus size={10} className="stroke-[2.5]" />
+                              </button>
+                            </div>
+
+                            {isCustom && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveCustomSkill(skill)}
+                                title={locale === "ta" ? "நீக்குக" : "Delete"}
+                                className="p-1 rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition shrink-0 cursor-pointer"
+                              >
+                                <X size={13} />
+                              </button>
+                            )}
+                          </div>
                         </div>
                       );
                     });
@@ -1779,9 +1871,13 @@ export function RegisterClient({
                     {regData.services.map((skill, idx) => (
                       <span
                         key={idx}
-                        className="px-2 py-0.5 bg-primary/10 border border-primary/20 rounded-md text-[10px] font-semibold text-primary dark:text-orange-400"
+                        className="px-2.5 py-1 bg-primary/10 border border-primary/20 rounded-lg text-[10px] font-bold text-primary dark:text-orange-400 flex items-center gap-1.5"
                       >
-                        {skill}
+                        <span>{skill}</span>
+                        <span className="opacity-60">•</span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          ₹{getSkillRate(skill)}
+                        </span>
                       </span>
                     ))}
                   </div>
