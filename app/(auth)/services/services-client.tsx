@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
   Wrench,
@@ -18,6 +20,7 @@ import {
   UserPlus,
   CheckCircle2,
   Award,
+  X,
   LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -210,7 +213,8 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
 }) => {
   const t = useTranslations("services");
   const locale = useLocale();
-  const { activeWard, userProfile } = useWard();
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Local state initialized with server props
   const [providers, setProviders] =
@@ -219,23 +223,17 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedProvider, setSelectedProvider] =
     useState<ServiceProvider | null>(null);
-
-  // Registration modal & toast state
-  const [isRegisterModalOpen, setIsRegisterModalOpen] =
-    useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Profile creation form state
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "Plumbers",
-    phone: userProfile?.wardNumber?.toString() || "",
-    ward: activeWard?.id || 14,
-    experience: "5 Years",
-    hours: "8:00 AM - 8:00 PM",
-    description: "",
-    imageUrl: PRESET_AVATARS[0],
-  });
+  // Detect return from /services/register
+  useEffect(() => {
+    if (searchParams.get("registered") === "true") {
+      setToastMessage(t("registrationToast"));
+      const timer = setTimeout(() => setToastMessage(null), 7000);
+      router.replace("/services");
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, router, t]);
 
   const filteredProviders = useMemo(() => {
     let list = [...providers];
@@ -274,61 +272,6 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
     }, 1500);
   };
 
-  const handleSubmitProfile = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.phone.trim()) {
-      alert(
-        locale === "ta"
-          ? "தயவுசெய்து உங்கள் பெயர் மற்றும் கைபேசி எண்ணை உள்ளிடவும்."
-          : "Please enter your name and phone number.",
-      );
-      return;
-    }
-
-    const newProvider: ServiceProvider = {
-      id: Date.now(),
-      name: formData.name.trim(),
-      category: formData.category,
-      phone: formData.phone.trim(),
-      ward: Number(formData.ward),
-      experience: formData.experience,
-      hours: formData.hours,
-      specialty:
-        formData.description.trim() ||
-        `${formData.category} repairs & service works`,
-      rate:
-        locale === "ta"
-          ? "₹350 ஆய்வுக் கட்டணம்"
-          : "₹350 visiting / inspection charge",
-      description:
-        formData.description.trim() ||
-        `Verified local ${formData.category} serving Ward ${formData.ward} and surrounding areas.`,
-      imageUrl: formData.imageUrl,
-      rating: 5.0,
-      verified: true,
-    };
-
-    setProviders((prev) => [newProvider, ...prev]);
-    setIsRegisterModalOpen(false);
-    setSelectedCategory(formData.category);
-    setToastMessage(
-      `🎉 Profile for "${formData.name}" created successfully as a verified ${formData.category}!`,
-    );
-    setTimeout(() => setToastMessage(null), 4000);
-
-    // Reset form
-    setFormData({
-      name: "",
-      category: "Plumbers",
-      phone: userProfile?.wardNumber?.toString() || "",
-      ward: activeWard?.id || 14,
-      experience: "5 Years",
-      hours: "8:00 AM - 8:00 PM",
-      description: "",
-      imageUrl: PRESET_AVATARS[0],
-    });
-  };
-
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       {/* Header Banner */}
@@ -350,13 +293,13 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsRegisterModalOpen(true)}
-          className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-primary hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition shadow-sm hover:shadow shrink-0 cursor-pointer"
+        <Link
+          href="/services/register"
+          className="flex items-center justify-center space-x-2 px-4 py-2.5 bg-primary hover:bg-orange-600 text-white rounded-xl text-xs font-bold transition shadow-sm hover:shadow shrink-0 cursor-pointer active:scale-95"
         >
           <UserPlus size={16} />
           <span>{t("createProfile")}</span>
-        </button>
+        </Link>
       </div>
 
       {/* Global Search bar */}
@@ -546,19 +489,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
         </div>
       </div>
 
-      {/* Toast Notification */}
-      <AnimatePresence>
-        {toastMessage && (
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-20 left-1/2 -translate-x-1/2 z-55 px-5 py-3 rounded-xl bg-slate-900 text-white font-semibold text-xs shadow-lg text-center max-w-sm"
-          >
-            {toastMessage}
-          </motion.div>
-        )}
-      </AnimatePresence>
+
 
       {/* PROVIDER DETAIL MODAL */}
       {selectedProvider && (
@@ -677,166 +608,65 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
         </Modal>
       )}
 
-      {/* CREATE SERVICE PROFILE MODAL */}
-      <Modal
-        isOpen={isRegisterModalOpen}
-        onClose={() => setIsRegisterModalOpen(false)}
-        title={t("createProfile")}
-      >
-        <form onSubmit={handleSubmitProfile} className="space-y-4 text-xs">
-          <p className="text-slate-500 dark:text-slate-400 text-[11px]">
-            {t("registerDesc")}
-          </p>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Full Name / Business Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) =>
-                setFormData({ ...formData, name: e.target.value })
-              }
-              placeholder="e.g. Anand (Master Plumber) or Royal Electric"
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                Service Category *
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) =>
-                  setFormData({ ...formData, category: e.target.value })
-                }
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-              >
-                {CATEGORIES.filter((c) => c.id !== "All").map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.fallbackName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                Serving Ward *
-              </label>
-              <select
-                value={formData.ward}
-                onChange={(e) =>
-                  setFormData({ ...formData, ward: Number(e.target.value) })
-                }
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-              >
-                {wardsList.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    Ward {w.id} - {w.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                Phone Number *
-              </label>
-              <input
-                type="tel"
-                required
-                value={formData.phone}
-                onChange={(e) =>
-                  setFormData({ ...formData, phone: e.target.value })
-                }
-                placeholder="+91 98765 43210"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-              />
-            </div>
-
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                Years of Experience
-              </label>
-              <input
-                type="text"
-                value={formData.experience}
-                onChange={(e) =>
-                  setFormData({ ...formData, experience: e.target.value })
-                }
-                placeholder="e.g. 5 Years"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Working Hours
-            </label>
-            <input
-              type="text"
-              value={formData.hours}
-              onChange={(e) =>
-                setFormData({ ...formData, hours: e.target.value })
-              }
-              placeholder="e.g. 8:00 AM - 8:00 PM or 24/7 Emergency"
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-              Description of Services Offered
-            </label>
-            <textarea
-              rows={3}
-              value={formData.description}
-              onChange={(e) =>
-                setFormData({ ...formData, description: e.target.value })
-              }
-              placeholder="Describe your expertise, specialization, tools available, and service coverage..."
-              className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1.5">
-              Choose Profile Photo
-            </label>
-            <div className="flex space-x-2 mb-2">
-              {PRESET_AVATARS.map((url, idx) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt={`Preset ${idx}`}
-                  onClick={() => setFormData({ ...formData, imageUrl: url })}
-                  className={`w-10 h-10 rounded-xl object-cover cursor-pointer border-2 transition ${
-                    formData.imageUrl === url
-                      ? "border-primary ring-2 ring-primary/30"
-                      : "border-transparent opacity-70 hover:opacity-100"
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 bg-primary hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition shadow-sm hover:shadow cursor-pointer flex items-center justify-center space-x-1.5"
+      {/* Toast / Push Notification Banner */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            initial={{ opacity: 0, y: -24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 450, damping: 30 }}
+            className="fixed top-4 left-3 right-3 sm:left-auto sm:right-6 sm:top-6 sm:max-w-md z-70 mx-auto"
           >
-            <CheckCircle2 size={16} />
-            <span>Publish Service Profile</span>
-          </button>
-        </form>
-      </Modal>
+            <div className="relative overflow-hidden rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800 shadow-[0_12px_40px_rgba(0,0,0,0.18)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-3.5 sm:p-4 text-left ring-1 ring-black/5 dark:ring-white/10">
+              {/* Subtle top accent gradient bar */}
+              <div className="absolute top-0 left-0 right-0 h-1 bg-linear-to-r from-emerald-500 via-primary to-orange-500" />
+
+              {/* Header row: App badge, Title, Time, Close */}
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <CheckCircle2 size={14} className="stroke-[2.5]" />
+                  </div>
+                  <div className="flex items-center gap-1.5 min-w-0 truncate">
+                    <span className="text-xs font-bold text-slate-900 dark:text-white tracking-tight">
+                      Avadi City
+                    </span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium truncate">
+                      • {locale === "ta" ? "உள்ளூர் சேவைகள்" : "Local Services"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    {locale === "ta" ? "இப்போது" : "Just now"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setToastMessage(null)}
+                    aria-label="Close notification"
+                    className="w-6 h-6 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Message body */}
+              <p className="mt-2.5 text-xs sm:text-[13px] font-medium text-slate-700 dark:text-slate-200 leading-relaxed">
+                {toastMessage}
+              </p>
+
+              {/* Status pill indicator */}
+              <div className="mt-2.5 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full w-fit">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>{locale === "ta" ? "சமர்ப்பிக்கப்பட்டது — பரிசீலனையில் உள்ளது" : "Submitted — Under Review"}</span>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

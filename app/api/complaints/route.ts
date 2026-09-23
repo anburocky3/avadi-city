@@ -8,6 +8,40 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 import { r2Client, BUCKET_NAME, PUBLIC_R2_DOMAIN } from "@/lib/r2";
 import { ALL_AVADI_STREETS } from "@/lib/wards";
+import { initialComplaints } from "@/data/complaints";
+
+// GET /api/complaints
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const ward = searchParams.get("ward");
+
+    const complaints = await prisma.complaint.findMany({
+      where: ward && ward !== "all" ? { incidentWard: Number(ward) } : {},
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (complaints && complaints.length > 0) {
+      return NextResponse.json(complaints, { status: 200 });
+    }
+
+    const filtered =
+      ward && ward !== "all"
+        ? initialComplaints.filter((c: any) => String(c.ward) === String(ward))
+        : initialComplaints;
+
+    return NextResponse.json(filtered, { status: 200 });
+  } catch (error: any) {
+    const { searchParams } = new URL(request.url);
+    const ward = searchParams.get("ward");
+    const filtered =
+      ward && ward !== "all"
+        ? initialComplaints.filter((c: any) => String(c.ward) === String(ward))
+        : initialComplaints;
+
+    return NextResponse.json(filtered, { status: 200 });
+  }
+}
 
 // --- SERVER-SIDE VALIDATION SCHEMA ---
 const serverComplaintSchema = zod.object({

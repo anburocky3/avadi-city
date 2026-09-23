@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as zod from "zod";
 import { useTranslations } from "next-intl";
+import imageCompression from "browser-image-compression";
 import {
   Home,
   Search,
@@ -14,6 +15,12 @@ import {
   CheckCircle2,
   Building2,
   Check,
+  X,
+  Upload,
+  Loader2,
+  Trash2,
+  Sparkles,
+  ImageIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -81,10 +88,11 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
   const [justPostedIds, setJustPostedIds] = useState<string[]>([]);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
 
-  // Property Image state default
-  const [rentalImageUrl, setRentalImageUrl] = useState<string>(
-    "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=60",
-  );
+  // Property Photo upload state
+  const [rentalPhotoUrl, setRentalPhotoUrl] = useState<string>("");
+  const [isCompressingPhoto, setIsCompressingPhoto] = useState<boolean>(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   // React Hook Form
   const {
@@ -154,6 +162,45 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     }, 1500);
   };
 
+  const handleRentalPhotoUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setPhotoUploadError("Please select a valid image file (JPG, PNG, WebP).");
+      return;
+    }
+    setPhotoUploadError(null);
+    setIsCompressingPhoto(true);
+    try {
+      let dataUrl: string;
+      try {
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.5,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+          fileType: "image/webp",
+        });
+        dataUrl = await imageCompression.getDataUrlFromFile(compressed);
+      } catch {
+        dataUrl = await new Promise<string>((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+      setRentalPhotoUrl(dataUrl);
+    } catch (err) {
+      console.error("Photo processing error:", err);
+      setPhotoUploadError("Could not process image. Please try another photo.");
+    } finally {
+      setIsCompressingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  };
+
   const handleRentalSubmit = (data: RentalFormData) => {
     const newId = `rent-${Date.now()}`;
     const bhkMatch = data.title.match(/\b\d+BHK\b/i);
@@ -174,9 +221,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
       ownerName: userProfile?.name || "Avadi Resident",
       location: `Ward ${activeWard.id}, Avadi`,
       ward: activeWard.id,
-      imageUrl:
-        rentalImageUrl ||
-        "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=60",
+      imageUrl: rentalPhotoUrl || undefined,
       details: data.details,
       features: ["24/7 Water", "Covered Bike Parking", "3-Phase Electricity"],
     };
@@ -190,6 +235,8 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     }, 6000);
 
     reset();
+    setRentalPhotoUrl("");
+    setPhotoUploadError(null);
     setIsModalOpen(false);
   };
 
@@ -284,14 +331,18 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 >
                   {/* Image Container */}
                   <div className="relative w-full h-52 sm:h-60 overflow-hidden bg-slate-100 dark:bg-slate-950 group">
-                    <img
-                      src={
-                        rental.imageUrl ||
-                        "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=600&auto=format&fit=crop&q=60"
-                      }
-                      alt={rental.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
+                    {rental.imageUrl ? (
+                      <img
+                        src={rental.imageUrl}
+                        alt={rental.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-600">
+                        <ImageIcon size={40} className="opacity-50" />
+                        <span className="text-xs font-semibold opacity-70">No photo uploaded</span>
+                      </div>
+                    )}
 
                     {/* Property Type Badge */}
                     <div className="absolute top-3 left-3 bg-slate-950/80 backdrop-blur-md text-white font-extrabold text-[11px] sm:text-xs px-3 py-1 rounded-full border border-white/20 shadow-md">
@@ -504,15 +555,95 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
 
           <div>
             <label className="block text-xs font-black text-slate-700 dark:text-slate-300 mb-1">
-              Property Photo URL (Optional)
+              Property Photo (Optional)
             </label>
-            <input
-              type="text"
-              value={rentalImageUrl}
-              onChange={(e) => setRentalImageUrl(e.target.value)}
-              placeholder="Paste image URL or leave default"
-              className="w-full px-3.5 py-2.5 text-xs bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary text-slate-900 dark:text-white"
-            />
+
+            {/* Gallery Upload UI */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/70 border border-slate-200/80 dark:border-slate-800 space-y-3">
+              <div className="flex items-center gap-3.5">
+                {/* Preview */}
+                <div className="relative shrink-0">
+                  {rentalPhotoUrl ? (
+                    <img
+                      src={rentalPhotoUrl}
+                      alt="Property preview"
+                      className="w-20 h-16 rounded-xl object-cover border-2 border-primary shadow-sm ring-2 ring-primary/20"
+                    />
+                  ) : (
+                    <div className="w-20 h-16 rounded-xl bg-slate-200 dark:bg-slate-800 flex items-center justify-center border-2 border-dashed border-slate-300 dark:border-slate-700">
+                      <ImageIcon size={22} className="text-slate-400" />
+                    </div>
+                  )}
+                  {rentalPhotoUrl && (
+                    <span className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-1 border border-white dark:border-slate-900 shadow-sm flex items-center justify-center">
+                      <CheckCircle2 size={11} className="stroke-3" />
+                    </span>
+                  )}
+                </div>
+
+                {/* Controls */}
+                <div className="flex-1 min-w-0 space-y-2">
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    id="rental-photo-upload"
+                    accept="image/*"
+                    onChange={handleRentalPhotoUpload}
+                    className="hidden"
+                  />
+                  <div className="flex flex-wrap items-center gap-2">
+                    <label
+                      htmlFor="rental-photo-upload"
+                      className={`inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                        isCompressingPhoto
+                          ? "bg-slate-200 dark:bg-slate-800 text-slate-500 cursor-not-allowed"
+                          : "bg-primary hover:bg-orange-600 text-white active:scale-95"
+                      }`}
+                    >
+                      {isCompressingPhoto ? (
+                        <>
+                          <Loader2 size={14} className="animate-spin" />
+                          <span>Optimizing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={14} />
+                          <span>{rentalPhotoUrl ? "Change Photo" : "Upload from Gallery"}</span>
+                        </>
+                      )}
+                    </label>
+                    {rentalPhotoUrl && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setRentalPhotoUrl("");
+                          setPhotoUploadError(null);
+                          if (photoInputRef.current) photoInputRef.current.value = "";
+                        }}
+                        className="inline-flex items-center space-x-1 px-3 py-2 rounded-xl text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 border border-rose-200/60 dark:border-rose-900/60 cursor-pointer transition"
+                      >
+                        <Trash2 size={13} />
+                        <span>Remove</span>
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-medium leading-tight">
+                    {rentalPhotoUrl ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                        <Sparkles size={12} /> Photo loaded and compressed (WebP)
+                      </span>
+                    ) : (
+                      "Optional. If no photo uploaded, a placeholder will be shown."
+                    )}
+                  </p>
+                </div>
+              </div>
+              {photoUploadError && (
+                <p className="text-xs font-semibold text-rose-500 bg-rose-50 dark:bg-rose-950/40 p-2 rounded-xl border border-rose-200 dark:border-rose-900">
+                  {photoUploadError}
+                </p>
+              )}
+            </div>
           </div>
 
           <div>

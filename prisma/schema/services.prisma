@@ -1,0 +1,32 @@
+// Approval workflow status for admin-moderated submissions
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model ServiceWorker {
+  id          String         @id @default(cuid())
+  name        String
+  category    String
+  phone       String
+  ward        Int
+  address     String         @db.Text
+  experience  String?
+  hours       String?
+  description String?        @db.Text
+  specialty   String?        @db.Text
+  rate        String?
+  imageUrl    String?        @db.LongText
+  rating      Float          @default(5.0)
+  verified    Boolean        @default(false)
+  status      ApprovalStatus @default(PENDING)
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([ward])
+  @@index([status])
+  @@index([category])
+  @@map("service_workers")
+}

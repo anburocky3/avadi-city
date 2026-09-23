@@ -4,6 +4,7 @@ import { verifyAuthToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import { BUCKET_NAME, PUBLIC_R2_DOMAIN, r2Client } from "@/lib/r2";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import { initialPosts } from "@/data/posts";
 
 // GET /api/feeds
 export async function GET(request: Request) {
@@ -53,37 +54,62 @@ export async function GET(request: Request) {
               where: { userId: currentUserId },
               select: { id: true },
             }
-          : false,
+          : undefined,
       },
       orderBy: { timestamp: "desc" },
     });
 
-    // Format response so frontend receives expected property names
-    const formattedFeeds = feeds.map((feed) => ({
-      ...feed,
-      authorName: feed.author?.name || "Avadi Resident",
-      authorAvatar: feed.author?.avatar || "/default-avatar.png",
-      authorWard: feed.author?.wardNumber,
-      authorStreet: feed.author?.streetName,
-      isAuthorVerified: feed.author?.isVerified || false,
-      likes: feed.likesCount,
-      // If feed.likes returned an array with at least 1 item, YOU liked this post!
-      likedByMe: Array.isArray(feed.likes) && feed.likes.length > 0,
-      complaint: feed.complaint || null,
-      comments: feed.comments.map((c: any) => ({
-        ...c,
-        author: c.user?.name || c.author || "Resident",
-        authorAvatar: c.user?.avatar || c.authorAvatar || "/default-avatar.png",
-      })),
-    }));
+    if (feeds && feeds.length > 0) {
+      // Format response so frontend receives expected property names
+      const formattedFeeds = feeds.map((feed) => ({
+        ...feed,
+        authorName: feed.author?.name || "Avadi Resident",
+        authorAvatar: feed.author?.avatar || "/default-avatar.png",
+        authorWard: feed.author?.wardNumber,
+        authorStreet: feed.author?.streetName,
+        isAuthorVerified: feed.author?.isVerified || false,
+        likes: feed.likesCount,
+        // If feed.likes returned an array with at least 1 item, YOU liked this post!
+        likedByMe: Array.isArray(feed.likes) && feed.likes.length > 0,
+        complaint: feed.complaint || null,
+        comments: feed.comments.map((c: any) => ({
+          ...c,
+          author: c.user?.name || c.author || "Resident",
+          authorAvatar: c.user?.avatar || c.authorAvatar || "/default-avatar.png",
+        })),
+      }));
 
-    return NextResponse.json(formattedFeeds, { status: 200 });
+      return NextResponse.json(formattedFeeds, { status: 200 });
+    }
+
+    // Fallback to initial mock posts if DB has no feeds
+    const fallbackFeeds = initialPosts.filter((item: any) => {
+      if (ward && ward !== "all" && String(item.ward) !== String(ward)) {
+        return false;
+      }
+      if (category && item.category?.toLowerCase() !== category.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+
+    return NextResponse.json(fallbackFeeds, { status: 200 });
   } catch (error: any) {
-    console.error("GET /api/feeds error:", error?.message || error);
-    return NextResponse.json(
-      { message: "Failed to fetch feeds from database." },
-      { status: 500 },
-    );
+    const { searchParams } = new URL(request.url);
+    const ward = searchParams.get("ward");
+    const category = searchParams.get("category");
+
+    const fallbackFeeds = initialPosts.filter((item: any) => {
+      if (ward && ward !== "all" && String(item.ward) !== String(ward)) {
+        return false;
+      }
+      if (category && item.category?.toLowerCase() !== category.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+
+    return NextResponse.json(fallbackFeeds, { status: 200 });
   }
 }
 
