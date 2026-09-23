@@ -1389,7 +1389,6 @@ export function RegisterClient({
                     <div className="min-w-0">
                       <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
                         Ward {regData.servingWard}
-                        {regData.streetName && ` • ${regData.streetName}`}
                       </span>
                       <span className="text-[10px] text-slate-400 block truncate">
                         {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
