@@ -237,11 +237,7 @@ export const formatTimeTo12hr = (timeStr: string): string => {
   return `${displayH.toString().padStart(2, "0")}:${mStr || "00"} ${period}`;
 };
 
-export function RegisterClient({
-  wardsList = [],
-}: {
-  wardsList: { id: number; name: string }[];
-}) {
+export function ServiceRegisterClient() {
   const router = useRouter();
   const t = useTranslations("services");
   const locale = useLocale();
@@ -255,7 +251,8 @@ export function RegisterClient({
   const [regStep, setRegStep] = useState<1 | 2 | 3 | 4>(1);
   const [regSubmitted, setRegSubmitted] = useState<boolean>(false);
   const [regError, setRegError] = useState<string | null>(null);
-  const [isStreetWardModalOpen, setIsStreetWardModalOpen] = useState<boolean>(false);
+  const [isStreetWardModalOpen, setIsStreetWardModalOpen] =
+    useState<boolean>(false);
   const [customSkillInput, setCustomSkillInput] = useState<string>("");
   const [customSkillsByCategory, setCustomSkillsByCategory] = useState<
     Record<string, string[]>
@@ -270,7 +267,9 @@ export function RegisterClient({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isCameraOpen, setIsCameraOpen] = useState<boolean>(false);
   const [isCameraReady, setIsCameraReady] = useState<boolean>(false);
-  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">("user");
+  const [cameraFacing, setCameraFacing] = useState<"user" | "environment">(
+    "user",
+  );
   const [isCameraStarting, setIsCameraStarting] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -312,6 +311,8 @@ export function RegisterClient({
       clearTimeout(t2);
     };
   }, [regStep, regSubmitted]);
+
+  const [streetChoosen, setStreetChoosen] = useState<StreetItem>();
 
   const [regData, setRegData] = useState({
     profilePhoto: "",
@@ -437,13 +438,19 @@ export function RegisterClient({
       setIsCameraOpen(false);
       setIsCameraReady(false);
 
-      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+      if (
+        err.name === "NotAllowedError" ||
+        err.name === "PermissionDeniedError"
+      ) {
         setUploadError(
           locale === "ta"
             ? "கேமரா அனுமதி மறுக்கப்பட்டது. உலாவியில் கேமரா அனுமதியை அனுமதிக்கவும் அல்லது கோப்புகளிலிருந்து பதிவேற்றவும்."
             : "Camera permission denied. Please allow camera access in browser settings or upload from files.",
         );
-      } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+      } else if (
+        err.name === "NotFoundError" ||
+        err.name === "DevicesNotFoundError"
+      ) {
         setUploadError(
           locale === "ta"
             ? "கேமரா சாதனம் எதுவும் கண்டறியப்படவில்லை. கோப்புகளிலிருந்து பதிவேற்றவும்."
@@ -506,12 +513,18 @@ export function RegisterClient({
     stopCameraStream();
 
     const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
-    if (dataUrl && dataUrl.startsWith("data:image/jpeg") && dataUrl.length > 100) {
+    if (
+      dataUrl &&
+      dataUrl.startsWith("data:image/jpeg") &&
+      dataUrl.length > 100
+    ) {
       setRegData((prev) => ({ ...prev, profilePhoto: dataUrl }));
       setRegError(null);
       setUploadError(null);
     } else {
-      setUploadError("Could not capture photo. Please try uploading from files.");
+      setUploadError(
+        "Could not capture photo. Please try uploading from files.",
+      );
     }
   };
 
@@ -755,7 +768,9 @@ export function RegisterClient({
   };
 
   const handleSelectCategory = (catId: string) => {
-    const defaultSkills = SERVICE_SKILLS[catId] ? SERVICE_SKILLS[catId].slice(0, 2) : [];
+    const defaultSkills = SERVICE_SKILLS[catId]
+      ? SERVICE_SKILLS[catId].slice(0, 2)
+      : [];
     const savedCustom = customSkillsByCategory[catId] || [];
     setRegData((prev) => ({
       ...prev,
@@ -807,7 +822,9 @@ export function RegisterClient({
   const handleRemoveCustomSkill = (skill: string) => {
     setCustomSkillsByCategory((prev) => ({
       ...prev,
-      [regData.category]: (prev[regData.category] || []).filter((s) => s !== skill),
+      [regData.category]: (prev[regData.category] || []).filter(
+        (s) => s !== skill,
+      ),
     }));
     setRegData((prev) => ({
       ...prev,
@@ -838,7 +855,8 @@ export function RegisterClient({
   // Push notification trigger
   const triggerPushNotification = () => {
     if (typeof window !== "undefined" && "Notification" in window) {
-      const title = locale === "ta" ? "ஆவடி மாநகராட்சி சேவைகள்" : "Avadi City Services";
+      const title =
+        locale === "ta" ? "ஆவடி மாநகராட்சி சேவைகள்" : "Avadi City Services";
       const body =
         locale === "ta"
           ? "ஆவடி மாநகரில் சேவை வழங்குநராக இணைவதற்கான உங்கள் கோரிக்கை வெற்றிகரமாகச் சமர்ப்பிக்கப்பட்டது. மதிப்பாய்வு செய்யப்பட்டதும் உங்களுக்கு அறிவிக்கப்படும்."
@@ -896,7 +914,10 @@ export function RegisterClient({
   };
 
   return (
-    <div ref={topRef} className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-2xl mx-auto space-y-4">
+    <div
+      ref={topRef}
+      className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-2xl mx-auto space-y-4"
+    >
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
         <Link
@@ -910,10 +931,14 @@ export function RegisterClient({
         {!regSubmitted && (
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
-              {regStep === 1 && (locale === "ta" ? "சுயவிவரம் & வார்டு" : "Profile & Location")}
-              {regStep === 2 && (locale === "ta" ? "தொழில் & வேலைகள்" : "Trade & Skills")}
-              {regStep === 3 && (locale === "ta" ? "அனுபவம் & கட்டணம்" : "Rates & Hours")}
-              {regStep === 4 && (locale === "ta" ? "சரிபார்த்து சமர்ப்பி" : "Review & Submit")}
+              {regStep === 1 &&
+                (locale === "ta" ? "சுயவிவரம் & வார்டு" : "Profile & Location")}
+              {regStep === 2 &&
+                (locale === "ta" ? "தொழில் & வேலைகள்" : "Trade & Skills")}
+              {regStep === 3 &&
+                (locale === "ta" ? "அனுபவம் & கட்டணம்" : "Rates & Hours")}
+              {regStep === 4 &&
+                (locale === "ta" ? "சரிபார்த்து சமர்ப்பி" : "Review & Submit")}
             </span>
           </div>
         )}
@@ -924,7 +949,10 @@ export function RegisterClient({
         /* SUBMISSION SUCCESS CONFIRMATION VIEW */
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xl text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
           <div className="w-16 h-16 rounded-3xl bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-500 flex items-center justify-center mx-auto shadow-sm">
-            <CheckCircle2 size={36} className="animate-in zoom-in duration-300" />
+            <CheckCircle2
+              size={36}
+              className="animate-in zoom-in duration-300"
+            />
           </div>
 
           <div className="space-y-2">
@@ -947,7 +975,9 @@ export function RegisterClient({
                 <img
                   src={regData.profilePhoto}
                   alt={regData.fullName}
-                  onError={() => setRegData((prev) => ({ ...prev, profilePhoto: "" }))}
+                  onError={() =>
+                    setRegData((prev) => ({ ...prev, profilePhoto: "" }))
+                  }
                   className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
                 />
               ) : (
@@ -960,7 +990,10 @@ export function RegisterClient({
                   {regData.fullName}
                 </h4>
                 <div className="flex items-center gap-1.5 mt-0.5">
-                  <Badge variant="primary" className="text-[10px] py-0 px-2 font-bold">
+                  <Badge
+                    variant="primary"
+                    className="text-[10px] py-0 px-2 font-bold"
+                  >
                     {regData.category}
                   </Badge>
                   <span className="text-[11px] text-slate-400 font-medium">
@@ -972,11 +1005,16 @@ export function RegisterClient({
 
             <div className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
               <span className="text-amber-800 dark:text-amber-300 font-semibold text-[11px] flex items-center gap-1.5">
-                <Clock size={13} className="text-amber-600 dark:text-amber-400" />
+                <Clock
+                  size={13}
+                  className="text-amber-600 dark:text-amber-400"
+                />
                 <span>{locale === "ta" ? "நிலை:" : "Status:"}</span>
               </span>
               <span className="text-amber-600 dark:text-amber-400 font-extrabold text-[11px]">
-                {locale === "ta" ? "நிர்வாக பரிசீலனையில் உள்ளது" : "Awaiting Admin Approval"}
+                {locale === "ta"
+                  ? "நிர்வாக பரிசீலனையில் உள்ளது"
+                  : "Awaiting Admin Approval"}
               </span>
             </div>
 
@@ -996,7 +1034,11 @@ export function RegisterClient({
             className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white rounded-2xl font-bold text-xs sm:text-sm transition shadow-md hover:shadow-lg cursor-pointer flex items-center justify-center gap-2 active:scale-[0.99]"
           >
             <Bell size={15} />
-            <span>{locale === "ta" ? "முடிந்தது — சேவை பகுதிக்குச் செல்" : "Done — Return to Local Services"}</span>
+            <span>
+              {locale === "ta"
+                ? "முடிந்தது — சேவை பகுதிக்குச் செல்"
+                : "Done — Return to Local Services"}
+            </span>
           </button>
         </div>
       ) : (
@@ -1019,8 +1061,8 @@ export function RegisterClient({
                         isCompleted
                           ? "bg-emerald-500 w-full"
                           : isCurrent
-                          ? "bg-linear-to-r from-primary to-orange-500 w-full shadow-xs"
-                          : "w-0"
+                            ? "bg-linear-to-r from-primary to-orange-500 w-full shadow-xs"
+                            : "w-0"
                       }`}
                     />
                   </div>
@@ -1032,19 +1074,45 @@ export function RegisterClient({
             <div className="flex items-start justify-between gap-3 pt-1">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider text-primary block">
-                  {locale === "ta" ? `படி ${regStep} / 4` : `STEP ${regStep} OF 4`}
+                  {locale === "ta"
+                    ? `படி ${regStep} / 4`
+                    : `STEP ${regStep} OF 4`}
                 </span>
                 <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 leading-snug">
-                  {regStep === 1 && (locale === "ta" ? "சுயவிவரப் படம் & சேவை வார்டு" : "Profile Photo & Serving Ward")}
-                  {regStep === 2 && (locale === "ta" ? "உங்கள் தொழில் & சேவைகளைத் தேர்ந்தெடுக்கவும்" : "Select Your Trade & Services")}
-                  {regStep === 3 && (locale === "ta" ? "பணி அனுபவம் & கட்டணம்" : "Experience, Rates & Hours")}
-                  {regStep === 4 && (locale === "ta" ? "விவரங்களைச் சரிபார்த்து சமர்ப்பிக்கவும்" : "Review & Submit Profile")}
+                  {regStep === 1 &&
+                    (locale === "ta"
+                      ? "சுயவிவரப் படம் & சேவை வார்டு"
+                      : "Profile Photo & Serving Ward")}
+                  {regStep === 2 &&
+                    (locale === "ta"
+                      ? "உங்கள் தொழில் & சேவைகளைத் தேர்ந்தெடுக்கவும்"
+                      : "Select Your Trade & Services")}
+                  {regStep === 3 &&
+                    (locale === "ta"
+                      ? "பணி அனுபவம் & கட்டணம்"
+                      : "Experience, Rates & Hours")}
+                  {regStep === 4 &&
+                    (locale === "ta"
+                      ? "விவரங்களைச் சரிபார்த்து சமர்ப்பிக்கவும்"
+                      : "Review & Submit Profile")}
                 </h1>
                 <p className="text-[11px] text-slate-400 mt-0.5">
-                  {regStep === 1 && (locale === "ta" ? "உங்கள் படம், தொடர்பு விவரங்கள் மற்றும் பணிபுரியும் வார்டை உள்ளிடவும்." : "Upload your photo, contact info, and select your active ward.")}
-                  {regStep === 2 && (locale === "ta" ? "உங்கள் முக்கிய தொழில் மற்றும் நீங்கள் வழங்கும் பழுதுபார்க்கும் வேலைகள்." : "Pick your core trade and check off the repairs you handle.")}
-                  {regStep === 3 && (locale === "ta" ? "உங்கள் அனுபவம் மற்றும் வாடிக்கையாளர் வருகைக் கட்டணம்." : "Set your years of experience, inspection charge, and working hours.")}
-                  {regStep === 4 && (locale === "ta" ? "நிர்வாக ஒப்புதலுக்கு அனுப்பும் முன் தகவல்களைச் சரிபார்க்கவும்." : "Double-check your information before sending for admin review.")}
+                  {regStep === 1 &&
+                    (locale === "ta"
+                      ? "உங்கள் படம், தொடர்பு விவரங்கள் மற்றும் பணிபுரியும் வார்டை உள்ளிடவும்."
+                      : "Upload your photo, contact info, and select your active ward.")}
+                  {regStep === 2 &&
+                    (locale === "ta"
+                      ? "உங்கள் முக்கிய தொழில் மற்றும் நீங்கள் வழங்கும் பழுதுபார்க்கும் வேலைகள்."
+                      : "Pick your core trade and check off the repairs you handle.")}
+                  {regStep === 3 &&
+                    (locale === "ta"
+                      ? "உங்கள் அனுபவம் மற்றும் வாடிக்கையாளர் வருகைக் கட்டணம்."
+                      : "Set your years of experience, inspection charge, and working hours.")}
+                  {regStep === 4 &&
+                    (locale === "ta"
+                      ? "நிர்வாக ஒப்புதலுக்கு அனுப்பும் முன் தகவல்களைச் சரிபார்க்கவும்."
+                      : "Double-check your information before sending for admin review.")}
                 </p>
               </div>
 
@@ -1069,7 +1137,9 @@ export function RegisterClient({
               <div className="space-y-3 pb-5 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <label className="block text-slate-900 dark:text-slate-100 font-semibold text-xs sm:text-sm">
-                    {locale === "ta" ? "சுயவிவர புகைப்படம் *" : "Profile Photo *"}
+                    {locale === "ta"
+                      ? "சுயவிவர புகைப்படம் *"
+                      : "Profile Photo *"}
                   </label>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {locale === "ta"
@@ -1114,9 +1184,14 @@ export function RegisterClient({
                       />
                       {(!isCameraReady || isCameraStarting) && (
                         <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center text-white gap-2 z-10">
-                          <Loader2 size={24} className="animate-spin text-white" />
+                          <Loader2
+                            size={24}
+                            className="animate-spin text-white"
+                          />
                           <span className="text-xs font-medium">
-                            {locale === "ta" ? "கேமரா தயாராகிறது..." : "Starting camera..."}
+                            {locale === "ta"
+                              ? "கேமரா தயாராகிறது..."
+                              : "Starting camera..."}
                           </span>
                         </div>
                       )}
@@ -1126,7 +1201,11 @@ export function RegisterClient({
                       <button
                         type="button"
                         onClick={capturePhotoFromCamera}
-                        disabled={isCompressingImage || isCameraStarting || !isCameraReady}
+                        disabled={
+                          isCompressingImage ||
+                          isCameraStarting ||
+                          !isCameraReady
+                        }
                         className="px-4 py-2 bg-white text-slate-900 hover:bg-slate-100 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                       >
                         {isCompressingImage ? (
@@ -1137,16 +1216,26 @@ export function RegisterClient({
                         ) : (
                           <>
                             <Camera size={14} />
-                            <span>{locale === "ta" ? "படம் எடுக்கவும்" : "Capture Photo"}</span>
+                            <span>
+                              {locale === "ta"
+                                ? "படம் எடுக்கவும்"
+                                : "Capture Photo"}
+                            </span>
                           </>
                         )}
                       </button>
 
                       <button
                         type="button"
-                        onClick={() => startCameraStream(cameraFacing === "user" ? "environment" : "user")}
+                        onClick={() =>
+                          startCameraStream(
+                            cameraFacing === "user" ? "environment" : "user",
+                          )
+                        }
                         disabled={isCameraStarting}
-                        title={locale === "ta" ? "கேமரா மாற்றுக" : "Flip Camera"}
+                        title={
+                          locale === "ta" ? "கேமரா மாற்றுக" : "Flip Camera"
+                        }
                         className="p-2 rounded-lg border border-slate-700 bg-transparent text-slate-300 hover:bg-slate-800 transition cursor-pointer"
                       >
                         <RefreshCw size={14} />
@@ -1173,14 +1262,20 @@ export function RegisterClient({
                             src={regData.profilePhoto}
                             alt="Profile"
                             onError={() => {
-                              setRegData((prev) => ({ ...prev, profilePhoto: "" }));
+                              setRegData((prev) => ({
+                                ...prev,
+                                profilePhoto: "",
+                              }));
                             }}
                             className="w-full h-full object-cover"
                           />
                         </div>
                       ) : (
                         <div className="w-16 h-16 rounded-full border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center text-slate-400">
-                          <User size={22} className="text-slate-400 dark:text-slate-500" />
+                          <User
+                            size={22}
+                            className="text-slate-400 dark:text-slate-500"
+                          />
                         </div>
                       )}
                     </div>
@@ -1194,7 +1289,11 @@ export function RegisterClient({
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-white bg-primary hover:bg-orange-600 transition shadow-xs cursor-pointer active:scale-[0.98]"
                         >
                           <Upload size={13} />
-                          <span>{locale === "ta" ? "கோப்புகளிலிருந்து பதிவேற்றவும்" : "Upload from files"}</span>
+                          <span>
+                            {locale === "ta"
+                              ? "கோப்புகளிலிருந்து பதிவேற்றவும்"
+                              : "Upload from files"}
+                          </span>
                         </button>
 
                         {/* Subtle Outline Button: Take Photo */}
@@ -1204,29 +1303,42 @@ export function RegisterClient({
                           className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-200 bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800/80 transition border border-slate-300 dark:border-slate-700 cursor-pointer active:scale-[0.98]"
                         >
                           <Camera size={13} />
-                          <span>{locale === "ta" ? "படம் எடுக்கவும்" : "Take Photo"}</span>
+                          <span>
+                            {locale === "ta" ? "படம் எடுக்கவும்" : "Take Photo"}
+                          </span>
                         </button>
 
-                        {regData.profilePhoto && regData.profilePhoto.length > 100 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setRegData((prev) => ({ ...prev, profilePhoto: "" }));
-                              setUploadError(null);
-                              if (fileInputRef.current) fileInputRef.current.value = "";
-                              if (cameraInputRef.current) cameraInputRef.current.value = "";
-                            }}
-                            className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition cursor-pointer"
-                          >
-                            <Trash2 size={12} />
-                            <span>{locale === "ta" ? "நீக்குக" : "Remove"}</span>
-                          </button>
-                        )}
+                        {regData.profilePhoto &&
+                          regData.profilePhoto.length > 100 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setRegData((prev) => ({
+                                  ...prev,
+                                  profilePhoto: "",
+                                }));
+                                setUploadError(null);
+                                if (fileInputRef.current)
+                                  fileInputRef.current.value = "";
+                                if (cameraInputRef.current)
+                                  cameraInputRef.current.value = "";
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-2 rounded-lg text-xs font-medium text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 transition cursor-pointer"
+                            >
+                              <Trash2 size={12} />
+                              <span>
+                                {locale === "ta" ? "நீக்குக" : "Remove"}
+                              </span>
+                            </button>
+                          )}
                       </div>
 
                       {isCompressingImage && (
                         <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs text-slate-500">
-                          <Loader2 size={12} className="animate-spin text-primary" />
+                          <Loader2
+                            size={12}
+                            className="animate-spin text-primary"
+                          />
                           <span>Optimizing photo...</span>
                         </div>
                       )}
@@ -1262,7 +1374,9 @@ export function RegisterClient({
               {/* Full Name / Business Name */}
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                  {locale === "ta" ? "முழு பெயர் / நிறுவன பெயர் *" : "Full Name / Business Name *"}
+                  {locale === "ta"
+                    ? "முழு பெயர் / நிறுவன பெயர் *"
+                    : "Full Name / Business Name *"}
                 </label>
                 <input
                   type="text"
@@ -1294,7 +1408,9 @@ export function RegisterClient({
                     maxLength={10}
                     value={regData.phone}
                     onChange={(e) => {
-                      const digitsOnly = e.target.value.replace(/[^0-9]/g, "").slice(0, 10);
+                      const digitsOnly = e.target.value
+                        .replace(/[^0-9]/g, "")
+                        .slice(0, 10);
                       setRegData({ ...regData, phone: digitsOnly });
                       setRegError(null);
                     }}
@@ -1306,7 +1422,9 @@ export function RegisterClient({
                 {/* Email (Optional) */}
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                    {locale === "ta" ? "மின்னஞ்சல் (விருப்பத்தேர்வு)" : "Email (Optional)"}
+                    {locale === "ta"
+                      ? "மின்னஞ்சல் (விருப்பத்தேர்வு)"
+                      : "Email (Optional)"}
                   </label>
                   <input
                     type="email"
@@ -1328,26 +1446,39 @@ export function RegisterClient({
                     <MapPin size={18} />
                   </div>
                   <span>
-                    {locale === "ta" ? "தெரு பெயர் & முக்கிய அடையாளம்" : "Street Name & Landmark"}
+                    {locale === "ta"
+                      ? "தெரு பெயர் & முக்கிய அடையாளம்"
+                      : "Enter Primary Serving Area"}
                   </span>
                 </label>
 
                 <input
-                  type="text"
+                  type="search"
                   autoComplete="off"
                   value={regData.streetName}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setRegData((prev) => ({ ...prev, streetName: val, address: val }));
+                    setRegData((prev) => ({
+                      ...prev,
+                      streetName: val,
+                      address: val,
+                    }));
                     setRegError(null);
-                    if (val.trim().length < 2) {
+                    if (val.trim().length <= 3) {
                       setStreetResults([]);
                       return;
                     }
                     const filtered = ALL_AVADI_STREETS.filter((item) =>
-                      item.streetName.toLowerCase().includes(val.toLowerCase().trim()),
+                      item.streetName
+                        .toLowerCase()
+                        .includes(val.toLowerCase().trim()),
                     ).slice(0, 10);
                     setStreetResults(filtered);
+                    setStreetChoosen(
+                      filtered.some((s) => s.streetName === val.trim())
+                        ? filtered.find((s) => s.streetName === val.trim())
+                        : undefined,
+                    );
                   }}
                   placeholder={
                     locale === "ta"
@@ -1382,7 +1513,10 @@ export function RegisterClient({
                           className="px-4 py-3 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-500/10 hover:text-primary cursor-pointer flex items-center justify-between"
                         >
                           <span className="flex items-center gap-2">
-                            <MapPin size={14} className="text-slate-400 shrink-0" />
+                            <MapPin
+                              size={14}
+                              className="text-slate-400 shrink-0"
+                            />
                             <span>{street.streetName}</span>
                           </span>
                           <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500">
@@ -1396,33 +1530,39 @@ export function RegisterClient({
               </div>
 
               {/* Primary Serving Ward (with Interactive Find Your Street Search) */}
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                  {locale === "ta" ? "முதன்மை சேவை வார்டு *" : "Primary Serving Ward *"}
-                </label>
-                <div
-                  onClick={() => setIsStreetWardModalOpen(true)}
-                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-xs"
-                >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
-                      W{regData.servingWard}
+              {true && (
+                <div>
+                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    {locale === "ta"
+                      ? "முதன்மை சேவை வார்டு *"
+                      : "Primary Serving Ward *"}
+                  </label>
+                  <div
+                    onClick={() => setIsStreetWardModalOpen(true)}
+                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-xs"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
+                        W{regData.servingWard}
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
+                          {regData.streetName}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block truncate">
+                          {locale === "ta"
+                            ? "தெருவைத் தேடி வார்டு மாற்றுக"
+                            : "Search street to change"}
+                        </span>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <span className="font-extrabold text-slate-900 dark:text-slate-100 block text-xs truncate">
-                        Ward {regData.servingWard}
-                      </span>
-                      <span className="text-[10px] text-slate-400 block truncate">
-                        {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
-                      </span>
-                    </div>
+                    <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
+                      <Search size={13} />
+                      <span>{locale === "ta" ? "தேடு" : "Find"}</span>
+                    </span>
                   </div>
-                  <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
-                    <Search size={13} />
-                    <span>{locale === "ta" ? "தேடு" : "Find"}</span>
-                  </span>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
@@ -1432,7 +1572,9 @@ export function RegisterClient({
               {/* Trade Selection Cards */}
               <div className="space-y-2">
                 <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
-                  {locale === "ta" ? "முதன்மை தொழில் *" : "Select Your Primary Trade *"}
+                  {locale === "ta"
+                    ? "முதன்மை தொழில் *"
+                    : "Select Your Primary Trade *"}
                 </label>
                 <p className="text-[11px] text-slate-400">
                   {locale === "ta"
@@ -1469,8 +1611,12 @@ export function RegisterClient({
                           <IconComponent size={18} className="stroke-[2.2]" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <span className="block text-xs font-bold truncate leading-tight">{label}</span>
-                          <span className="block text-[10px] text-slate-400 truncate mt-0.5">{cat.hint}</span>
+                          <span className="block text-xs font-bold truncate leading-tight">
+                            {label}
+                          </span>
+                          <span className="block text-[10px] text-slate-400 truncate mt-0.5">
+                            {cat.hint}
+                          </span>
                         </div>
                       </button>
                     );
@@ -1483,7 +1629,9 @@ export function RegisterClient({
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
-                      {locale === "ta" ? `நீங்கள் வழங்கும் ${regData.category} வேலைகள் *` : `What ${regData.category} work do you provide? *`}
+                      {locale === "ta"
+                        ? `நீங்கள் வழங்கும் ${regData.category} வேலைகள் *`
+                        : `What ${regData.category} work do you provide? *`}
                     </label>
                     <span className="text-[11px] text-slate-400">
                       {locale === "ta"
@@ -1498,13 +1646,17 @@ export function RegisterClient({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {(() => {
-                    const categoryDefaultSkills = SERVICE_SKILLS[regData.category] || [];
-                    const categoryCustomSkills = customSkillsByCategory[regData.category] || [];
+                    const categoryDefaultSkills =
+                      SERVICE_SKILLS[regData.category] || [];
+                    const categoryCustomSkills =
+                      customSkillsByCategory[regData.category] || [];
                     const allCategorySkills = Array.from(
                       new Set([
                         ...categoryDefaultSkills,
                         ...categoryCustomSkills,
-                        ...regData.services.filter((s) => !categoryDefaultSkills.includes(s)),
+                        ...regData.services.filter(
+                          (s) => !categoryDefaultSkills.includes(s),
+                        ),
                       ]),
                     );
 
@@ -1531,7 +1683,9 @@ export function RegisterClient({
                                   : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950"
                               }`}
                             >
-                              {isChecked && <Check size={11} className="stroke-[3]" />}
+                              {isChecked && (
+                                <Check size={11} className="stroke-[3]" />
+                              )}
                             </div>
                             <span className="text-xs truncate">{skill}</span>
                           </div>
@@ -1550,9 +1704,15 @@ export function RegisterClient({
                             >
                               <button
                                 type="button"
-                                onClick={() => handleUpdateSkillRate(skill, -50)}
+                                onClick={() =>
+                                  handleUpdateSkillRate(skill, -50)
+                                }
                                 disabled={rate <= 50}
-                                title={locale === "ta" ? "விலையைக் குறைக்கவும்" : "Decrease price"}
+                                title={
+                                  locale === "ta"
+                                    ? "விலையைக் குறைக்கவும்"
+                                    : "Decrease price"
+                                }
                                 className={`w-5 h-5 flex items-center justify-center rounded transition cursor-pointer ${
                                   isChecked
                                     ? "text-slate-600 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary disabled:opacity-25"
@@ -1563,7 +1723,11 @@ export function RegisterClient({
                               </button>
 
                               <div className="flex items-center px-1">
-                                <span className={`text-[10px] font-semibold ${isChecked ? "text-primary dark:text-orange-400" : "text-slate-400"}`}>₹</span>
+                                <span
+                                  className={`text-[10px] font-semibold ${isChecked ? "text-primary dark:text-orange-400" : "text-slate-400"}`}
+                                >
+                                  ₹
+                                </span>
                                 <input
                                   type="number"
                                   min={10}
@@ -1573,7 +1737,9 @@ export function RegisterClient({
                                     const val = parseInt(e.target.value, 10);
                                     setServiceRates((prev) => ({
                                       ...prev,
-                                      [skill]: isNaN(val) ? 0 : Math.max(0, val),
+                                      [skill]: isNaN(val)
+                                        ? 0
+                                        : Math.max(0, val),
                                     }));
                                     if (!regData.services.includes(skill)) {
                                       setRegData((prev) => ({
@@ -1593,7 +1759,11 @@ export function RegisterClient({
                               <button
                                 type="button"
                                 onClick={() => handleUpdateSkillRate(skill, 50)}
-                                title={locale === "ta" ? "விலையை உயர்த்தவும்" : "Increase price"}
+                                title={
+                                  locale === "ta"
+                                    ? "விலையை உயர்த்தவும்"
+                                    : "Increase price"
+                                }
                                 className={`w-5 h-5 flex items-center justify-center rounded transition cursor-pointer ${
                                   isChecked
                                     ? "text-slate-600 dark:text-slate-300 hover:bg-primary/10 dark:hover:bg-primary/20 hover:text-primary"
@@ -1661,7 +1831,9 @@ export function RegisterClient({
                 {/* Experience Dropdown */}
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                    {locale === "ta" ? "பணி அனுபவம் *" : "Years of Experience *"}
+                    {locale === "ta"
+                      ? "பணி அனுபவம் *"
+                      : "Years of Experience *"}
                   </label>
                   <select
                     value={regData.experience}
@@ -1681,7 +1853,9 @@ export function RegisterClient({
                 {/* Visiting / Inspection Charge */}
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                    {locale === "ta" ? "ஆய்வு / வருகைக் கட்டணம் (₹) *" : "Visiting / Inspection Charge (₹) *"}
+                    {locale === "ta"
+                      ? "ஆய்வு / வருகைக் கட்டணம் (₹) *"
+                      : "Visiting / Inspection Charge (₹) *"}
                   </label>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-500 font-bold">
@@ -1694,7 +1868,10 @@ export function RegisterClient({
                       required
                       value={regData.visitingCharge}
                       onChange={(e) =>
-                        setRegData({ ...regData, visitingCharge: e.target.value })
+                        setRegData({
+                          ...regData,
+                          visitingCharge: e.target.value,
+                        })
                       }
                       placeholder="350"
                       className="w-full pl-8 pr-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-bold focus:ring-2 focus:ring-primary focus:outline-none text-xs sm:text-sm"
@@ -1791,7 +1968,9 @@ export function RegisterClient({
                       <img
                         src={regData.profilePhoto}
                         alt={regData.fullName}
-                        onError={() => setRegData((prev) => ({ ...prev, profilePhoto: "" }))}
+                        onError={() =>
+                          setRegData((prev) => ({ ...prev, profilePhoto: "" }))
+                        }
                         className="w-12 h-12 rounded-xl object-cover border border-slate-200 dark:border-slate-800 shrink-0"
                       />
                     ) : (
@@ -1804,7 +1983,10 @@ export function RegisterClient({
                         {regData.fullName}
                       </h4>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="primary" className="text-[10px] py-0 px-1.5 font-bold">
+                        <Badge
+                          variant="primary"
+                          className="text-[10px] py-0 px-1.5 font-bold"
+                        >
                           {regData.category}
                         </Badge>
                         <span className="text-[11px] text-slate-400 font-medium">
@@ -1827,14 +2009,18 @@ export function RegisterClient({
                 {/* Contact & Location Details */}
                 <div className="text-[11px] space-y-1.5 pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">{locale === "ta" ? "தொலைபேசி:" : "Phone:"}</span>
+                    <span className="text-slate-400">
+                      {locale === "ta" ? "தொலைபேசி:" : "Phone:"}
+                    </span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {regData.phone}
                     </span>
                   </div>
                   {regData.email && (
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-400">{locale === "ta" ? "மின்னஞ்சல்:" : "Email:"}</span>
+                      <span className="text-slate-400">
+                        {locale === "ta" ? "மின்னஞ்சல்:" : "Email:"}
+                      </span>
                       <span className="font-semibold text-slate-700 dark:text-slate-300">
                         {regData.email}
                       </span>
@@ -1856,7 +2042,9 @@ export function RegisterClient({
                 <div className="pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[11px] text-slate-400 font-medium">
-                      {locale === "ta" ? "சேவைகள் & திறன்கள்:" : "Services & Skills:"}
+                      {locale === "ta"
+                        ? "சேவைகள் & திறன்கள்:"
+                        : "Services & Skills:"}
                     </span>
                     <button
                       type="button"
@@ -1886,7 +2074,9 @@ export function RegisterClient({
                 {/* Experience, Visiting Rate, Hours */}
                 <div className="text-[11px] space-y-1.5">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400">{locale === "ta" ? "அனுபவம் & கட்டணம்:" : "Exp & Rate:"}</span>
+                    <span className="text-slate-400">
+                      {locale === "ta" ? "அனுபவம் & கட்டணம்:" : "Exp & Rate:"}
+                    </span>
                     <button
                       type="button"
                       onClick={() => setRegStep(3)}
@@ -1899,23 +2089,33 @@ export function RegisterClient({
 
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900">
-                      <span className="text-[10px] text-slate-400 block">{locale === "ta" ? "அனுபவம்" : "Experience"}</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{regData.experience}</span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {locale === "ta" ? "அனுபவம்" : "Experience"}
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">
+                        {regData.experience}
+                      </span>
                     </div>
                     <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900">
-                      <span className="text-[10px] text-slate-400 block">{locale === "ta" ? "ஆய்வுக் கட்டணம்" : "Visiting Rate"}</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">₹{regData.visitingCharge}</span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {locale === "ta" ? "ஆய்வுக் கட்டணம்" : "Visiting Rate"}
+                      </span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">
+                        ₹{regData.visitingCharge}
+                      </span>
                     </div>
                     <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-900">
-                      <span className="text-[10px] text-slate-400 block">{locale === "ta" ? "வேலை நேரம்" : "Hours"}</span>
+                      <span className="text-[10px] text-slate-400 block">
+                        {locale === "ta" ? "வேலை நேரம்" : "Hours"}
+                      </span>
                       <span className="font-bold text-slate-800 dark:text-slate-100 truncate block text-[10px]">
-                        {formatTimeTo12hr(regData.startTime)} - {formatTimeTo12hr(regData.endTime)}
+                        {formatTimeTo12hr(regData.startTime)} -{" "}
+                        {formatTimeTo12hr(regData.endTime)}
                       </span>
                     </div>
                   </div>
                 </div>
               </div>
-
 
               {/* Review Confirmation & Ready to Submit Checkbox */}
               <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition cursor-pointer select-none">
@@ -1959,9 +2159,18 @@ export function RegisterClient({
                 className="px-5 py-2.5 bg-primary hover:bg-orange-600 text-white rounded-xl font-bold text-xs transition shadow-sm hover:shadow cursor-pointer flex items-center gap-1.5 ml-auto active:scale-95"
               >
                 <span>
-                  {regStep === 1 && (locale === "ta" ? "சேவைகளுக்குத் தொடர்க" : "Continue to Services")}
-                  {regStep === 2 && (locale === "ta" ? "கட்டணத்திற்குத் தொடர்க" : "Continue to Rates")}
-                  {regStep === 3 && (locale === "ta" ? "விவரங்களைச் சரிபார்க்கவும்" : "Review Details")}
+                  {regStep === 1 &&
+                    (locale === "ta"
+                      ? "சேவைகளுக்குத் தொடர்க"
+                      : "Continue to Services")}
+                  {regStep === 2 &&
+                    (locale === "ta"
+                      ? "கட்டணத்திற்குத் தொடர்க"
+                      : "Continue to Rates")}
+                  {regStep === 3 &&
+                    (locale === "ta"
+                      ? "விவரங்களைச் சரிபார்க்கவும்"
+                      : "Review Details")}
                 </span>
                 <ChevronRight size={15} />
               </button>
@@ -1984,7 +2193,11 @@ export function RegisterClient({
       <Modal
         isOpen={isStreetWardModalOpen}
         onClose={() => setIsStreetWardModalOpen(false)}
-        title={locale === "ta" ? "சேவை வார்டைத் தேர்ந்தெடுக்கவும்" : "Select Active Ward"}
+        title={
+          locale === "ta"
+            ? "சேவை வார்டைத் தேர்ந்தெடுக்கவும்"
+            : "Select Active Ward"
+        }
         zIndex="z-70"
       >
         <WardSelector
@@ -1994,7 +2207,7 @@ export function RegisterClient({
               ...prev,
               servingWard: wardNo,
               streetName: streetName || "",
-              address: prev.address.trim() ? prev.address : (streetName || ""),
+              address: prev.address.trim() ? prev.address : streetName || "",
             }));
             setRegError(null);
             setIsStreetWardModalOpen(false);

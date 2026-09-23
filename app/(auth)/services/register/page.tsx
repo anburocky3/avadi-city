@@ -1,18 +1,13 @@
 import React, { Suspense } from "react";
-import { wards } from "@/data/wards";
-import { RegisterClient } from "./register-client";
+import { ServiceRegisterClient } from "./service-register-client";
 
 export const metadata = {
   title: "Register as Service Provider | Avadi City",
-  description: "Register your skilled services with Avadi City Local Services network",
+  description:
+    "Register your skilled services with Avadi City Local Services network",
 };
 
 export default function ServiceRegisterPage() {
-  const wardsList = (wards || []).map((w) => ({
-    id: Number(w.id),
-    name: w.name,
-  }));
-
   return (
     <Suspense
       fallback={
@@ -22,7 +17,7 @@ export default function ServiceRegisterPage() {
         </div>
       }
     >
-      <RegisterClient wardsList={wardsList} />
+      <ServiceRegisterClient />
     </Suspense>
   );
 }
