@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Award,
   X,
+  MapPin,
   LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -54,6 +55,8 @@ export interface ServiceProvider {
   imageUrl?: string;
   rating?: number;
   verified?: boolean;
+  address?: string;
+  skills?: { name: string; price: number }[];
 }
 
 export interface ServiceCategory {
@@ -373,108 +376,131 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
               <Card
                 key={provider.id}
                 onClick={() => setSelectedProvider(provider)}
-                className="p-4 sm:p-5 border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 rounded-3xl shadow-sm hover:shadow-md transition duration-200 cursor-pointer flex flex-col justify-between"
+                className="rounded-3xl overflow-hidden bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 hover:border-primary/50 transition cursor-pointer p-0 flex flex-col justify-between group shadow-sm hover:shadow-md"
               >
-                {/* Worker Profile Header */}
-                <div className="flex items-start space-x-3.5 relative">
-                  <div className="relative shrink-0">
-                    <img
-                      src={
-                        provider.imageUrl ||
-                        "https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=100&auto=format&fit=crop&q=60"
-                      }
-                      alt={provider.name}
-                      className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shadow-sm"
-                    />
+                {/* Image Holder with Overlays */}
+                <div className="h-44 sm:h-52 w-full relative bg-slate-100 dark:bg-slate-800 overflow-hidden rounded-t-3xl">
+                  <img
+                    src={
+                      provider.imageUrl ||
+                      "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=600&auto=format&fit=crop&q=80"
+                    }
+                    alt={provider.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+
+                  {/* Top Badges */}
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
                     {provider.verified !== false && (
-                      <div
-                        className="absolute -bottom-1 -right-1 bg-emerald-500 text-white rounded-full p-0.5 border-2 border-white dark:border-slate-900 shadow-sm flex items-center justify-center"
-                        title="Verified Professional"
-                      >
+                      <span className="bg-emerald-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1">
                         <CheckCircle2 size={12} className="stroke-3" />
-                      </div>
+                        <span>{t("verified")}</span>
+                      </span>
                     )}
+                    <span className="bg-slate-900/80 backdrop-blur-md text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg shadow-md">
+                      Ward {provider.ward}
+                    </span>
                   </div>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1.5 mb-1">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 border border-indigo-100/60 dark:border-indigo-900/50">
-                        {formatCategoryBadge(provider.category, locale)}
-                      </span>
-
-                      <div className="flex items-center space-x-1 text-xs font-black text-amber-500 bg-amber-50/50 dark:bg-amber-950/20 px-2 py-0.5 rounded-full shrink-0">
-                        <Star
-                          size={12}
-                          className="fill-amber-400 text-amber-400"
-                        />
-                        <span>{provider.rating || "4.9"}</span>
-                      </div>
-                    </div>
-
-                    <h3 className="font-extrabold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate leading-snug">
-                      {provider.name}
-                    </h3>
-
-                    <div className="flex items-center space-x-1.5 text-xs mt-0.5">
-                      <span className="flex items-center font-bold text-emerald-600 dark:text-emerald-400">
-                        <Award
-                          size={13}
-                          className="mr-1 shrink-0 text-emerald-500"
-                        />
-                        {provider.experience || "5 Years"} {t("expLabel")}
-                      </span>
-                      <span className="text-slate-300 dark:text-slate-600">
-                        •
-                      </span>
-                      <span className="text-slate-500 dark:text-slate-400 font-medium">
-                        {t("ward")} {provider.ward}
-                      </span>
-                    </div>
+                  <div className="absolute top-3 right-3 bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg text-xs font-black flex items-center shadow-md">
+                    <Star
+                      size={12}
+                      className="fill-slate-950 text-slate-950 mr-1"
+                    />
+                    <span>{provider.rating || "4.9"}</span>
                   </div>
                 </div>
 
-                {/* Specialty Box */}
-                <div className="mt-3.5 mb-3.5 p-3.5 rounded-2xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/70 dark:border-slate-800/70 text-xs space-y-1.5">
-                  <div className="text-slate-700 dark:text-slate-300">
-                    <span className="font-bold text-slate-800 dark:text-slate-100">
-                      {t("specialtyLabel")}:{" "}
-                    </span>
-                    <span className="text-slate-600 dark:text-slate-400">
+                {/* Body Info */}
+                <div className="p-4 sm:p-5 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[11px] font-black uppercase tracking-wider text-primary dark:text-orange-400">
+                        {formatCategoryBadge(provider.category, locale)}
+                      </span>
+                      <span className="text-xs font-medium text-slate-400 dark:text-slate-500 flex items-center">
+                        <Clock size={12} className="mr-1 text-slate-400" />
+                        <span>{provider.hours || "8:00 AM - 8:00 PM"}</span>
+                      </span>
+                    </div>
+
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white leading-snug line-clamp-1">
+                      {provider.name}
+                    </h3>
+
+                    <p className="text-xs sm:text-sm font-semibold text-emerald-600 dark:text-emerald-400 line-clamp-1">
                       {getCategorySpecialty(
                         provider.category,
                         provider.description,
                         provider.specialty,
                         locale,
                       )}
-                    </span>
+                    </p>
+
+                    <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+                      {provider.description}
+                    </p>
+
+                    {/* Rates Section */}
+                    <div className="pt-2 space-y-2">
+                      <div className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs">
+                        <span className="font-semibold text-slate-500 dark:text-slate-400">
+                          {t("rateLabel")}:
+                        </span>
+                        <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          {provider.rate ||
+                            provider.serviceCharge ||
+                            (locale === "ta"
+                              ? "₹350 ஆய்வுக் கட்டணம்"
+                              : "₹350 visiting / inspection charge")}
+                        </span>
+                      </div>
+
+                      {provider.skills && provider.skills.length > 0 && (
+                        <div className="space-y-1">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
+                            {locale === "ta" ? "சேவை கட்டணங்கள்:" : "Service Rates:"}
+                          </span>
+                          <div className="flex flex-wrap gap-1.5">
+                            {provider.skills.map((s, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 text-[10px] font-medium text-slate-700 dark:text-slate-300 shadow-2xs"
+                              >
+                                <span>{s.name}</span>
+                                <span className="font-black text-primary dark:text-orange-400">
+                                  ₹{s.price}
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-slate-600 dark:text-slate-400 text-[11px] sm:text-xs">
-                    <span className="font-semibold text-slate-500 dark:text-slate-400">
-                      {t("rateLabel")}:{" "}
+
+                  {/* Bottom Action Footer */}
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-[50%] flex items-center">
+                      <MapPin size={12} className="mr-1 shrink-0 text-slate-400" />
+                      <span className="truncate">
+                        {provider.address
+                          ? `${provider.address} · Ward ${provider.ward}`
+                          : `Ward ${provider.ward}`}
+                      </span>
                     </span>
-                    <span className="text-slate-600 dark:text-slate-400">
-                      {provider.rate ||
-                        provider.serviceCharge ||
-                        (locale === "ta"
-                          ? "₹350 ஆய்வுக் கட்டணம்"
-                          : "₹350 visiting / inspection charge")}
-                    </span>
+
+                    <div className="flex items-center space-x-2 shrink-0">
+                      <button
+                        onClick={(e) => handleCallProvider(provider, e)}
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center space-x-1.5 cursor-pointer active:scale-95"
+                      >
+                        <Phone size={12} />
+                        <span>{t("callNow")}</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
-
-                {/* Call Button */}
-                <button
-                  onClick={(e) => handleCallProvider(provider, e)}
-                  className="w-full py-3 px-4 rounded-2xl bg-linear-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center space-x-2.5 cursor-pointer active:scale-[0.98] group"
-                >
-                  <Phone
-                    size={16}
-                    className="shrink-0 transition-transform duration-200 group-hover:scale-110"
-                  />
-                  <span>
-                    {t("callWorker")} ({provider.phone})
-                  </span>
-                </button>
               </Card>
             ))
           ) : (
@@ -564,12 +590,38 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
                       : "₹350 visiting / inspection charge")}
                 </span>
               </div>
+
+              {/* Service Rates Breakdown in Modal */}
+              {selectedProvider.skills && selectedProvider.skills.length > 0 && (
+                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block">
+                    {locale === "ta" ? "சேவை வேலைகளின் கட்டண பட்டியல்:" : "Service Rate Card:"}
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedProvider.skills.map((s, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px]"
+                      >
+                        <span className="font-semibold text-slate-700 dark:text-slate-300 truncate pr-2">
+                          {s.name}
+                        </span>
+                        <span className="font-black text-primary dark:text-orange-400 shrink-0">
+                          ₹{s.price}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-400 font-semibold">
                   {t("servingArea")}:
                 </span>
                 <span className="font-bold text-slate-700 dark:text-slate-300">
-                  {t("ward")} {selectedProvider.ward} & {t("surroundingWards")}
+                  {selectedProvider.address
+                    ? `${selectedProvider.address} (Ward ${selectedProvider.ward})`
+                    : `${t("ward")} ${selectedProvider.ward} & ${t("surroundingWards")}`}
                 </span>
               </div>
               <div className="flex justify-between">
