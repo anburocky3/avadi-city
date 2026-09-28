@@ -59,6 +59,9 @@ model LostFoundClaim {
   // Mandatory proof / identification note
   message     String @db.Text
 
+  // Proof photo uploaded by claimant (R2 URL)
+  imageUrl    String?
+
   // PENDING | ACCEPTED | REJECTED
   status      String @default("PENDING")
 

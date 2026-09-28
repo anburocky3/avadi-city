@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useQuery } from "@tanstack/react-query";
 import {
   Sun,
   Moon,
@@ -78,6 +79,38 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       !readAlerts.includes(alert.id) && !dismissedAlerts.includes(alert.id),
   ).length;
 
+  // Pending Lost & Found claim requests received by this user (owner)
+  const { data: pendingClaimsCount = 0 } = useQuery<number>({
+    queryKey: ["lost-found-claims-badge"],
+    queryFn: async () => {
+      const res = await fetch("/api/lost-found/claims?role=owner&status=PENDING", {
+        credentials: "include",
+      });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return Array.isArray(data) ? data.length : 0;
+    },
+    enabled: Boolean(isAuthenticated && authUser),
+    refetchInterval: 15000,
+  });
+
+  // Outgoing claims that just got ACCEPTED (requester/finder's badge)
+  const { data: acceptedClaimsCount = 0 } = useQuery<number>({
+    queryKey: ["lost-found-claims-requester-badge"],
+    queryFn: async () => {
+      const res = await fetch("/api/lost-found/claims?role=requester&status=ACCEPTED", {
+        credentials: "include",
+      });
+      if (!res.ok) return 0;
+      const data = await res.json();
+      return Array.isArray(data) ? data.length : 0;
+    },
+    enabled: Boolean(isAuthenticated && authUser),
+    refetchInterval: 15000,
+  });
+
+  const totalNotificationCount = unreadAlertsCount + pendingClaimsCount + acceptedClaimsCount;
+
   // Execute backend session logout
   const handleLogout = async () => {
     setIsDropdownOpen(false);
@@ -148,8 +181,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
               aria-label="Notifications"
             >
               <Bell size={16} />
-              {unreadAlertsCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white dark:ring-slate-900 animate-pulse" />
+              {totalNotificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-rose-500 text-[9px] font-black text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                  {totalNotificationCount > 9 ? "9+" : totalNotificationCount}
+                </span>
               )}
             </button>
           </div>

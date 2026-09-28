@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PackageSearch,
@@ -30,6 +30,9 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import dynamic from "next/dynamic";
+import { ALL_AVADI_STREETS, StreetItem } from "@/lib/wards";
+
 import {
   Card,
   Badge,
@@ -38,6 +41,19 @@ import {
   Modal,
 } from "@/components/shared-components";
 import { useWard } from "@/context/wardContext";
+
+// SSR-safe Leaflet Map
+const MapLocationPicker = dynamic(
+  () => import("@/components/ui/MapLocationPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-56 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse border border-slate-200 dark:border-slate-700 flex items-center justify-center text-xs font-bold text-slate-400">
+        Loading Map…
+      </div>
+    ),
+  },
+);
 
 // --- TYPES ---
 interface LostFoundItem {
@@ -67,6 +83,7 @@ interface LostFoundClaim {
   id: string;
   lostFoundItemId: string;
   message: string;
+  imageUrl?: string | null;
   status: "PENDING" | "ACCEPTED" | "REJECTED";
   createdAt: string;
   requester: { id: string; name: string };
@@ -382,6 +399,21 @@ function LostFoundCard({
   );
 }
 
+// Avadi Ward Center coordinates
+const WARD_CENTERS: Record<number, { lat: number; lng: number }> = {
+  1: { lat: 13.1300, lng: 80.1150 }, 2: { lat: 13.1280, lng: 80.1080 },
+  3: { lat: 13.1250, lng: 80.1020 }, 4: { lat: 13.1220, lng: 80.0980 },
+  5: { lat: 13.1210, lng: 80.1100 }, 6: { lat: 13.1175, lng: 80.1010 },
+  7: { lat: 13.1169, lng: 80.0972 }, 8: { lat: 13.1145, lng: 80.0940 },
+  9: { lat: 13.1120, lng: 80.0900 }, 10: { lat: 13.0930, lng: 80.0820 },
+  11: { lat: 13.1050, lng: 80.0870 }, 12: { lat: 13.0650, lng: 80.0830 },
+  13: { lat: 13.0700, lng: 80.0780 }, 14: { lat: 13.0760, lng: 80.0720 },
+  15: { lat: 13.0990, lng: 80.0800 }, 16: { lat: 13.1010, lng: 80.0750 },
+  17: { lat: 13.1080, lng: 80.0700 }, 18: { lat: 13.1060, lng: 80.0660 },
+  19: { lat: 13.0990, lng: 80.0620 }, 20: { lat: 13.0880, lng: 80.0640 },
+  21: { lat: 13.0920, lng: 80.0580 }, 22: { lat: 13.1160, lng: 80.0270 },
+};
+
 // --- REPORT FORM ---
 function ReportForm({
   type,
@@ -403,7 +435,7 @@ function ReportForm({
     category: "" as (typeof CATEGORIES)[number] | "",
     title: "",
     description: "",
-    ward: String(activeWardId),
+    ward: String(activeWardId || 7),
     location: "",
     lostFoundDate: new Date().toISOString().split("T")[0],
     lostFoundTime: "",
@@ -414,53 +446,68 @@ function ReportForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [apiError, setApiError] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationGpsStatus, setLocationGpsStatus] = useState<"idle" | "success" | "error">("idle");
+
+  // Map & Street Autocomplete state
+  const [selectedCoords, setSelectedCoords] = useState<{ lat: number; lng: number } | null>(
+    WARD_CENTERS[activeWardId] || { lat: 13.1169, lng: 80.0972 }
+  );
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [showStreetDropdown, setShowStreetDropdown] = useState(false);
+  const streetInputRef = React.useRef<HTMLDivElement>(null);
 
   const queryClient = useQueryClient();
 
-  const handleAutoDetect = async () => {
-    if (!navigator.geolocation) {
-      setLocationGpsStatus("error");
-      return;
+  // Close street dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (streetInputRef.current && !streetInputRef.current.contains(e.target as Node)) {
+        setShowStreetDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Filter Avadi verified streets
+  const streetSuggestions = useMemo(() => {
+    const q = form.location.trim().toLowerCase();
+    if (!q || q.length < 2) return [];
+    return ALL_AVADI_STREETS.filter((s) =>
+      s.streetName.toLowerCase().includes(q)
+    ).slice(0, 8);
+  }, [form.location]);
+
+  const handleSelectStreet = (street: StreetItem) => {
+    setForm((prev) => ({
+      ...prev,
+      location: street.streetName,
+      ward: String(street.wardNo),
+    }));
+    setShowStreetDropdown(false);
+    setErrors((prev) => ({ ...prev, location: "", ward: "" }));
+    const coords = WARD_CENTERS[street.wardNo] || { lat: 13.1169, lng: 80.0972 };
+    setSelectedCoords(coords);
+  };
+
+  const handleReverseGeocode = async (lat: number, lng: number) => {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&addressdetails=1`,
+        { headers: { "Accept-Language": "en" } },
+      );
+      const data = await res.json();
+      const addr = data.address || {};
+      const parts = [
+        addr.road || addr.pedestrian || addr.footway,
+        addr.suburb || addr.neighbourhood,
+        addr.city_district || addr.county,
+      ].filter(Boolean);
+      const locationStr = parts.length > 0 ? parts.join(", ") : data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      setForm((prev) => ({ ...prev, location: locationStr }));
+      setErrors((prev) => ({ ...prev, location: "" }));
+    } catch {
+      // Ignore reverse geocode network fallback
     }
-    setIsLocating(true);
-    setLocationGpsStatus("idle");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude: lat, longitude: lon } = pos.coords;
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`,
-            { headers: { "Accept-Language": "en" } },
-          );
-          const data = await res.json();
-          const addr = data.address || {};
-          const parts = [
-            addr.road || addr.pedestrian || addr.footway,
-            addr.suburb || addr.neighbourhood || addr.quarter,
-            addr.city_district || addr.county,
-            addr.city || addr.town || addr.village,
-          ].filter(Boolean);
-          const locationStr = parts.length > 0 ? parts.join(", ") : data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-          setForm((prev) => ({ ...prev, location: locationStr }));
-          setErrors((prev) => ({ ...prev, location: "" }));
-          setLocationGpsStatus("success");
-        } catch {
-          // Fallback to raw coordinates if reverse geocoding fails
-          const { latitude: lat, longitude: lon } = pos.coords;
-          setForm((prev) => ({ ...prev, location: `${lat.toFixed(5)}, ${lon.toFixed(5)}` }));
-          setLocationGpsStatus("success");
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      () => {
-        setIsLocating(false);
-        setLocationGpsStatus("error");
-      },
-      { timeout: 10000, maximumAge: 30000 },
-    );
   };
 
   const handleChange = (
@@ -622,79 +669,112 @@ function ReportForm({
 
 
 
-      {/* Location */}
-      <div>
-        <label className={labelCls}>
-          {isLost ? "Lost Location" : "Found Location"} *
-        </label>
-        <div className="relative flex items-center gap-2">
-          <div className="relative flex-1">
-            <MapPin
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            />
-            <input
-              type="text"
-              name="location"
-              value={form.location}
+      {/* Ward Selection & Street / Location with Avadi Boundaries */}
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {/* Ward Select */}
+          <div>
+            <label className={labelCls}>Avadi Ward *</label>
+            <select
+              name="ward"
+              value={form.ward}
               onChange={(e) => {
-                handleChange(e);
-                setLocationGpsStatus("idle");
+                const wId = Number(e.target.value);
+                setForm((prev) => ({ ...prev, ward: e.target.value }));
+                if (WARD_CENTERS[wId]) setSelectedCoords(WARD_CENTERS[wId]);
               }}
-              placeholder="Type location or use GPS →"
-              className={`${inputCls} pl-9 pr-3`}
-              maxLength={150}
-            />
+              className={inputCls}
+            >
+              {Array.from({ length: 48 }, (_, i) => i + 1).map((w) => (
+                <option key={w} value={w}>
+                  Ward {w}
+                </option>
+              ))}
+            </select>
           </div>
-          <button
-            type="button"
-            onClick={handleAutoDetect}
-            disabled={isLocating}
-            title="Auto-detect my current location"
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border disabled:cursor-not-allowed ${
-              locationGpsStatus === "success"
-                ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                : locationGpsStatus === "error"
-                  ? "bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400"
-                  : "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40"
-            }`}
-          >
-            {isLocating ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                <span className="hidden sm:inline">Locating…</span>
-              </>
-            ) : locationGpsStatus === "success" ? (
-              <>
-                <CheckCircle2 size={14} />
-                <span className="hidden sm:inline">GPS Set</span>
-              </>
-            ) : locationGpsStatus === "error" ? (
-              <>
-                <LocateFixed size={14} />
-                <span className="hidden sm:inline">Retry GPS</span>
-              </>
-            ) : (
-              <>
-                <LocateFixed size={14} />
-                <span className="hidden sm:inline">Use GPS</span>
-              </>
+
+          {/* Street Autocomplete / Location Input */}
+          <div className="sm:col-span-2 relative" ref={streetInputRef}>
+            <label className={labelCls}>
+              {isLost ? "Lost Street / Area *" : "Found Street / Area *"}
+            </label>
+            <div className="relative">
+              <MapPin
+                size={15}
+                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+              />
+              <input
+                type="text"
+                name="location"
+                value={form.location}
+                onFocus={() => setShowStreetDropdown(true)}
+                onChange={(e) => {
+                  handleChange(e);
+                  setShowStreetDropdown(true);
+                }}
+                placeholder="Type street name (e.g., Gandhi St, Kamaraj Nagar)…"
+                className={`${inputCls} pl-9 pr-3`}
+                maxLength={150}
+                autoComplete="off"
+              />
+            </div>
+
+            {/* Street Suggestions Dropdown */}
+            {showStreetDropdown && streetSuggestions.length > 0 && (
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto">
+                <div className="p-2 border-b border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                  Avadi Verified Streets
+                </div>
+                {streetSuggestions.map((street) => (
+                  <button
+                    key={street.id}
+                    type="button"
+                    onClick={() => handleSelectStreet(street)}
+                    className="w-full px-3.5 py-2 text-left hover:bg-orange-50 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group"
+                  >
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600 transition">
+                      {street.streetName}
+                    </span>
+                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                      Ward {street.wardNo}
+                    </span>
+                  </button>
+                ))}
+              </div>
             )}
-          </button>
+          </div>
         </div>
-        {locationGpsStatus === "error" && (
-          <p className="text-[11px] text-red-500 font-semibold mt-1">
-            ⚠️ Location access denied. Please type your location manually.
-          </p>
-        )}
-        {locationGpsStatus === "success" && (
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-            ✅ Location auto-detected! You can edit it if needed.
-          </p>
-        )}
-        {errors.location && locationGpsStatus !== "error" && (
-          <p className={errorCls}>{errors.location}</p>
-        )}
+
+        {/* Leaflet + OpenStreetMap Location Picker with GPS Guard */}
+        <div>
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+              Pin Location on Map (OpenStreetMap)
+            </span>
+            <span className="text-[10px] font-bold text-slate-400">
+              Avadi Municipal Limits
+            </span>
+          </div>
+
+          <MapLocationPicker
+            onLocationSelect={(lat, lng) => {
+              setSelectedCoords({ lat, lng });
+              setMapError(null);
+            }}
+            onError={(err) => setMapError(err)}
+            selectedCoords={selectedCoords}
+            onReverseGeocode={handleReverseGeocode}
+          />
+
+          {mapError && (
+            <p className="text-[11px] text-rose-500 font-semibold mt-1 flex items-center gap-1">
+              ⚠️ {mapError}
+            </p>
+          )}
+          {errors.location && (
+            <p className={errorCls}>{errors.location}</p>
+          )}
+        </div>
       </div>
 
       {/* Date & Time */}
@@ -849,6 +929,8 @@ function ClaimRequestModal({
   onSent: (claimId: string) => void;
 }) {
   const [message, setMessage] = useState("");
+  const [claimImage, setClaimImage] = useState<File | null>(null);
+  const [claimImagePreview, setClaimImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -858,17 +940,26 @@ function ClaimRequestModal({
       setError("Please write at least 10 characters describing how you identify this item.");
       return;
     }
+    if (!claimImage) {
+      setError("A clear proof photo is mandatory so the owner can verify your claim.");
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     try {
+      const formData = new FormData();
+      formData.append("lostFoundItemId", item.id);
+      formData.append("message", message.trim());
+      formData.append("image", claimImage);
+
       const res = await fetch("/api/lost-found/claims", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lostFoundItemId: item.id, message: message.trim() }),
+        body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(data.message || "Failed to send claim");
       onSent(data.claim.id);
     } catch (err: any) {
       setError(err.message || "Failed to send request");
@@ -883,10 +974,10 @@ function ClaimRequestModal({
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
-        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
               <MessageSquare size={15} className="text-orange-500" />
@@ -905,12 +996,12 @@ function ClaimRequestModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
           {/* Info box */}
           <div className="flex items-start gap-2 p-3 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50">
             <ShieldCheck size={13} className="text-orange-500 shrink-0 mt-0.5" />
             <p className="text-[11px] text-orange-700 dark:text-orange-400 leading-relaxed font-medium">
-              Your message will be sent to the item owner for review. Phone numbers are only shared after <span className="font-black">mutual consent</span>.
+              Your message and proof photo will be sent to the item owner for review. Phone numbers are only shared after <span className="font-black">mutual consent</span>.
             </p>
           </div>
 
@@ -922,7 +1013,7 @@ function ClaimRequestModal({
             <textarea
               value={message}
               onChange={(e) => { setMessage(e.target.value); setError(null); }}
-              rows={4}
+              rows={3}
               maxLength={500}
               placeholder={
                 item.type === "lost"
@@ -932,14 +1023,78 @@ function ClaimRequestModal({
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all resize-none"
             />
             <div className="flex justify-between mt-1">
-              {error ? (
-                <p className="text-[11px] text-red-500 font-semibold">{error}</p>
-              ) : (
-                <p className="text-[11px] text-slate-400">Minimum 10 characters required</p>
-              )}
-              <span className="text-[11px] text-slate-400">{message.length}/500</span>
+              <span className="text-[10px] text-slate-400">Minimum 10 characters</span>
+              <span className="text-[10px] text-slate-400">{message.length}/500</span>
             </div>
           </div>
+
+          {/* Mandatory Proof Photo */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                Proof Photo <span className="text-red-500">*</span>
+              </label>
+              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-900/50">
+                Mandatory
+              </span>
+            </div>
+
+            {claimImagePreview ? (
+              <div className="relative rounded-2xl overflow-hidden border-2 border-orange-400/50 dark:border-orange-500/40 shadow-xs">
+                <img
+                  src={claimImagePreview}
+                  alt="Proof Preview"
+                  className="w-full h-36 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClaimImage(null);
+                    setClaimImagePreview(null);
+                  }}
+                  className="absolute top-2 right-2 w-7 h-7 bg-slate-900/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-red-600 transition cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 h-28 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-orange-500/60 bg-slate-50 dark:bg-slate-950/60 cursor-pointer transition">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-orange-600">
+                  <Camera size={18} />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Take or Upload Proof Photo
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    Photo showing you have this item
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.type.startsWith("image/")) {
+                      setClaimImage(file);
+                      const reader = new FileReader();
+                      reader.onload = (ev) =>
+                        setClaimImagePreview(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                      setError(null);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-[11px] text-red-500 font-semibold bg-red-50 dark:bg-red-950/30 p-2.5 rounded-xl border border-red-200 dark:border-red-900/50">
+              ⚠️ {error}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-1">
             <button
@@ -951,7 +1106,7 @@ function ClaimRequestModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || message.trim().length < 10}
+              disabled={isSubmitting || message.trim().length < 10 || !claimImage}
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black transition cursor-pointer shadow-md shadow-orange-500/25 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
@@ -978,6 +1133,7 @@ function IncomingClaimsPanel({
   const queryClient = useQueryClient();
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [expandedPhone, setExpandedPhone] = useState<Record<string, { name: string; phone: string }>>({});
+  const [previewProof, setPreviewProof] = useState<string | null>(null);
 
   const { data: claims = [], isLoading, refetch } = useQuery<LostFoundClaim[]>({
     queryKey: ["lost-found-claims-owner", item.id],
@@ -1098,6 +1254,27 @@ function IncomingClaimsPanel({
             </p>
           </div>
 
+          {/* Claimant Proof Photo */}
+          {claim.imageUrl && (
+            <div className="p-2 rounded-lg bg-white dark:bg-slate-900/60">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 flex items-center justify-between">
+                <span>Proof Photo</span>
+                <span className="text-[9px] text-orange-500 font-bold">Tap to view</span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreviewProof(claim.imageUrl || null)}
+                className="group relative w-32 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 block cursor-pointer hover:ring-2 hover:ring-orange-500 transition"
+              >
+                <img
+                  src={claim.imageUrl}
+                  alt="Proof"
+                  className="w-full h-full object-cover group-hover:scale-105 transition"
+                />
+              </button>
+            </div>
+          )}
+
           {/* Phone unlocked after accept */}
           {(claim.status === "ACCEPTED" || expandedPhone[claim.id]) && (
             <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-100 dark:bg-emerald-950/40">
@@ -1143,6 +1320,40 @@ function IncomingClaimsPanel({
           )}
         </div>
       ))}
+
+      {/* Zoom preview modal for proof photo */}
+      {previewProof && (
+        <div
+          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          onClick={() => setPreviewProof(null)}
+        >
+          <div
+            className="relative max-w-lg w-full bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-orange-500" />
+                Claimant's Uploaded Proof Photo
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewProof(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-2 flex items-center justify-center max-h-[70vh] overflow-hidden rounded-2xl bg-black/5">
+              <img
+                src={previewProof}
+                alt="Proof Photo Full"
+                className="max-h-[65vh] w-auto object-contain rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
