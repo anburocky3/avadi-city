@@ -47,6 +47,7 @@ export async function GET(request: Request) {
         status: true,
         contactName: true,
         contactPhone: true, // Included for owner's My Reports view
+        userId: true, // Required for client-side owner detection
         resolvedAt: true,
         createdAt: true,
         updatedAt: true,

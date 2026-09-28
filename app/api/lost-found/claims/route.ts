@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
+import { r2Client, BUCKET_NAME, PUBLIC_R2_DOMAIN } from "@/lib/r2";
 
 // GET — List claims for the authenticated user
 // ?role=owner  → incoming claims where I am the item owner (my items)
@@ -39,6 +41,7 @@ export async function GET(request: Request) {
         id: true,
         lostFoundItemId: true,
         message: true,
+        imageUrl: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -72,8 +75,7 @@ export async function GET(request: Request) {
   }
 }
 
-// POST — Send a new claim request
-// Body JSON: { lostFoundItemId: string, message: string }
+// POST — Send a new claim request with mandatory proof photo
 export async function POST(request: Request) {
   try {
     const cookieStore = await cookies();
@@ -85,8 +87,25 @@ export async function POST(request: Request) {
     if (!session?.userId)
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
 
-    const body = await request.json();
-    const { lostFoundItemId, message } = body;
+    let lostFoundItemId = "";
+    let message = "";
+    let imageFile: File | null = null;
+
+    const contentType = request.headers.get("content-type") || "";
+
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await request.formData();
+      lostFoundItemId = formData.get("lostFoundItemId")?.toString() || "";
+      message = formData.get("message")?.toString() || "";
+      const rawImage = formData.get("image");
+      if (rawImage instanceof File && rawImage.size > 0) {
+        imageFile = rawImage;
+      }
+    } else {
+      const body = await request.json();
+      lostFoundItemId = body.lostFoundItemId || "";
+      message = body.message || "";
+    }
 
     if (!lostFoundItemId) {
       return NextResponse.json(
@@ -102,6 +121,51 @@ export async function POST(request: Request) {
             "A description is required (minimum 10 characters) so the owner can verify your claim.",
         },
         { status: 400 },
+      );
+    }
+
+    // MANDATORY PROOF PHOTO CHECK
+    if (!imageFile) {
+      return NextResponse.json(
+        {
+          message:
+            "A clear proof photo is mandatory so the item owner can verify your claim.",
+        },
+        { status: 400 },
+      );
+    }
+
+    // Validate image mime type
+    if (!imageFile.type.startsWith("image/")) {
+      return NextResponse.json(
+        { message: "The uploaded proof file must be a valid image." },
+        { status: 400 },
+      );
+    }
+
+    // Upload to Cloudflare R2
+    let imageUrl: string | null = null;
+    try {
+      const inputBuffer = Buffer.from(await imageFile.arrayBuffer());
+      const rawExt = imageFile.type.split("/")[1] || "jpg";
+      const ext = rawExt === "jpeg" ? "jpg" : rawExt;
+      const fileKey = `lost-found-claims/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+
+      await r2Client.send(
+        new PutObjectCommand({
+          Bucket: BUCKET_NAME,
+          Key: fileKey,
+          Body: inputBuffer,
+          ContentType: imageFile.type,
+        }),
+      );
+
+      imageUrl = `${PUBLIC_R2_DOMAIN}/${fileKey}`;
+    } catch (uploadError) {
+      console.error("R2 Claim Image Upload Error:", uploadError);
+      return NextResponse.json(
+        { message: "Failed to upload proof image to storage." },
+        { status: 500 },
       );
     }
 
@@ -130,7 +194,7 @@ export async function POST(request: Request) {
       );
     }
 
-    // Upsert — if already sent a claim, update the message and reset to PENDING
+    // Upsert — if already sent a claim, update the message, imageUrl and reset to PENDING
     const claim = await prisma.lostFoundClaim.upsert({
       where: {
         lostFoundItemId_requesterId: {
@@ -140,6 +204,7 @@ export async function POST(request: Request) {
       },
       update: {
         message: message.trim(),
+        imageUrl,
         status: "PENDING",
         updatedAt: new Date(),
       },
@@ -148,11 +213,13 @@ export async function POST(request: Request) {
         requesterId: session.userId,
         ownerId: item.userId,
         message: message.trim(),
+        imageUrl,
         status: "PENDING",
       },
       select: {
         id: true,
         status: true,
+        imageUrl: true,
         createdAt: true,
       },
     });
