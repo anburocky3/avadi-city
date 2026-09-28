@@ -461,7 +461,7 @@ function ReportForm({
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (streetInputRef.current && !streetInputRef.current.contains(e.target as Node)) {
-        setShowStreetDropdown(false);
+        setShowStreetDropdown((prev) => (prev ? false : prev));
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
