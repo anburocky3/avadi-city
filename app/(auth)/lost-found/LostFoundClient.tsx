@@ -671,78 +671,55 @@ function ReportForm({
 
       {/* Ward Selection & Street / Location with Avadi Boundaries */}
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          {/* Ward Select */}
-          <div>
-            <label className={labelCls}>Avadi Ward *</label>
-            <select
-              name="ward"
-              value={form.ward}
+        {/* Street Autocomplete / Location Input */}
+        <div className="relative" ref={streetInputRef}>
+          <label className={labelCls}>
+            {isLost ? "Lost Street / Area *" : "Found Street / Area *"}
+          </label>
+          <div className="relative">
+            <MapPin
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            />
+            <input
+              type="text"
+              name="location"
+              value={form.location}
+              onFocus={() => setShowStreetDropdown(true)}
               onChange={(e) => {
-                const wId = Number(e.target.value);
-                setForm((prev) => ({ ...prev, ward: e.target.value }));
-                if (WARD_CENTERS[wId]) setSelectedCoords(WARD_CENTERS[wId]);
+                handleChange(e);
+                setShowStreetDropdown(true);
               }}
-              className={inputCls}
-            >
-              {Array.from({ length: 48 }, (_, i) => i + 1).map((w) => (
-                <option key={w} value={w}>
-                  Ward {w}
-                </option>
-              ))}
-            </select>
+              placeholder="Type street name (e.g., Gandhi St, Kamaraj Nagar)…"
+              className={`${inputCls} pl-9 pr-3`}
+              maxLength={150}
+              autoComplete="off"
+            />
           </div>
 
-          {/* Street Autocomplete / Location Input */}
-          <div className="sm:col-span-2 relative" ref={streetInputRef}>
-            <label className={labelCls}>
-              {isLost ? "Lost Street / Area *" : "Found Street / Area *"}
-            </label>
-            <div className="relative">
-              <MapPin
-                size={15}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-              />
-              <input
-                type="text"
-                name="location"
-                value={form.location}
-                onFocus={() => setShowStreetDropdown(true)}
-                onChange={(e) => {
-                  handleChange(e);
-                  setShowStreetDropdown(true);
-                }}
-                placeholder="Type street name (e.g., Gandhi St, Kamaraj Nagar)…"
-                className={`${inputCls} pl-9 pr-3`}
-                maxLength={150}
-                autoComplete="off"
-              />
-            </div>
-
-            {/* Street Suggestions Dropdown */}
-            {showStreetDropdown && streetSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto">
-                <div className="p-2 border-b border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                  Avadi Verified Streets
-                </div>
-                {streetSuggestions.map((street) => (
-                  <button
-                    key={street.id}
-                    type="button"
-                    onClick={() => handleSelectStreet(street)}
-                    className="w-full px-3.5 py-2 text-left hover:bg-orange-50 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group"
-                  >
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600 transition">
-                      {street.streetName}
-                    </span>
-                    <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
-                      Ward {street.wardNo}
-                    </span>
-                  </button>
-                ))}
+          {/* Street Suggestions Dropdown */}
+          {showStreetDropdown && streetSuggestions.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden max-h-56 overflow-y-auto">
+              <div className="p-2 border-b border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                Avadi Verified Streets
               </div>
-            )}
-          </div>
+              {streetSuggestions.map((street) => (
+                <button
+                  key={street.id}
+                  type="button"
+                  onClick={() => handleSelectStreet(street)}
+                  className="w-full px-3.5 py-2 text-left hover:bg-orange-50 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group"
+                >
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-orange-600 transition">
+                    {street.streetName}
+                  </span>
+                  <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                    Ward {street.wardNo}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Leaflet + OpenStreetMap Location Picker with GPS Guard */}
