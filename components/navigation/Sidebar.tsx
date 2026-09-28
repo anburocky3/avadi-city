@@ -24,6 +24,7 @@ import {
   HeartPulse,
   LucideIcon,
   ChevronRight,
+  PackageSearch,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -132,6 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: t("jobs.title"), path: "/jobs", icon: Briefcase },
     { name: t("volunteers.title"), path: "/volunteers", icon: HeartHandshake },
     { name: t("transport"), path: "/transport", icon: Train },
+    { name: "Lost & Found", path: "/lost-found", icon: PackageSearch },
   ];
 
   // Helper function to reliably check if a route is active (handles nested routing)

@@ -37,7 +37,11 @@ model User {
   comments            Comment[]
   likes               FeedLike[]
   submissions         ContactSubmission[]
-  complaints    Complaint[]
+  complaints          Complaint[]
+  complaintUpvotes    ComplaintUpvote[]   // Required reverse relation for ComplaintUpvote.user
+  lostFoundItems      LostFoundItem[]
+  claimRequests       LostFoundClaim[]    @relation("ClaimRequests")  // Claims sent by this user
+  claimOwnership      LostFoundClaim[]    @relation("ClaimOwnership") // Claims received by this user (as item owner)
 
   @@index([wardNumber])
   @@map("users")

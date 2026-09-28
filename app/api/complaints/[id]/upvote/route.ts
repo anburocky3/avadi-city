@@ -2,13 +2,18 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
+import { StringDecoder } from "node:string_decoder";
 
-export async function POST(
-  request: Request,
-  { params }: { params: { id: string } },
-) {
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
+export async function POST(request: Request, { params }: RouteContext) {
   try {
-    const complaintId = params.id;
+    const { id } = await params;
+
+    const complaintId = id;
+
     const cookieStore = await cookies();
     const token = cookieStore.get("avadi_session")?.value;
 

@@ -125,7 +125,9 @@
       "hospitals": "Hospitals",
       "pharmacies": "Pharmacies",
       "clinics": "Clinics",
-      "diagnostics": "Diagnostics & Labs"
+      "diagnostics": "Diagnostics & Labs",
+      "petHospitals": "Pet Hospitals",
+      "petClinics": "Pet Clinics"
     }
   },
   "services": {

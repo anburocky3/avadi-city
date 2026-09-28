@@ -16,7 +16,9 @@ import {
   Building2,
   Navigation,
   HelpCircle,
+  PawPrint,
   LucideIcon,
+  X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -69,6 +71,8 @@ const CATEGORIES: FilterCategory[] = [
   { id: "Pharmacies", nameKey: "pharmacies", icon: Pill },
   { id: "Clinics", nameKey: "clinics", icon: Stethoscope },
   { id: "Diagnostics", nameKey: "diagnostics", icon: Building2 },
+  { id: "Pet Hospitals", nameKey: "petHospitals", icon: PawPrint },
+  { id: "Pet Clinics", nameKey: "petClinics", icon: PawPrint },
 ];
 
 export const HealthcareClient: React.FC<HealthcareClientProps> = ({
@@ -184,8 +188,18 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
             setSearchQuery(e.target.value)
           }
           placeholder={t("searchPlaceholder")}
-          className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition shadow-sm"
+          className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-rose-500 focus:border-transparent transition shadow-sm"
         />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery("")}
+            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            aria-label="Clear search"
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
       {/* Category Filter Chips */}

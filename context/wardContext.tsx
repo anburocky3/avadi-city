@@ -269,7 +269,7 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
       retry: false,
     });
 
-  console.log("authUser in WardProvider:", authUser); // Debugging line to check authUser state
+  // console.log("authUser in WardProvider:", authUser); // Debugging line to check authUser state
 
   const isAuthenticated = Boolean(authUser);
 

@@ -28,6 +28,7 @@ import {
   Sun,
   CloudRain,
   CloudFog,
+  PackageSearch,
 } from "lucide-react";
 
 // Shared & Icon components (Adjust import paths to match your project)
@@ -215,6 +216,12 @@ const WARD_SERVICES = [
     path: "/notifications",
     icon: Bell,
     bg: "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400",
+  },
+  {
+    name: "Lost & Found",
+    path: "/lost-found",
+    icon: PackageSearch,
+    bg: "bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400",
   },
 ];
 
