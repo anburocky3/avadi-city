@@ -144,19 +144,27 @@ const MapLocationPicker = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Fly-to sync when external coords arrive (autocomplete / form) ──────────
+  // ── Sync when external coords arrive (autocomplete / ward select) ──────────
   useEffect(() => {
     if (selectedCoords && mapInstance.current && markerInstance.current) {
-      isExternalUpdate.current = true;
       const { lat, lng } = selectedCoords;
-      mapInstance.current.flyTo([lat, lng], 16, { animate: true, duration: 0.8 });
+      const current = markerInstance.current.getLatLng();
+      if (
+        Math.abs(current.lat - lat) < 0.0001 &&
+        Math.abs(current.lng - lng) < 0.0001
+      ) {
+        return;
+      }
+      isExternalUpdate.current = true;
+      mapInstance.current.setView([lat, lng], 15);
       markerInstance.current.setLatLng([lat, lng]);
-      onLocationSelect(lat, lng);
       onError(null);
-      setTimeout(() => { isExternalUpdate.current = false; }, 1000);
+      setTimeout(() => {
+        isExternalUpdate.current = false;
+      }, 500);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCoords]);
+  }, [selectedCoords?.lat, selectedCoords?.lng]);
 
   // ── GPS: Use My Current Location ──────────────────────────────────────────
   const handleGPS = () => {
@@ -192,7 +200,7 @@ const MapLocationPicker = ({
         }
 
         if (mapInstance.current && markerInstance.current) {
-          mapInstance.current.flyTo([lat, lng], 16, { animate: true, duration: 0.9 });
+          mapInstance.current.setView([lat, lng], 16);
           markerInstance.current.setLatLng([lat, lng]);
           onLocationSelect(lat, lng);
           onError(null);

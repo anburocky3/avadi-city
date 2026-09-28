@@ -757,8 +757,7 @@ function ReportForm({
           </div>
 
           <MapLocationPicker
-            onLocationSelect={(lat, lng) => {
-              setSelectedCoords({ lat, lng });
+            onLocationSelect={() => {
               setMapError(null);
             }}
             onError={(err) => setMapError(err)}
