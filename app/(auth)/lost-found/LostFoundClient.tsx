@@ -31,7 +31,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 import dynamic from "next/dynamic";
-import { ALL_AVADI_STREETS, StreetItem } from "@/lib/wards";
+import { ALL_AVADI_STREETS, StreetItem, sanitiseReverseGeocodedAddress } from "@/lib/wards";
 
 import {
   Card,
@@ -497,12 +497,9 @@ function ReportForm({
       );
       const data = await res.json();
       const addr = data.address || {};
-      const parts = [
-        addr.road || addr.pedestrian || addr.footway,
-        addr.suburb || addr.neighbourhood,
-        addr.city_district || addr.county,
-      ].filter(Boolean);
-      const locationStr = parts.length > 0 ? parts.join(", ") : data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+      // Use sanitiser to strip non-Avadi place names (e.g. Poonamallee, Ambattur)
+      const wardNo = form.ward ? Number(form.ward) : undefined;
+      const locationStr = sanitiseReverseGeocodedAddress(addr, wardNo);
       setForm((prev) => ({ ...prev, location: locationStr }));
       setErrors((prev) => ({ ...prev, location: "" }));
     } catch {

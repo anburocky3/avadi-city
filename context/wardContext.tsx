@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, usePathname } from "next/navigation"; // 👈 Added usePathname
+import { getWardName, getWardHints } from "@/data/wards";
 
 // APP VERSION
 export const APP_VERSION = "v1.0.0";
@@ -341,11 +342,11 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     name:
       authUser?.streetName && isMatchingUserWard
         ? `${authUser.streetName}`
-        : `Ward ${activeWardId}`,
+        : getWardName(activeWardId),
     hints:
       authUser?.streetName && isMatchingUserWard
         ? authUser.streetName
-        : "Active Municipal Ward",
+        : getWardHints(activeWardId),
   };
 
   const userProfile = authUser
