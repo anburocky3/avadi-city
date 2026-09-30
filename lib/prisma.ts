@@ -16,8 +16,8 @@ function createPrismaClient() {
     database: process.env.DATABASE_NAME,
     port: Number(process.env.DATABASE_PORT) || 3306, // 👈 Added explicit port fallback
     connectionLimit: 10, // Increased slightly for Next.js API concurrency
-    connectTimeout: 2000,
-    acquireTimeout: 2000,
+    connectTimeout: 15000,
+    acquireTimeout: 15000,
   });
 
   return new PrismaClient({ adapter });

@@ -136,6 +136,9 @@ interface WardContextType {
     newRequest: Partial<{ name: string; bloodGroup: string; contact: string }>,
   ) => Promise<boolean>;
 
+  // Service Registration
+  registerServiceWorker: (serviceData: any) => Promise<boolean>;
+
   // Session State
   activeWard: { id: number; name: string; hints?: string };
   userProfile: { name: string; wardNumber: number };
@@ -649,6 +652,26 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const registerServiceWorker = async (serviceData: any): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/services", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(serviceData),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || err.message || "Failed to register service");
+      }
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      return true;
+    } catch (error) {
+      console.error("Service worker registration failed:", error);
+      throw error;
+    }
+  };
+
   const bloodGroup = authUser?.bloodGroup || "Unknown";
 
   // Generated all 48 wards of Avadi Municipal Corporation
@@ -700,6 +723,7 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         bloodGroup,
         addBloodRequest,
         addVolunteer,
+        registerServiceWorker,
         wards,
         selectWard,
         volunteers: [],

@@ -242,7 +242,7 @@ export function ServiceRegisterClient() {
   const router = useRouter();
   const t = useTranslations("services");
   const locale = useLocale();
-  const { activeWard, authUser } = useWard();
+  const { activeWard, authUser, registerServiceWorker } = useWard();
 
   // Natural flow:
   // Step 1: Profile Details & Ward (First!)
@@ -251,6 +251,7 @@ export function ServiceRegisterClient() {
   // Step 4: Final Review & Submit
   const [regStep, setRegStep] = useState<1 | 2 | 3 | 4>(1);
   const [regSubmitted, setRegSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [regError, setRegError] = useState<string | null>(null);
   const [isStreetWardModalOpen, setIsStreetWardModalOpen] =
     useState<boolean>(false);
@@ -889,7 +890,7 @@ export function ServiceRegisterClient() {
     }
   };
 
-  const handleSubmitRegistration = (e?: React.FormEvent) => {
+  const handleSubmitRegistration = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
       return;
@@ -904,10 +905,29 @@ export function ServiceRegisterClient() {
       return;
     }
 
-    // Trigger device push notification
-    triggerPushNotification();
-    setRegSubmitted(true);
-    scrollToTop();
+    try {
+      setIsSubmitting(true);
+      setRegError(null);
+
+      await registerServiceWorker({
+        ...regData,
+        serviceRates,
+      });
+
+      // Trigger device push notification
+      triggerPushNotification();
+      setRegSubmitted(true);
+      scrollToTop();
+    } catch (err: any) {
+      setRegError(
+        err?.message ||
+          (locale === "ta"
+            ? "பதிவைச் சமர்ப்பிக்க முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்."
+            : "Failed to submit registration. Please try again.")
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFinishAndReturn = () => {
@@ -2197,11 +2217,19 @@ export function ServiceRegisterClient() {
               <button
                 type="button"
                 onClick={handleSubmitRegistration}
-                disabled={!reviewConsent}
+                disabled={!reviewConsent || isSubmitting}
                 className="px-5 py-2.5 bg-linear-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 ml-auto active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <CheckCircle2 size={16} />
-                <span>{t("submitForReview")}</span>
+                {isSubmitting ? (
+                  <Loader2 size={16} className="animate-spin" />
+                ) : (
+                  <CheckCircle2 size={16} />
+                )}
+                <span>
+                  {isSubmitting
+                    ? (locale === "ta" ? "சமர்ப்பிக்கிறது..." : "Submitting...")
+                    : t("submitForReview")}
+                </span>
               </button>
             )}
           </div>
