@@ -35,6 +35,8 @@ const createFoodSchema = zod.object({
   website: zod.string().trim().max(200).optional().nullable(),
   socialLink: zod.string().trim().max(200).optional().nullable(),
   areaLandmark: zod.string().trim().max(150).optional().nullable(),
+  latitude: zod.coerce.number().optional().nullable(),
+  longitude: zod.coerce.number().optional().nullable(),
   additionalDetails: zod.string().trim().max(3000).optional().nullable(),
   isLateNight: zod.coerce.boolean().optional(),
   lateNightStartTime: zod.string().trim().optional().nullable(),
@@ -104,10 +106,7 @@ export async function GET(request: Request) {
     }
 
     const whereClause: any = {
-      OR: [
-        { status: "APPROVED" },
-        ...(userId ? [{ ownerId: userId }] : []),
-      ],
+      status: "APPROVED",
     };
 
     if (wardParam) {
@@ -153,6 +152,9 @@ export async function GET(request: Request) {
         ...listing,
         rating: rev?.rating ?? null,
         reviewCount: rev?.count ?? 0,
+        cuisines: meta.cuisines || null,
+        latitude: meta.latitude ?? null,
+        longitude: meta.longitude ?? null,
         popularItems: meta.popularItems || [],
         isLateNight: meta.isLateNight || Boolean(listing.closingTime?.toLowerCase().includes("midnight") || listing.closingTime?.toLowerCase().includes("am")),
         lateNightStartTime: meta.lateNightStartTime || null,
@@ -233,6 +235,8 @@ export async function POST(request: Request) {
       website: formData.get("website")?.toString() || null,
       socialLink: formData.get("socialLink")?.toString() || null,
       areaLandmark: formData.get("areaLandmark")?.toString() || null,
+      latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
+      longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
       additionalDetails: formData.get("additionalDetails")?.toString() || null,
       isLateNight: formData.get("isLateNight") === "true",
       lateNightStartTime: formData.get("lateNightStartTime")?.toString() || null,
@@ -291,9 +295,12 @@ export async function POST(request: Request) {
     const finalFoodType = valid.foodType || valid.foodTypes || "Both Veg & Non-Veg";
     const finalDescription = valid.description;
 
-    const resolvedAddress = valid.areaLandmark
-      ? `${valid.address} (Landmark: ${valid.areaLandmark})`
-      : valid.address;
+    const cleanAddr = (valid.address || "").replace(/^,\s*/, "").trim();
+    const cleanLandmark = (valid.areaLandmark || "").trim();
+    const resolvedAddress =
+      cleanAddr && cleanLandmark && !cleanAddr.toLowerCase().includes(cleanLandmark.toLowerCase())
+        ? `${cleanAddr}, ${cleanLandmark}`
+        : cleanAddr || cleanLandmark || `Ward ${valid.ward}, Avadi`;
     const resolvedWebsite = valid.website || valid.socialLink || null;
 
     // Parse popular items
@@ -327,6 +334,8 @@ export async function POST(request: Request) {
       dineIn: valid.dineIn || false,
       socialLink: valid.socialLink,
       areaLandmark: valid.areaLandmark,
+      latitude: valid.latitude ?? null,
+      longitude: valid.longitude ?? null,
     };
 
     // 4. Save to Database via Prisma (Server forcefully sets status="PENDING" and ownerId=userId)

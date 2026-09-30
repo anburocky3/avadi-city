@@ -1,16 +1,22 @@
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
+import "leaflet/dist/leaflet.css";
+import { MapPin } from "lucide-react";
 
 interface MapLocationPickerProps {
-  onLocationSelect: (lat: number, lng: number, isUserAction?: boolean) => void;
+  onLocationSelect: (lat: number, lng: number) => void;
   onError: (msg: string | null) => void;
-  selectedCoords?: { lat: number; lng: number } | null;
+  selectedLat?: number | null;
+  selectedLng?: number | null;
+  selectedAreaName?: string | null;
 }
 
-const MapLocationPicker = ({
+const MapLocationPicker: React.FC<MapLocationPickerProps> = ({
   onLocationSelect,
   onError,
-  selectedCoords,
-}: MapLocationPickerProps) => {
+  selectedLat,
+  selectedLng,
+  selectedAreaName,
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
@@ -23,10 +29,17 @@ const MapLocationPicker = ({
       mapInstance.current &&
       markerInstance.current
     ) {
-      markerInstance.current.setLatLng([selectedCoords.lat, selectedCoords.lng]);
-      mapInstance.current.setView([selectedCoords.lat, selectedCoords.lng], 16, {
-        animate: true,
-      });
+      markerInstance.current.setLatLng([
+        selectedCoords.lat,
+        selectedCoords.lng,
+      ]);
+      mapInstance.current.setView(
+        [selectedCoords.lat, selectedCoords.lng],
+        16,
+        {
+          animate: true,
+        },
+      );
     }
   }, [selectedCoords?.lat, selectedCoords?.lng]);
 
@@ -47,28 +60,47 @@ const MapLocationPicker = ({
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
-      const defaultLat = selectedCoords?.lat || 13.1169;
-      const defaultLng = selectedCoords?.lng || 80.0972;
+      const initialLat =
+        typeof selectedLat === "number" && !isNaN(selectedLat)
+          ? selectedLat
+          : 13.1169;
+      const initialLng =
+        typeof selectedLng === "number" && !isNaN(selectedLng)
+          ? selectedLng
+          : 80.0972;
 
-      // Define Avadi Bounding Box (~20km radius equivalent)
+      // Define Avadi Bounding Box for marker validation (~25km radius encompassing all 48 Avadi wards)
       const avadiBounds = L.latLngBounds(
-        L.latLng(13.01, 79.99), // South-West Limit
-        L.latLng(13.22, 80.2), // North-East Limit
+        L.latLng(12.98, 79.95), // South-West Limit
+        L.latLng(13.25, 80.25), // North-East Limit
       );
 
       const map = L.map(mapRef.current, {
-        maxBounds: avadiBounds, // Restricts panning outside Avadi
-        maxBoundsViscosity: 1.0,
-        minZoom: 12,
-      }).setView([defaultLat, defaultLng], 14);
+        zoomControl: false,
+        dragging: true,
+        touchZoom: true,
+        scrollWheelZoom: true,
+        doubleClickZoom: true,
+        boxZoom: true,
+        keyboard: true,
+        tap: false,
+        minZoom: 10,
+        maxZoom: 19,
+      }).setView([initialLat, initialLng], 15);
+
+      L.control.zoom({ position: "bottomright" }).addTo(map);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
 
-      const marker = L.marker([defaultLat, defaultLng], {
+      const marker = L.marker([initialLat, initialLng], {
         draggable: true,
       }).addTo(map);
+
+      if (selectedAreaName) {
+        marker.bindPopup(selectedAreaName).openPopup();
+      }
 
       // Validation Function
       const validateAndSetLocation = (latlng: any, isUserAction = false) => {
@@ -78,27 +110,72 @@ const MapLocationPicker = ({
           onError(null);
         } else {
           // Snap back to Avadi center if dragged outside limits
-          marker.setLatLng([defaultLat, defaultLng]);
-          map.setView([defaultLat, defaultLng], 14);
-          onLocationSelect(defaultLat, defaultLng, isUserAction);
+          marker.setLatLng([initialLat, initialLng]);
+          map.setView([initialLat, initialLng], 15);
+          onLocationSelect(initialLat, initialLng);
           onError("Location must be within Avadi Corporation limits.");
         }
       };
 
-      marker.on("dragend", () => validateAndSetLocation(marker.getLatLng(), true));
+      marker.on("dragend", () =>
+        validateAndSetLocation(marker.getLatLng(), true),
+      );
       map.on("click", (e: any) => validateAndSetLocation(e.latlng, true));
 
       mapInstance.current = map;
       markerInstance.current = marker;
-      onLocationSelect(defaultLat, defaultLng, false);
+      onLocationSelect(initialLat, initialLng);
+
+      // Force recalculation of map container dimensions once rendered
+      setTimeout(() => {
+        if (mapInstance.current) {
+          mapInstance.current.invalidateSize();
+        }
+      }, 200);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Dynamically pan & move marker when selectedLat / selectedLng changes
+  useEffect(() => {
+    if (
+      mapInstance.current &&
+      markerInstance.current &&
+      typeof selectedLat === "number" &&
+      typeof selectedLng === "number" &&
+      !isNaN(selectedLat) &&
+      !isNaN(selectedLng)
+    ) {
+      markerInstance.current.setLatLng([selectedLat, selectedLng]);
+      mapInstance.current.setView([selectedLat, selectedLng], 15, {
+        animate: true,
+      });
+
+      if (selectedAreaName) {
+        markerInstance.current.bindPopup(selectedAreaName).openPopup();
+      }
+
+      setTimeout(() => {
+        if (mapInstance.current) {
+          mapInstance.current.invalidateSize();
+        }
+      }, 150);
+    }
+  }, [selectedLat, selectedLng, selectedAreaName]);
+
   return (
-    <div
-      ref={mapRef}
-      className="w-full h-64 rounded-2xl z-0 relative border border-slate-200 dark:border-slate-700 shadow-sm"
-    />
+    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-100 dark:bg-slate-900">
+      {selectedAreaName && (
+        <div className="absolute top-2.5 left-2.5 z-[1000] bg-slate-900/90 backdrop-blur-md text-white text-[11px] font-bold px-3 py-1.5 rounded-xl border border-slate-700/80 shadow-md flex items-center gap-1.5 max-w-[85%] pointer-events-none">
+          <MapPin size={13} className="text-amber-400 shrink-0" />
+          <span className="truncate">{selectedAreaName}</span>
+        </div>
+      )}
+      <div
+        ref={mapRef}
+        className="w-full h-56 sm:h-64 z-0 relative cursor-grab active:cursor-grabbing"
+      />
+    </div>
   );
 };
 

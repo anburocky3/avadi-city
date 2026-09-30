@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   ArrowRight,
-  Store,
   MapPin,
+  Building2,
   Phone,
   Mail,
   Clock,
@@ -20,7 +20,6 @@ import {
   Loader2,
   CheckCircle2,
   Search,
-  Check,
   FileText,
   Moon,
   Truck,
@@ -28,18 +27,38 @@ import {
 } from "lucide-react";
 import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
-import { ALL_AVADI_STREETS } from "@/lib/wards";
-import { wards as WARD_LIST } from "@/data/wards";
+import avadiWardsData from "@/data/avadi-wards.json";
+import {
+  VegSymbol,
+  NonVegSymbol,
+  VeganSymbol,
+  GlutenFreeSymbol,
+  DairyFreeSymbol,
+  EggFreeSymbol,
+} from "@/components/food-icons";
+import { TimePickerDropdown } from "@/components/ui/TimePickerDropdown";
 
-const FOOD_TYPE_OPTIONS = [
+import dynamic from "next/dynamic";
+
+const MapLocationPicker = dynamic(
+  () => import("@/components/ui/MapLocationPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse flex items-center justify-center text-xs text-slate-400">
+        Loading Avadi Map...
+      </div>
+    ),
+  }
+);
+
+const DIETARY_OPTIONS = [
   "Vegetarian",
   "Non-Vegetarian",
-  "Both",
-  "Egg",
   "Vegan",
-  "Jain",
-  "Halal",
-  "Other",
+  "Gluten-Free",
+  "Dairy-Free",
+  "Egg-Free",
 ];
 
 const CUISINE_OPTIONS = [
@@ -48,81 +67,103 @@ const CUISINE_OPTIONS = [
   "Chinese",
   "Arabian",
   "Continental",
-  "Kerala",
-  "Tamil Cuisine",
-  "Fast Food",
-  "Street Food",
   "Bakery",
   "Desserts",
   "Beverages",
-  "Other",
 ];
 
-const OPENING_TIME_OPTIONS = [
-  "6:00 AM",
-  "7:00 AM",
-  "8:00 AM",
-  "9:00 AM",
-  "10:00 AM",
-  "11:00 AM",
-  "12:00 PM",
-  "1:00 PM",
-  "2:00 PM",
-  "3:00 PM",
-  "4:00 PM",
-  "5:00 PM",
-  "6:00 PM",
-  "7:00 PM",
-  "8:00 PM",
-  "9:00 PM",
-  "10:00 PM",
-  "11:00 PM",
+// 12-Hour AM/PM Time Options for user-facing selection (no railway 24h timetable format)
+const TIME_OPTIONS_12H = [
+  "5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM",
+  "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM",
+  "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM",
+  "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM",
+  "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM",
+  "8:00 PM", "8:30 PM", "9:00 PM", "9:30 PM", "10:00 PM", "10:30 PM",
+  "11:00 PM", "11:30 PM", "12:00 AM", "12:30 AM", "1:00 AM", "1:30 AM",
+  "2:00 AM", "2:30 AM", "3:00 AM", "3:30 AM", "4:00 AM", "4:30 AM"
 ];
 
-const CLOSING_TIME_OPTIONS = [
-  "6:00 PM",
-  "7:00 PM",
-  "8:00 PM",
-  "9:00 PM",
+// Late-Night serving range: 10:00 PM → 6:00 AM with 12-hour AM/PM format
+const LATE_NIGHT_TIME_OPTIONS_12H = [
   "10:00 PM",
+  "10:30 PM",
   "11:00 PM",
+  "11:30 PM",
   "12:00 AM",
+  "12:30 AM",
   "1:00 AM",
+  "1:30 AM",
   "2:00 AM",
+  "2:30 AM",
   "3:00 AM",
+  "3:30 AM",
   "4:00 AM",
+  "4:30 AM",
   "5:00 AM",
-  "6:00 AM",
-  "12:00 PM",
-  "1:00 PM",
-  "2:00 PM",
-  "3:00 PM",
-  "4:00 PM",
-  "5:00 PM",
+  "5:30 AM",
+  "6:00 AM"
 ];
 
-const LATE_NIGHT_TIME_OPTIONS = [
-  "6:00 PM",
-  "7:00 PM",
-  "8:00 PM",
-  "9:00 PM",
-  "10:00 PM",
-  "11:00 PM",
-  "12:00 AM",
-  "1:00 AM",
-  "2:00 AM",
-  "3:00 AM",
-  "4:00 AM",
-  "5:00 AM",
-  "6:00 AM",
-];
-
-interface LocationSuggestion {
+interface AvadiStreetRecord {
   id: string;
   name: string;
   wardNo: number;
-  wardLabel: string;
+  wardCode: string;
+  lat: number;
+  lng: number;
 }
+
+const AVADI_WARD_COORDINATES: Record<number, { lat: number; lng: number }> = {
+  1: { lat: 13.1245, lng: 80.0582 },
+  2: { lat: 13.1218, lng: 80.0635 },
+  3: { lat: 13.1158, lng: 80.0631 },
+  4: { lat: 13.1482, lng: 80.0894 },
+  5: { lat: 13.1415, lng: 80.0763 },
+  6: { lat: 13.1332, lng: 80.0841 },
+  7: { lat: 13.1425, lng: 80.1012 },
+  8: { lat: 13.1398, lng: 80.1075 },
+  9: { lat: 13.1092, lng: 80.0885 },
+  10: { lat: 13.1065, lng: 80.0942 },
+  11: { lat: 13.0984, lng: 80.0853 },
+  12: { lat: 13.0921, lng: 80.0915 },
+  13: { lat: 13.0856, lng: 80.0847 },
+  14: { lat: 13.0782, lng: 80.0898 },
+  15: { lat: 13.0715, lng: 80.0945 },
+  16: { lat: 13.1182, lng: 80.0985 },
+  17: { lat: 13.1197, lng: 80.1017 },
+  18: { lat: 13.1165, lng: 80.1052 },
+  19: { lat: 13.1295, lng: 80.1124 },
+  20: { lat: 13.1272, lng: 80.1189 },
+  21: { lat: 13.1345, lng: 80.1168 },
+  22: { lat: 13.1312, lng: 80.1235 },
+  23: { lat: 13.1115, lng: 80.1172 },
+  24: { lat: 13.1082, lng: 80.1225 },
+  25: { lat: 13.1285, lng: 80.1298 },
+  26: { lat: 13.1342, lng: 80.1365 },
+  27: { lat: 13.1305, lng: 80.1412 },
+  28: { lat: 13.1268, lng: 80.1458 },
+  29: { lat: 13.1197, lng: 80.1500 },
+  30: { lat: 13.1252, lng: 80.1548 },
+  31: { lat: 13.1215, lng: 80.1605 },
+  32: { lat: 13.1145, lng: 80.1545 },
+  33: { lat: 13.1154, lng: 80.1477 },
+  34: { lat: 13.1235, lng: 80.1028 },
+  35: { lat: 13.1352, lng: 80.1485 },
+  36: { lat: 13.1289, lng: 80.1065 },
+  37: { lat: 13.1525, lng: 80.0925 },
+  38: { lat: 13.1465, lng: 80.0825 },
+  39: { lat: 13.1285, lng: 80.0545 },
+  40: { lat: 13.1195, lng: 80.0525 },
+  41: { lat: 13.1125, lng: 80.0825 },
+  42: { lat: 13.1365, lng: 80.0875 },
+  43: { lat: 13.1172, lng: 80.1045 },
+  44: { lat: 13.1462, lng: 80.1042 },
+  45: { lat: 13.0952, lng: 80.0815 },
+  46: { lat: 13.0815, lng: 80.0925 },
+  47: { lat: 13.1045, lng: 80.1195 },
+  48: { lat: 13.1315, lng: 80.1495 },
+};
 
 function toTitleCase(str: string): string {
   return str
@@ -134,18 +175,73 @@ function toTitleCase(str: string): string {
     .trim();
 }
 
+interface AvadiWardItem {
+  ward_no?: number;
+  ward_code?: string;
+  streets?: Array<{ value?: string; text?: string } | string>;
+}
+
+// Authoritative Street & Area dataset derived exclusively from @avadi-wards.json
+const AVADI_STREETS_CATALOG: AvadiStreetRecord[] = (() => {
+  const list: AvadiStreetRecord[] = [];
+  const rawWards = (avadiWardsData as { wards?: AvadiWardItem[] })?.wards;
+  if (Array.isArray(rawWards)) {
+    for (const w of rawWards) {
+      const wardNo = Number(w.ward_no);
+      if (!wardNo || wardNo < 1 || wardNo > 48 || !Array.isArray(w.streets)) continue;
+      const wardCode = String(w.ward_code || `WD-${String(wardNo).padStart(2, "0")}`);
+      const baseCoord = AVADI_WARD_COORDINATES[wardNo] || { lat: 13.1169, lng: 80.0972 };
+
+      for (let i = 0; i < w.streets.length; i++) {
+        const item = w.streets[i];
+        const rawName = typeof item === "string" ? item : item?.text;
+        const val = typeof item === "object" && item?.value ? String(item.value) : String(i);
+        const clean = rawName?.trim();
+        if (!clean) continue;
+
+        // Micro-offset distributes individual streets naturally across the ward's authentic geography
+        const charSum = val.split("").reduce((sum: number, c: string) => sum + c.charCodeAt(0), 0) + i;
+        const latOffset = ((charSum % 11) - 5) * 0.00025;
+        const lngOffset = ((Math.floor(charSum / 11) % 11) - 5) * 0.00025;
+
+        list.push({
+          id: `w${wardNo}-${val}-${i}`,
+          name: toTitleCase(clean),
+          wardNo,
+          wardCode,
+          lat: Number((baseCoord.lat + latOffset).toFixed(5)),
+          lng: Number((baseCoord.lng + lngOffset).toFixed(5)),
+        });
+      }
+    }
+  }
+  return list;
+})();
+
 export default function NewListingWizardPage() {
   const router = useRouter();
   const toast = useToast();
   const { activeWard, isAuthenticated, isLoadingAuth } = useWard();
 
-  // File input references
+  // File input & container references
   const shopFileInputRef = useRef<HTMLInputElement>(null);
   const menuFileInputRef = useRef<HTMLInputElement>(null);
   const locationContainerRef = useRef<HTMLDivElement>(null);
+  const wizardTopRef = useRef<HTMLDivElement>(null);
 
   // Wizard Navigation: Step 1, 2, or 3
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+
+  // Step Navigation with automatic top-scroll
+  const goToStep = (step: 1 | 2 | 3) => {
+    setCurrentStep(step);
+    setTimeout(() => {
+      if (wizardTopRef.current) {
+        wizardTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }, 50);
+  };
 
   // Authentication Guard
   useEffect(() => {
@@ -155,12 +251,10 @@ export default function NewListingWizardPage() {
   }, [isLoadingAuth, isAuthenticated, router]);
 
   // ==========================================
-  // STEP 1 STATE: FOOD DETAILS
+  // STEP 1 STATE: DIETARY & CUISINES
   // ==========================================
-  const [selectedFoodTypes, setSelectedFoodTypes] = useState<string[]>(["Both"]);
-  const [otherFoodType, setOtherFoodType] = useState("");
-  const [selectedCuisines, setSelectedCuisines] = useState<string[]>(["South Indian"]);
-  const [otherCuisine, setOtherCuisine] = useState("");
+  const [selectedDietary, setSelectedDietary] = useState<string[]>([]);
+  const [selectedCuisines, setSelectedCuisines] = useState<string[]>([]);
 
   // ==========================================
   // STEP 2 STATE: SHOP DETAILS
@@ -171,6 +265,9 @@ export default function NewListingWizardPage() {
   const [email, setEmail] = useState("");
   const [streetArea, setStreetArea] = useState("");
   const [ward, setWard] = useState<number>(activeWard?.id || 1);
+  const [latitude, setLatitude] = useState<number>(13.1169);
+  const [longitude, setLongitude] = useState<number>(80.0972);
+  const [mapError, setMapError] = useState<string | null>(null);
   const [shopAddress, setShopAddress] = useState("");
   const [openingTime, setOpeningTime] = useState("9:00 AM");
   const [closingTime, setClosingTime] = useState("10:00 PM");
@@ -243,79 +340,54 @@ export default function NewListingWizardPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter Location Suggestions from existing project datasets
-  const locationSuggestions = useMemo((): LocationSuggestion[] => {
+  // Filter Location Suggestions solely and strictly from @avadi-wards.json
+  const locationSuggestions = useMemo((): AvadiStreetRecord[] => {
     const q = streetArea.trim().toLowerCase();
     if (!q || q.length < 2) return [];
 
-    const prefixMatches: LocationSuggestion[] = [];
-    const otherMatches: LocationSuggestion[] = [];
-    const seenNames = new Set<string>();
+    const prefixMatches: AvadiStreetRecord[] = [];
+    const otherMatches: AvadiStreetRecord[] = [];
+    const seen = new Set<string>();
 
-    const checkAndAdd = (rawName: string, wardNo: number, id: string) => {
-      const lower = rawName.toLowerCase().trim();
-      if (!lower || seenNames.has(lower)) return;
-      seenNames.add(lower);
-
-      const wardInfo = WARD_LIST.find((w) => w.id === wardNo);
-      const wardLabel = wardInfo ? `Ward ${wardNo} - ${wardInfo.name}` : `Ward ${wardNo}`;
-      const item: LocationSuggestion = {
-        id,
-        name: toTitleCase(rawName),
-        wardNo,
-        wardLabel,
-      };
+    for (const street of AVADI_STREETS_CATALOG) {
+      const lower = street.name.toLowerCase();
+      if (seen.has(lower)) continue;
 
       if (lower.startsWith(q)) {
-        prefixMatches.push(item);
-      } else {
-        otherMatches.push(item);
+        seen.add(lower);
+        prefixMatches.push(street);
+      } else if (lower.includes(q)) {
+        seen.add(lower);
+        otherMatches.push(street);
       }
-    };
 
-    // 1. Check Areas and Localities from WARD_LIST
-    for (const w of WARD_LIST) {
-      if (w.name.toLowerCase().includes(q)) {
-        checkAndAdd(w.name, w.id, `ward-area-${w.id}`);
-      }
-      if (w.hints) {
-        const hintsArr = w.hints.split(",").map((h) => h.trim());
-        for (const hint of hintsArr) {
-          if (hint.toLowerCase().includes(q)) {
-            checkAndAdd(hint, w.id, `ward-hint-${w.id}-${hint.replace(/\s+/g, "-")}`);
-          }
-        }
-      }
-    }
-
-    // 2. Check Street List from ALL_AVADI_STREETS
-    for (const street of ALL_AVADI_STREETS) {
-      if (street.streetName.toLowerCase().includes(q)) {
-        checkAndAdd(street.streetName, street.wardNo, street.id);
-      }
       if (prefixMatches.length + otherMatches.length >= 25) break;
     }
 
-    return [...prefixMatches, ...otherMatches].slice(0, 8);
+    return [...prefixMatches, ...otherMatches].slice(0, 10);
   }, [streetArea]);
 
-  const handleSelectLocation = (suggestion: LocationSuggestion) => {
+  const handleSelectLocation = (suggestion: AvadiStreetRecord) => {
     setStreetArea(suggestion.name);
-    // Automatically determine and set the corresponding Ward Number!
+    // Ward is derived internally from the selected @avadi-wards.json record (NO visible ward dropdown)
     setWard(suggestion.wardNo);
+    // Coordinates corresponding to the selected record
+    setLatitude(suggestion.lat);
+    setLongitude(suggestion.lng);
+    setMapError(null);
     setShowLocationSuggestions(false);
     if (fieldErrors.streetArea) {
       setFieldErrors((prev) => ({ ...prev, streetArea: "" }));
     }
   };
 
-  // Toggle Multi-select food types
-  const toggleFoodType = (item: string) => {
-    setSelectedFoodTypes((prev) => {
+  // Toggle Multi-select dietary options
+  const toggleDietary = (item: string) => {
+    setSelectedDietary((prev) => {
       const exists = prev.includes(item);
       const updated = exists ? prev.filter((i) => i !== item) : [...prev, item];
-      if (fieldErrors.foodTypes) {
-        setFieldErrors((p) => ({ ...p, foodTypes: "" }));
+      if (fieldErrors.dietary) {
+        setFieldErrors((p) => ({ ...p, dietary: "" }));
       }
       return updated;
     });
@@ -426,20 +498,18 @@ export default function NewListingWizardPage() {
     if (popularItemError) setPopularItemError("");
   };
 
-  // Step 1 Validation
+  // Step 1 Validation & Ready State
+  const isStep1Ready = selectedDietary.length > 0 && selectedCuisines.length > 0;
+
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
 
-    if (selectedFoodTypes.length === 0) {
-      errors.foodTypes = "Please select at least one food type.";
-    } else if (selectedFoodTypes.includes("Other") && !otherFoodType.trim()) {
-      errors.otherFoodType = "Please specify the other food type.";
+    if (selectedDietary.length === 0) {
+      errors.dietary = "Please select at least one Dietary option.";
     }
 
     if (selectedCuisines.length === 0) {
-      errors.cuisines = "Please select at least one cuisine.";
-    } else if (selectedCuisines.includes("Other") && !otherCuisine.trim()) {
-      errors.otherCuisine = "Please specify the other cuisine.";
+      errors.cuisines = "Please select at least one Cuisine.";
     }
 
     setFieldErrors(errors);
@@ -448,10 +518,9 @@ export default function NewListingWizardPage() {
 
   const handleContinueStep1 = () => {
     if (validateStep1()) {
-      setCurrentStep(2);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      goToStep(2);
     } else {
-      toast.error("Please complete the required food details.");
+      toast.error("Please select at least one Dietary option and at least one Cuisine.");
     }
   };
 
@@ -518,8 +587,7 @@ export default function NewListingWizardPage() {
 
   const handleContinueStep2 = () => {
     if (validateStep2()) {
-      setCurrentStep(3);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      goToStep(3);
     } else {
       toast.error("Please fill in all required shop details.");
     }
@@ -557,13 +625,13 @@ export default function NewListingWizardPage() {
     e.preventDefault();
 
     if (!validateStep1()) {
-      setCurrentStep(1);
+      goToStep(1);
       toast.error("Please check your food details in Step 1.");
       return;
     }
 
     if (!validateStep2()) {
-      setCurrentStep(2);
+      goToStep(2);
       toast.error("Please check your shop details in Step 2.");
       return;
     }
@@ -582,10 +650,12 @@ export default function NewListingWizardPage() {
       formData.append("phone", phone.trim());
       if (email.trim()) formData.append("email", email.trim());
 
-      const fullAddress = `${shopAddress.trim()}, ${streetArea.trim()}`;
+      const fullAddress = [shopAddress.trim(), streetArea.trim()].filter(Boolean).join(", ");
       formData.append("address", fullAddress);
       formData.append("areaLandmark", streetArea.trim());
       formData.append("ward", ward.toString());
+      if (latitude) formData.append("latitude", latitude.toString());
+      if (longitude) formData.append("longitude", longitude.toString());
 
       formData.append("openingTime", openingTime);
       formData.append("closingTime", closingTime);
@@ -593,17 +663,13 @@ export default function NewListingWizardPage() {
       if (website.trim()) formData.append("website", website.trim());
       if (socialLink.trim()) formData.append("socialLink", socialLink.trim());
 
-      // Food types & Cuisines
-      const allFoodTypes = selectedFoodTypes
-        .map((t) => (t === "Other" && otherFoodType.trim() ? otherFoodType.trim() : t))
-        .join(", ");
-      const allCuisines = selectedCuisines
-        .map((c) => (c === "Other" && otherCuisine.trim() ? otherCuisine.trim() : c))
-        .join(", ");
+      // Dietary & Cuisines
+      const allDietary = selectedDietary.join(", ");
+      const allCuisines = selectedCuisines.join(", ");
 
-      formData.append("foodTypes", allFoodTypes);
+      formData.append("foodTypes", allDietary);
       formData.append("cuisines", allCuisines);
-      formData.append("foodType", allFoodTypes);
+      formData.append("foodType", allDietary);
       formData.append("category", selectedCuisines[0] || "Restaurant");
 
       // Operational flags
@@ -612,9 +678,9 @@ export default function NewListingWizardPage() {
         formData.append("lateNightStartTime", lateNightStartTime);
         formData.append("lateNightEndTime", lateNightEndTime);
       }
-      formData.append("lateNightDining", lateNightDining ? "true" : "false");
-      formData.append("lateNightTakeaway", lateNightTakeaway ? "true" : "false");
-      formData.append("lateNightDelivery", lateNightDelivery ? "true" : "false");
+      formData.append("lateNightDining", (isLateNight && lateNightDining) ? "true" : "false");
+      formData.append("lateNightTakeaway", (isLateNight && lateNightDining && lateNightTakeaway) ? "true" : "false");
+      formData.append("lateNightDelivery", (isLateNight && lateNightDining && lateNightDelivery) ? "true" : "false");
       formData.append("popularItems", JSON.stringify(popularItems));
       formData.append("homeDelivery", homeDelivery ? "true" : "false");
       formData.append("takeaway", takeaway ? "true" : "false");
@@ -672,6 +738,7 @@ export default function NewListingWizardPage() {
 
       {/* 2. Main Wizard Card with Integrated Step Bar */}
       <form onSubmit={handleSubmit} className="space-y-6">
+        <div ref={wizardTopRef} className="scroll-mt-6" />
         <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-5 sm:p-8 shadow-xs space-y-6">
           {/* Top Segmented Progress Bar (Matches Reference Image) */}
           <div className="space-y-3.5 border-b border-slate-100 dark:border-slate-800 pb-5 sm:pb-6">
@@ -681,14 +748,22 @@ export default function NewListingWizardPage() {
                 <div
                   key={stepNum}
                   onClick={() => {
-                    if (stepNum < currentStep) setCurrentStep(stepNum as 1 | 2 | 3);
+                    if (stepNum < currentStep) goToStep(stepNum as 1 | 2 | 3);
                   }}
                   className={`h-1.5 sm:h-2 rounded-full transition-all duration-300 ${
-                    stepNum <= currentStep
+                    stepNum < currentStep
+                      ? "bg-emerald-500 shadow-xs shadow-emerald-500/30 cursor-pointer hover:opacity-80"
+                      : stepNum === currentStep
                       ? "bg-primary shadow-xs shadow-primary/30"
                       : "bg-slate-100 dark:bg-slate-800"
-                  } ${stepNum < currentStep ? "cursor-pointer hover:opacity-80" : ""}`}
-                  title={`Step ${stepNum}`}
+                  }`}
+                  title={
+                    stepNum < currentStep
+                      ? `Step ${stepNum} (Completed - Click to view)`
+                      : stepNum === currentStep
+                      ? `Step ${stepNum} (Current)`
+                      : `Step ${stepNum}`
+                  }
                 />
               ))}
             </div>
@@ -700,7 +775,7 @@ export default function NewListingWizardPage() {
                   STEP {currentStep} OF 3
                 </span>
                 <h2 className="text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-white leading-tight">
-                  {currentStep === 1 && "Food Details & Dietary Options"}
+                  {currentStep === 1 && "Dietary & Cuisines"}
                   {currentStep === 2 && "Shop Information & Location"}
                   {currentStep === 3 && "Photos & Confirmation"}
                 </h2>
@@ -713,84 +788,54 @@ export default function NewListingWizardPage() {
           </div>
 
           {/* ======================================================== */}
-          {/* STEP 1: FOOD DETAILS                                     */}
+          {/* STEP 1: DIETARY & CUISINES                               */}
           {/* ======================================================== */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-in fade-in duration-200">
 
-              {/* Food Type / Dietary Options (Multi-select) */}
+              {/* Dietary Options (Selectable button / card / chip, NO checkboxes, NO ticks) */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
-                  Food Type <span className="text-rose-500">*</span>
+                  Dietary <span className="text-rose-500">*</span>
                   <span className="text-xs font-normal text-slate-400 ml-1.5">
                     (Select all that apply)
                   </span>
                 </label>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {FOOD_TYPE_OPTIONS.map((type) => {
-                    const isSelected = selectedFoodTypes.includes(type);
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                  {DIETARY_OPTIONS.map((item) => {
+                    const isSelected = selectedDietary.includes(item);
                     return (
-                      <label
-                        key={type}
-                        className={`flex items-center space-x-2.5 p-3 rounded-2xl border cursor-pointer transition select-none ${
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => toggleDietary(item)}
+                        className={`flex items-center space-x-2.5 p-3.5 rounded-2xl border transition-all select-none text-left cursor-pointer active:scale-98 ${
                           isSelected
-                            ? "bg-primary/10 border-primary text-slate-900 dark:text-white font-bold"
-                            : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700"
+                            ? "bg-primary/10 border-primary text-slate-900 dark:text-white font-bold shadow-xs"
+                            : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 font-medium"
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleFoodType(type)}
-                          className="w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
-                        />
-                        <span className="text-xs">{type}</span>
-                      </label>
+                        {item === "Vegetarian" && <VegSymbol />}
+                        {item === "Non-Vegetarian" && <NonVegSymbol />}
+                        {item === "Vegan" && <VeganSymbol />}
+                        {item === "Gluten-Free" && <GlutenFreeSymbol />}
+                        {item === "Dairy-Free" && <DairyFreeSymbol />}
+                        {item === "Egg-Free" && <EggFreeSymbol />}
+                        <span className="text-xs sm:text-sm font-semibold">{item}</span>
+                      </button>
                     );
                   })}
                 </div>
 
-                {fieldErrors.foodTypes && (
+                {fieldErrors.dietary && (
                   <p className="mt-1 text-xs font-semibold text-rose-500 flex items-center gap-1">
-                    <AlertCircle size={13} /> {fieldErrors.foodTypes}
+                    <AlertCircle size={13} /> {fieldErrors.dietary}
                   </p>
-                )}
-
-                {/* Additional Food Type when 'Other' is checked */}
-                {selectedFoodTypes.includes("Other") && (
-                  <div className="pt-2">
-                    <label
-                      htmlFor="other-food-type-input"
-                      className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
-                    >
-                      Other Food Type <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      id="other-food-type-input"
-                      type="text"
-                      value={otherFoodType}
-                      onChange={(e) => {
-                        setOtherFoodType(e.target.value);
-                        if (fieldErrors.otherFoodType) setFieldErrors((p) => ({ ...p, otherFoodType: "" }));
-                      }}
-                      placeholder="e.g. Seafood, Homemade Food, Bakery Items, Snacks..."
-                      className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
-                        fieldErrors.otherFoodType
-                          ? "border-rose-400 focus:ring-rose-400"
-                          : "border-slate-200 dark:border-slate-800"
-                      }`}
-                    />
-                    {fieldErrors.otherFoodType && (
-                      <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
-                        <AlertCircle size={13} /> {fieldErrors.otherFoodType}
-                      </p>
-                    )}
-                  </div>
                 )}
               </div>
 
-              {/* Cuisines (Multi-select) */}
+              {/* Cuisines (Selectable button / card / chip, NO checkboxes, NO ticks) */}
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                   Cuisines <span className="text-rose-500">*</span>
@@ -799,26 +844,22 @@ export default function NewListingWizardPage() {
                   </span>
                 </label>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                   {CUISINE_OPTIONS.map((cuisine) => {
                     const isSelected = selectedCuisines.includes(cuisine);
                     return (
-                      <label
+                      <button
                         key={cuisine}
-                        className={`flex items-center space-x-2.5 p-3 rounded-2xl border cursor-pointer transition select-none ${
+                        type="button"
+                        onClick={() => toggleCuisine(cuisine)}
+                        className={`flex items-center justify-center p-3.5 rounded-2xl border transition-all select-none text-center cursor-pointer active:scale-98 ${
                           isSelected
-                            ? "bg-primary/10 border-primary text-slate-900 dark:text-white font-bold"
-                            : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700"
+                            ? "bg-primary/10 border-primary text-slate-900 dark:text-white font-bold shadow-xs"
+                            : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 font-medium"
                         }`}
                       >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => toggleCuisine(cuisine)}
-                          className="w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
-                        />
-                        <span className="text-xs">{cuisine}</span>
-                      </label>
+                        <span className="text-xs sm:text-sm">{cuisine}</span>
+                      </button>
                     );
                   })}
                 </div>
@@ -828,38 +869,6 @@ export default function NewListingWizardPage() {
                     <AlertCircle size={13} /> {fieldErrors.cuisines}
                   </p>
                 )}
-
-                {/* Additional Cuisine when 'Other' is checked */}
-                {selectedCuisines.includes("Other") && (
-                  <div className="pt-2">
-                    <label
-                      htmlFor="other-cuisine-input"
-                      className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
-                    >
-                      Other Cuisine <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      id="other-cuisine-input"
-                      type="text"
-                      value={otherCuisine}
-                      onChange={(e) => {
-                        setOtherCuisine(e.target.value);
-                        if (fieldErrors.otherCuisine) setFieldErrors((p) => ({ ...p, otherCuisine: "" }));
-                      }}
-                      placeholder="e.g. Chettinad, Mughlai, Mexican, Italian..."
-                      className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
-                        fieldErrors.otherCuisine
-                          ? "border-rose-400 focus:ring-rose-400"
-                          : "border-slate-200 dark:border-slate-800"
-                      }`}
-                    />
-                    {fieldErrors.otherCuisine && (
-                      <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
-                        <AlertCircle size={13} /> {fieldErrors.otherCuisine}
-                      </p>
-                    )}
-                  </div>
-                )}
               </div>
 
               {/* Step 1 Actions */}
@@ -867,7 +876,12 @@ export default function NewListingWizardPage() {
                 <button
                   type="button"
                   onClick={handleContinueStep1}
-                  className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs sm:text-sm shadow-sm transition flex items-center justify-center space-x-2 cursor-pointer active:scale-98"
+                  disabled={!isStep1Ready}
+                  className={`w-full sm:w-auto px-8 py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-sm transition flex items-center justify-center space-x-2 ${
+                    isStep1Ready
+                      ? "bg-primary hover:bg-primary/90 text-white cursor-pointer active:scale-98"
+                      : "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
+                  }`}
                 >
                   <span>Continue</span>
                   <ArrowRight size={16} />
@@ -1009,97 +1023,116 @@ export default function NewListingWizardPage() {
                 </div>
               </div>
 
-              {/* Location Details: Street / Area Autocomplete & Automatic Ward Selection */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="sm:col-span-2 relative" ref={locationContainerRef}>
-                  <label
-                    htmlFor="shop-street-input"
-                    className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
-                  >
-                    Street / Area <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      id="shop-street-input"
-                      type="text"
-                      value={streetArea}
-                      onFocus={() => {
-                        if (locationSuggestions.length > 0) setShowLocationSuggestions(true);
-                      }}
-                      onChange={(e) => {
-                        setStreetArea(e.target.value);
-                        setShowLocationSuggestions(true);
-                        if (fieldErrors.streetArea) setFieldErrors((prev) => ({ ...prev, streetArea: "" }));
-                      }}
-                      placeholder="Type street or area (e.g. Paruthipattu, Pattabiram, CTH Road)..."
-                      className={`w-full pl-4 pr-10 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
-                        fieldErrors.streetArea
-                          ? "border-rose-400 focus:ring-rose-400"
-                          : "border-slate-200 dark:border-slate-800"
-                      }`}
-                      autoComplete="off"
-                    />
-                    <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                  </div>
+              {/* Location Details: Street / Area Autocomplete (Ward is automatically derived) */}
+              <div className="relative" ref={locationContainerRef}>
+                <label
+                  htmlFor="shop-street-input"
+                  className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
+                >
+                  Street / Area <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    id="shop-street-input"
+                    type="text"
+                    value={streetArea}
+                    onFocus={() => {
+                      if (locationSuggestions.length > 0) setShowLocationSuggestions(true);
+                    }}
+                    onChange={(e) => {
+                      setStreetArea(e.target.value);
+                      setShowLocationSuggestions(true);
+                      if (fieldErrors.streetArea) setFieldErrors((prev) => ({ ...prev, streetArea: "" }));
+                    }}
+                    placeholder="Type street or area (e.g. Paruthipattu, Pattabiram, CTH Road)..."
+                    className={`w-full pl-4 pr-10 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
+                      fieldErrors.streetArea
+                        ? "border-rose-400 focus:ring-rose-400"
+                        : "border-slate-200 dark:border-slate-800"
+                    }`}
+                    autoComplete="off"
+                  />
+                  <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                </div>
 
-                  {/* Autocomplete Dropdown */}
-                  {showLocationSuggestions && locationSuggestions.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl overflow-hidden z-50 max-h-60 overflow-y-auto">
-                      <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-950 border-b border-slate-100 dark:border-slate-800 text-[10px] font-black uppercase text-slate-400 tracking-wider">
-                        Suggested Avadi Locations (Click to Auto-Select Ward)
+                {/* Autocomplete Dropdown matching project get-started styling */}
+                {showLocationSuggestions && streetArea.trim().length >= 2 && (
+                  <div className="absolute left-0 right-0 top-full mt-2 bg-[#0c1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto">
+                    {locationSuggestions.length > 0 ? (
+                      <ul className="divide-y divide-slate-800/80 text-left">
+                        {locationSuggestions.map((item) => (
+                          <li
+                            key={item.id}
+                            onClick={() => handleSelectLocation(item)}
+                            className="p-3.5 hover:bg-slate-800/60 cursor-pointer flex items-start gap-3 transition group"
+                          >
+                            <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500 shrink-0 mt-0.5 group-hover:bg-amber-500 group-hover:text-white transition shadow-sm">
+                              <MapPin size={16} />
+                            </div>
+                            <div className="flex-1 min-w-0 space-y-1.5">
+                              <p className="text-sm font-semibold text-slate-100 group-hover:text-amber-400 transition-colors truncate">
+                                {item.name}
+                              </p>
+                              <div className="flex items-center">
+                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-800/90 border border-slate-700/60 text-slate-300 text-[11px] font-bold transition">
+                                  <Building2 size={12} className="text-slate-400 shrink-0" />
+                                  <span>Ward {item.wardNo}</span>
+                                </span>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="p-4 text-center space-y-1 bg-[#0c1322]">
+                        <p className="text-xs font-bold text-slate-200">
+                          No matching Avadi location found
+                        </p>
+                        <p className="text-[11px] text-slate-400">
+                          Only locations within Avadi Municipal Corporation are permitted.
+                        </p>
                       </div>
-                      {locationSuggestions.map((item) => (
-                        <button
-                          key={item.id}
-                          type="button"
-                          onClick={() => handleSelectLocation(item)}
-                          className="w-full text-left px-4 py-2.5 hover:bg-orange-50 dark:hover:bg-slate-800 transition flex items-center justify-between group cursor-pointer border-b border-slate-100 dark:border-slate-800/60 last:border-b-0"
-                        >
-                          <div className="flex items-center space-x-2 min-w-0 pr-2">
-                            <MapPin size={14} className="text-slate-400 group-hover:text-primary shrink-0 transition-colors" />
-                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate group-hover:text-primary transition-colors">
-                              {item.name}
-                            </span>
-                          </div>
-                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                            {item.wardLabel}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    )}
+                  </div>
+                )}
 
-                  {fieldErrors.streetArea && (
-                    <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
-                      <AlertCircle size={13} /> {fieldErrors.streetArea}
-                    </p>
-                  )}
-                </div>
+                {fieldErrors.streetArea && (
+                  <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
+                    <AlertCircle size={13} /> {fieldErrors.streetArea}
+                  </p>
+                )}
+              </div>
 
-                {/* Ward Selector (Auto-filled on street selection or manual selection) */}
-                <div>
-                  <label
-                    htmlFor="shop-ward-select"
-                    className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
-                  >
-                    Ward <span className="text-rose-500">*</span>
-                  </label>
-                  <select
-                    id="shop-ward-select"
-                    value={ward}
-                    onChange={(e) => setWard(parseInt(e.target.value, 10))}
-                    className="w-full px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                  >
-                    {Array.from({ length: 48 }, (_, i) => i + 1).map((w) => {
-                      const wardObj = WARD_LIST.find((item) => item.id === w);
-                      return (
-                        <option key={w} value={w}>
-                          Ward {w} {wardObj ? `- ${wardObj.name}` : ""}
-                        </option>
-                      );
-                    })}
-                  </select>
-                </div>
+              {/* Map Section (Placed Above Shop Address) */}
+              <div className="space-y-2 pt-1">
+                <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                  <MapPin size={16} className="text-primary" />
+                  <span>Pinpoint Location on Map</span>
+                  <span className="text-[11px] font-normal text-slate-400">
+                    (Click or drag marker to set shop location in Avadi)
+                  </span>
+                </label>
+                <MapLocationPicker
+                  selectedLat={latitude}
+                  selectedLng={longitude}
+                  selectedAreaName={streetArea ? `${streetArea} (Ward ${ward})` : null}
+                  onLocationSelect={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
+                    setMapError(null);
+                  }}
+                  onError={(msg) => setMapError(msg)}
+                />
+                {mapError && (
+                  <p className="text-xs text-rose-500 font-semibold flex items-center gap-1">
+                    <AlertCircle size={13} /> {mapError}
+                  </p>
+                )}
+                {latitude && longitude && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Selected Location: <span className="font-semibold text-slate-700 dark:text-slate-300">{latitude.toFixed(5)}, {longitude.toFixed(5)}</span>
+                  </p>
+                )}
               </div>
 
               {/* Shop Address */}
@@ -1132,7 +1165,7 @@ export default function NewListingWizardPage() {
                 )}
               </div>
 
-              {/* Opening & Closing Time (Selectable Controls with convenient options) */}
+              {/* Opening & Closing Time (Custom 12-Hour AM/PM Time Picker Dropdown) */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label
@@ -1141,21 +1174,21 @@ export default function NewListingWizardPage() {
                   >
                     Opening Time <span className="text-rose-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Clock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    <select
-                      id="shop-opening-time"
-                      value={openingTime}
-                      onChange={(e) => setOpeningTime(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                    >
-                      {OPENING_TIME_OPTIONS.map((time) => (
-                        <option key={time} value={time}>
-                          {time}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <TimePickerDropdown
+                    id="shop-opening-time"
+                    value={openingTime}
+                    onChange={(val) => {
+                      setOpeningTime(val);
+                      if (fieldErrors.openingTime) setFieldErrors((p) => ({ ...p, openingTime: "" }));
+                    }}
+                    hasError={!!fieldErrors.openingTime}
+                    placement="top"
+                  />
+                  {fieldErrors.openingTime && (
+                    <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
+                      <AlertCircle size={13} /> {fieldErrors.openingTime}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1165,21 +1198,21 @@ export default function NewListingWizardPage() {
                   >
                     Closing Time <span className="text-rose-500">*</span>
                   </label>
-                  <div className="relative">
-                    <Clock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                    <select
-                      id="shop-closing-time"
-                      value={closingTime}
-                      onChange={(e) => setClosingTime(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                    >
-                      {CLOSING_TIME_OPTIONS.map((time) => (
-                        <option key={time} value={time}>
-                          {time}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <TimePickerDropdown
+                    id="shop-closing-time"
+                    value={closingTime}
+                    onChange={(val) => {
+                      setClosingTime(val);
+                      if (fieldErrors.closingTime) setFieldErrors((p) => ({ ...p, closingTime: "" }));
+                    }}
+                    hasError={!!fieldErrors.closingTime}
+                    placement="top"
+                  />
+                  {fieldErrors.closingTime && (
+                    <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
+                      <AlertCircle size={13} /> {fieldErrors.closingTime}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1246,7 +1279,7 @@ export default function NewListingWizardPage() {
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(1)}
+                  onClick={() => goToStep(1)}
                   className="px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center space-x-1.5 cursor-pointer"
                 >
                   <ArrowLeft size={16} />
@@ -1527,24 +1560,15 @@ export default function NewListingWizardPage() {
                         >
                           From
                         </label>
-                        <div className="relative">
-                          <Clock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                          <select
-                            id="late-night-from"
-                            value={lateNightStartTime}
-                            onChange={(e) => {
-                              setLateNightStartTime(e.target.value);
-                              if (fieldErrors.lateNightHours) setFieldErrors((p) => ({ ...p, lateNightHours: "" }));
-                            }}
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                          >
-                            {LATE_NIGHT_TIME_OPTIONS.map((time) => (
-                              <option key={time} value={time}>
-                                {time}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <TimePickerDropdown
+                          id="late-night-from"
+                          value={lateNightStartTime}
+                          onChange={(val) => {
+                            setLateNightStartTime(val);
+                            if (fieldErrors.lateNightHours) setFieldErrors((p) => ({ ...p, lateNightHours: "" }));
+                          }}
+                          placement="top"
+                        />
                       </div>
 
                       <div>
@@ -1554,24 +1578,15 @@ export default function NewListingWizardPage() {
                         >
                           To
                         </label>
-                        <div className="relative">
-                          <Clock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                          <select
-                            id="late-night-to"
-                            value={lateNightEndTime}
-                            onChange={(e) => {
-                              setLateNightEndTime(e.target.value);
-                              if (fieldErrors.lateNightHours) setFieldErrors((p) => ({ ...p, lateNightHours: "" }));
-                            }}
-                            className="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer"
-                          >
-                            {LATE_NIGHT_TIME_OPTIONS.map((time) => (
-                              <option key={time} value={time}>
-                                {time}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
+                        <TimePickerDropdown
+                          id="late-night-to"
+                          value={lateNightEndTime}
+                          onChange={(val) => {
+                            setLateNightEndTime(val);
+                            if (fieldErrors.lateNightHours) setFieldErrors((p) => ({ ...p, lateNightHours: "" }));
+                          }}
+                          placement="top"
+                        />
                       </div>
                     </div>
 
@@ -1588,13 +1603,19 @@ export default function NewListingWizardPage() {
                   <input
                     type="checkbox"
                     checked={lateNightDining}
-                    onChange={(e) => setLateNightDining(e.target.checked)}
+                    onChange={(e) => {
+                      setLateNightDining(e.target.checked);
+                      if (!e.target.checked) {
+                        setLateNightTakeaway(false);
+                        setLateNightDelivery(false);
+                      }
+                    }}
                     className="mt-0.5 w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
                   />
                   <div className="space-y-0.5">
                     <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
                       <Utensils size={15} className="text-purple-500" />
-                      <span>Late-Night Dining Available</span>
+                      <span>Late Night Dining Available</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
                       Customers can dine inside the shop during late-night hours.
@@ -1602,43 +1623,48 @@ export default function NewListingWizardPage() {
                   </div>
                 </label>
 
-                {/* 6. Late-Night Takeaway */}
-                <label className="flex items-start space-x-2.5 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={lateNightTakeaway}
-                    onChange={(e) => setLateNightTakeaway(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
-                  />
-                  <div className="space-y-0.5">
-                    <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                      <ShoppingBag size={15} className="text-emerald-500" />
-                      <span>Late-Night Takeaway Available</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Customers can collect takeaway orders during late-night hours.
-                    </p>
-                  </div>
-                </label>
+                {/* 6 & 7. Conditional Late-Night Takeaway & Delivery (displayed only when Late Night Dining is selected) */}
+                {lateNightDining && (
+                  <div className="pl-4 sm:pl-6 space-y-3 border-l-2 border-primary/30 ml-2 animate-in fade-in duration-200">
+                    {/* Late-Night Takeaway */}
+                    <label className="flex items-start space-x-2.5 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={lateNightTakeaway}
+                        onChange={(e) => setLateNightTakeaway(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                          <ShoppingBag size={15} className="text-emerald-500" />
+                          <span>Late Night Takeaway Available</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Customers can collect takeaway orders during late-night hours.
+                        </p>
+                      </div>
+                    </label>
 
-                {/* 7. Late-Night Delivery */}
-                <label className="flex items-start space-x-2.5 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={lateNightDelivery}
-                    onChange={(e) => setLateNightDelivery(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
-                  />
-                  <div className="space-y-0.5">
-                    <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-                      <Truck size={15} className="text-blue-500" />
-                      <span>Late-Night Food Delivery Available</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Customers can order food delivered during late-night hours.
-                    </p>
+                    {/* Late-Night Delivery */}
+                    <label className="flex items-start space-x-2.5 p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={lateNightDelivery}
+                        onChange={(e) => setLateNightDelivery(e.target.checked)}
+                        className="mt-0.5 w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
+                      />
+                      <div className="space-y-0.5">
+                        <div className="flex items-center space-x-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+                          <Truck size={15} className="text-blue-500" />
+                          <span>Late Night Food Delivery Available</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Customers can order food delivered during late-night hours.
+                        </p>
+                      </div>
+                    </label>
                   </div>
-                </label>
+                )}
               </div>
 
               {/* 8. Terms & Conditions Consent (Plain text, no hyperlink) */}
@@ -1681,7 +1707,7 @@ export default function NewListingWizardPage() {
               <div className="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 gap-3">
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(2)}
+                  onClick={() => goToStep(2)}
                   disabled={isSubmitting}
                   className="px-6 py-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm hover:bg-slate-100 dark:hover:bg-slate-800 transition flex items-center space-x-1.5 cursor-pointer disabled:opacity-50"
                 >
@@ -1723,12 +1749,12 @@ export default function NewListingWizardPage() {
             <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
               <CheckCircle2 size={36} />
             </div>
-            <div className="space-y-1">
+            <div className="space-y-2">
               <h3 className="text-xl font-black text-slate-900 dark:text-white">
                 Listing submitted successfully!
               </h3>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                Your shop has been submitted and is waiting for review.
+              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
+                ✅ <span className="text-primary font-bold">{name.trim() || "Your shop"}</span> has been submitted and is waiting for admin review.
               </p>
             </div>
             <div className="pt-2">

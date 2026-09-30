@@ -25,22 +25,36 @@ export interface FoodSpotLike {
 }
 
 /**
- * Parses time strings like "9:00 AM", "10:30 PM", "6 PM", "2 AM" into minutes from midnight (0 to 1439).
+ * Parses time strings like "9:00 AM", "10:30 PM", "6 PM", "2 AM" or 24h "09:00", "22:30" into minutes from midnight (0 to 1439).
  */
 export function parseTimeToMinutes(timeStr: string): number | null {
   if (!timeStr) return null;
   const clean = timeStr.trim().toLowerCase();
-  const match = clean.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
-  if (!match) return null;
 
-  let hours = parseInt(match[1], 10);
-  const minutes = match[2] ? parseInt(match[2], 10) : 0;
-  const period = match[3].toLowerCase();
+  // 1. 12-hour format with AM/PM (e.g. "9:00 AM", "10:30 PM", "6 PM")
+  const match12 = clean.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = match12[2] ? parseInt(match12[2], 10) : 0;
+    const period = match12[3].toLowerCase();
 
-  if (period === "pm" && hours < 12) hours += 12;
-  if (period === "am" && hours === 12) hours = 0;
+    if (period === "pm" && hours < 12) hours += 12;
+    if (period === "am" && hours === 12) hours = 0;
 
-  return hours * 60 + minutes;
+    return hours * 60 + minutes;
+  }
+
+  // 2. 24-hour format (e.g. "09:00", "22:30", "14:00")
+  const match24 = clean.match(/^(\d{1,2}):(\d{2})$/);
+  if (match24) {
+    const hours = parseInt(match24[1], 10);
+    const minutes = parseInt(match24[2], 10);
+    if (hours >= 0 && hours < 24 && minutes >= 0 && minutes < 60) {
+      return hours * 60 + minutes;
+    }
+  }
+
+  return null;
 }
 
 /**

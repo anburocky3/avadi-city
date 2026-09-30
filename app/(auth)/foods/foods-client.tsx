@@ -18,7 +18,6 @@ import {
   MessageSquare,
   Sparkles,
   Send,
-  Edit3,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,6 +32,7 @@ import {
 } from "@/components/shared-components";
 import { useTranslations } from "next-intl";
 import { isShopOpenNow, getSearchMatchScore } from "@/lib/food-discovery";
+import { wards as allWardsData } from "@/data/wards";
 
 export interface MenuItem {
   name: string;
@@ -63,6 +63,7 @@ export interface FoodSpot {
   status?: string;
   menu?: MenuItem[];
   popularItems?: string[];
+  cuisines?: string;
 }
 
 export interface ReviewItem {
@@ -173,9 +174,6 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   // Data & Modal States
   const [selectedSpot, setSelectedSpot] = useState<FoodSpot | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [simulatedOrderMessage, setSimulatedOrderMessage] = useState<
-    string | null
-  >(null);
   const [dynamicSpots, setDynamicSpots] = useState<FoodSpot[]>([]);
 
   // Feature 2: Review Statistics Map: shopId -> { rating, count }
@@ -196,7 +194,6 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   const [spotReviews, setSpotReviews] = useState<ReviewItem[]>([]);
   const [userExistingReview, setUserExistingReview] =
     useState<ReviewItem | null>(null);
-  const [isEditingReview, setIsEditingReview] = useState<boolean>(false);
   const [inputRating, setInputRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [inputReviewText, setInputReviewText] = useState<string>("");
@@ -237,6 +234,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
             category: item.category,
             status: item.status,
             popularItems: item.popularItems || [],
+            cuisines: item.cuisines || null,
           }));
           setDynamicSpots(mapped);
         }
@@ -434,58 +432,74 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
     recordRecentlyViewed(spot);
   };
 
+  // Helper to get realistic local area and street name for display
+  const getSpotDisplayLocation = useCallback((spot: FoodSpot) => {
+    if (spot.address && spot.address.trim()) {
+      const cleaned = spot.address.replace(/^,\s*/, "").trim();
+      if (
+        cleaned &&
+        !cleaned.toLowerCase().match(/^ward\s+\d+,\s*avadi$/i) &&
+        !cleaned.toLowerCase().match(/^ward\s+\d+$/i)
+      ) {
+        return cleaned;
+      }
+    }
+
+    const matchedWard = allWardsData.find((w) => w.id === spot.ward);
+    if (matchedWard?.name) {
+      return `${matchedWard.name}, Avadi`;
+    }
+
+    return `Ward ${spot.ward}, Avadi`;
+  }, []);
+
+  // Fetch reviews for a specific spot
+  const fetchReviewsForSpot = useCallback(async (spotId: string | number) => {
+    setReviewsLoading(true);
+    try {
+      const res = await fetch(`/api/foods/reviews?shopId=${spotId}`, {
+        credentials: "include",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          setSpotReviews(json.data.reviews || []);
+          setUserExistingReview(json.data.userReview || null);
+          if (json.data.userReview) {
+            setInputRating(json.data.userReview.rating);
+            setInputReviewText(json.data.userReview.reviewText || "");
+          } else {
+            setInputRating(5);
+            setInputReviewText("");
+          }
+
+          if (json.data.stats) {
+            setReviewStatsMap((prev) => ({
+              ...prev,
+              [String(spotId)]: json.data.stats,
+            }));
+          }
+        }
+      }
+    } catch {
+      // Non-blocking
+    } finally {
+      setReviewsLoading(false);
+    }
+  }, []);
+
   // Fetch reviews when modal opens
   useEffect(() => {
     if (!selectedSpot) {
       setSpotReviews([]);
       setUserExistingReview(null);
-      setIsEditingReview(false);
       return;
     }
 
-    const fetchReviewsForSpot = async () => {
-      setReviewsLoading(true);
-      try {
-        const res = await fetch(
-          `/api/foods/reviews?shopId=${selectedSpot.id}`,
-          {
-            credentials: "include",
-          },
-        );
-        if (res.ok) {
-          const json = await res.json();
-          if (json.success && json.data) {
-            setSpotReviews(json.data.reviews || []);
-            setUserExistingReview(json.data.userReview || null);
-            if (json.data.userReview) {
-              setInputRating(json.data.userReview.rating);
-              setInputReviewText(json.data.userReview.reviewText || "");
-              setIsEditingReview(false);
-            } else {
-              setInputRating(5);
-              setInputReviewText("");
-              setIsEditingReview(false);
-            }
+    fetchReviewsForSpot(selectedSpot.id);
+  }, [selectedSpot, fetchReviewsForSpot]);
 
-            if (json.data.stats) {
-              setReviewStatsMap((prev) => ({
-                ...prev,
-                [String(selectedSpot.id)]: json.data.stats,
-              }));
-            }
-          }
-        }
-      } catch {
-        // Non-blocking
-      } finally {
-        setReviewsLoading(false);
-      }
-    };
-
-    fetchReviewsForSpot();
-  }, [selectedSpot]);
-
-  // Submit or Edit Review
+  // Submit Review (Read-only after submission)
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedSpot) return;
@@ -529,7 +543,6 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
           if (refreshJson.success && refreshJson.data) {
             setSpotReviews(refreshJson.data.reviews || []);
             setUserExistingReview(refreshJson.data.userReview || null);
-            setIsEditingReview(false);
 
             if (refreshJson.data.stats) {
               setReviewStatsMap((prev) => ({
@@ -661,27 +674,6 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   const nearbySpots = useMemo(() => {
     return allSpots.filter((spot) => spot.ward === activeWard.id);
   }, [activeWard.id, allSpots]);
-
-  const simulateWhatsAppOrder = (spot: FoodSpot | null, itemName?: string) => {
-    if (!spot) return;
-    const text = `Hi, I saw your listing for "${spot.name}" on the AVADI CITY App. I would like to order: ${
-      itemName || "items from your menu"
-    }. Please let me know availability!`;
-    const encoded = encodeURIComponent(text);
-    const phoneNum = spot.phone
-      ? spot.phone.replace(/[^0-9]/g, "")
-      : "919876543210";
-    const link = `https://wa.me/${phoneNum}?text=${encoded}`;
-
-    setSimulatedOrderMessage(
-      `Redirecting to WhatsApp to chat with ${spot.name}...`,
-    );
-
-    setTimeout(() => {
-      window.open(link, "_blank");
-      setSimulatedOrderMessage(null);
-    }, 1500);
-  };
 
   const renderDietaryBadge = (spot: FoodSpot) => {
     if (spot.foodType === "Veg" || spot.isVeg === true) {
@@ -1220,9 +1212,25 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                           <span>{spot.timing || "Open Today"}</span>
                         </p>
 
+                        {/* CUISINES DISPLAY (Requirement 4) */}
+                        {spot.cuisines && (
+                          <div className="pt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 overflow-hidden">
+                            <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">
+                              Cuisines:
+                            </span>
+                            <span className="truncate text-orange-600 dark:text-orange-400 font-semibold">
+                              {spot.cuisines
+                                .split(",")
+                                .map((c) => c.trim())
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          </div>
+                        )}
+
                         {/* Popular Items preview if present */}
                         {spot.popularItems && spot.popularItems.length > 0 && (
-                          <div className="pt-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 overflow-hidden">
+                          <div className="pt-0.5 flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 overflow-hidden">
                             <span className="font-bold text-slate-700 dark:text-slate-300 shrink-0">
                               Popular:
                             </span>
@@ -1235,13 +1243,16 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
 
                       {/* Footer: Address & Action */}
                       <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 dark:border-slate-800 gap-2">
-                        <span className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-[50%] flex items-center">
+                        <span className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-[55%] flex items-center">
                           <MapPin
                             size={12}
                             className="mr-1 text-slate-400 shrink-0"
                           />
-                          <span className="truncate">
-                            {spot.address || `Ward ${spot.ward}, Avadi`}
+                          <span
+                            className="truncate"
+                            title={getSpotDisplayLocation(spot)}
+                          >
+                            {getSpotDisplayLocation(spot)}
                           </span>
                         </span>
 
@@ -1259,7 +1270,13 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                           <button
                             onClick={(e: React.MouseEvent) => {
                               e.stopPropagation();
-                              simulateWhatsAppOrder(spot);
+                              if (spot.phone) {
+                                window.location.href = `tel:${spot.phone}`;
+                              } else {
+                                toast.info(
+                                  "Phone number not provided for this eatery.",
+                                );
+                              }
                             }}
                             className="px-3.5 py-1.5 bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs rounded-full shadow-xs transition flex items-center space-x-1.5 cursor-pointer hover:scale-105 active:scale-95"
                           >
@@ -1372,16 +1389,8 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
               </div>
             </div>
 
-            {/* Title & Reviews Summary */}
-            <div className="flex items-center justify-between pt-1">
-              <div>
-                <Badge
-                  variant="primary"
-                  className="uppercase font-black text-xs"
-                >
-                  Ward {selectedSpot.ward} Local Kitchen
-                </Badge>
-              </div>
+            {/* Reviews Rating Summary */}
+            <div className="flex items-center justify-end pt-1">
               <div>{renderRatingSummary(selectedSpot)}</div>
             </div>
 
@@ -1396,6 +1405,20 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
               </span>
               <span className="font-black font-mono text-indigo-700 dark:text-indigo-300">
                 {selectedSpot.timing || "6:00 PM – 11:00 PM"}
+              </span>
+            </div>
+
+            {/* Location / Area Info Box */}
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300">
+              <span className="flex items-center">
+                <MapPin size={14} className="mr-1.5 text-primary shrink-0" />
+                <span>Location:</span>
+              </span>
+              <span
+                className="font-semibold text-slate-900 dark:text-white truncate max-w-[65%] text-right"
+                title={getSpotDisplayLocation(selectedSpot)}
+              >
+                {getSpotDisplayLocation(selectedSpot)}
               </span>
             </div>
 
@@ -1435,9 +1458,6 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
               <div className="space-y-2">
                 <h4 className="text-[11px] font-black tracking-wider text-slate-900 dark:text-white uppercase flex items-center justify-between">
                   <span>Menu &amp; Prices</span>
-                  <span className="text-[10px] text-teal-600 dark:text-teal-400 font-bold">
-                    Order Direct
-                  </span>
                 </h4>
 
                 <div className="bg-slate-50 dark:bg-slate-950 border-2 border-slate-200 dark:border-slate-800 rounded-2xl divide-y divide-slate-200 dark:divide-slate-800 overflow-hidden">
@@ -1463,14 +1483,6 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                         <span className="font-black text-slate-900 dark:text-white text-sm">
                           ₹{item.price}
                         </span>
-                        <button
-                          onClick={() =>
-                            simulateWhatsAppOrder(selectedSpot, item.name)
-                          }
-                          className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black transition cursor-pointer shadow-xs"
-                        >
-                          Order
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -1490,7 +1502,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                 <div>{renderRatingSummary(selectedSpot)}</div>
               </div>
 
-              {/* Review Submission Form / User Existing Review */}
+              {/* Review Submission Form / Edit Mode */}
               {!isAuthenticated ? (
                 <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
                   <span className="text-slate-600 dark:text-slate-400 font-medium">
@@ -1498,68 +1510,19 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                   </span>
                   <button
                     onClick={() => router.push(`/login?redirect=/foods`)}
-                    className="px-3 py-1.5 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition"
+                    className="px-3 py-1.5 bg-primary text-white rounded-xl font-bold hover:bg-primary/90 transition cursor-pointer"
                   >
                     Sign In
                   </button>
                 </div>
-              ) : userExistingReview && !isEditingReview ? (
-                <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black text-amber-900 dark:text-amber-300">
-                      Your Review
-                    </span>
-                    <button
-                      onClick={() => setIsEditingReview(true)}
-                      className="text-xs font-bold text-primary hover:underline flex items-center space-x-1 cursor-pointer"
-                    >
-                      <Edit3 size={12} />
-                      <span>Edit Review</span>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center space-x-1 text-amber-500">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        size={16}
-                        className={
-                          star <= userExistingReview.rating
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-slate-300 dark:text-slate-600"
-                        }
-                      />
-                    ))}
-                  </div>
-
-                  {userExistingReview.reviewText && (
-                    <p className="text-xs text-slate-700 dark:text-slate-300 italic">
-                      &ldquo;{userExistingReview.reviewText}&rdquo;
-                    </p>
-                  )}
-                </div>
-              ) : (
+              ) : !userExistingReview ? (
                 <form
                   onSubmit={handleSubmitReview}
                   className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3"
                 >
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      {userExistingReview
-                        ? "Edit Your Rating"
-                        : "Rate this Shop"}{" "}
-                      *
-                    </label>
-                    {isEditingReview && (
-                      <button
-                        type="button"
-                        onClick={() => setIsEditingReview(false)}
-                        className="text-xs text-slate-400 hover:text-slate-600"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
+                  <label className="text-xs font-bold text-slate-800 dark:text-slate-200 block">
+                    Rate this Shop *
+                  </label>
 
                   {/* Interactive Star Rating */}
                   <div className="flex items-center space-x-1.5">
@@ -1604,17 +1567,13 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                   >
                     <Send size={13} />
                     <span>
-                      {isSubmittingReview
-                        ? "Submitting..."
-                        : userExistingReview
-                          ? "Update Review"
-                          : "Submit Review"}
+                      {isSubmittingReview ? "Submitting..." : "Submit Review"}
                     </span>
                   </button>
                 </form>
-              )}
+              ) : null}
 
-              {/* List of Customer Reviews */}
+              {/* List of Customer Reviews (Preserves review cards & adds Edit/Delete on own card) */}
               <div className="space-y-2.5">
                 {reviewsLoading ? (
                   <div className="p-4 text-center text-xs text-slate-400 animate-pulse">
@@ -1639,6 +1598,9 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                               }
                             />
                           ))}
+                          <span className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1.5">
+                            {rev.rating.toFixed(1)}
+                          </span>
                         </div>
                         <span className="text-[10px] text-slate-400">
                           {new Date(rev.createdAt).toLocaleDateString("en-IN", {
@@ -1655,8 +1617,10 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
                         </p>
                       )}
 
-                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
-                        — {rev.userName} {rev.isOwn && "(You)"}
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                          — {rev.userName} {rev.isOwn && "(You)"}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -1668,19 +1632,15 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
               </div>
             </div>
 
-            {/* Simulated WhatsApp order banner / button */}
-            {simulatedOrderMessage ? (
-              <div className="p-3.5 bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border-2 border-teal-300 dark:border-teal-700 rounded-2xl text-center flex items-center justify-center space-x-2 text-xs font-black animate-pulse">
-                <span>{simulatedOrderMessage}</span>
-              </div>
-            ) : (
-              <button
-                onClick={() => simulateWhatsAppOrder(selectedSpot)}
-                className="w-full py-3.5 bg-linear-to-r from-teal-600 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white rounded-2xl font-black transition text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer"
+            {/* Direct Phone Call Button */}
+            {selectedSpot.phone && (
+              <a
+                href={`tel:${selectedSpot.phone}`}
+                className="w-full py-3.5 bg-orange-600 hover:bg-orange-700 text-white rounded-2xl font-black transition text-xs flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer"
               >
                 <Phone size={16} />
-                <span>Order via WhatsApp Direct (No Fee)</span>
-              </button>
+                <span>Call {selectedSpot.name}</span>
+              </a>
             )}
           </div>
         </Modal>
