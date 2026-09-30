@@ -37,20 +37,9 @@ import {
   EggFreeSymbol,
 } from "@/components/food-icons";
 import { TimePickerDropdown } from "@/components/ui/TimePickerDropdown";
-
-import dynamic from "next/dynamic";
-
-const MapLocationPicker = dynamic(
-  () => import("@/components/ui/MapLocationPicker"),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-64 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse flex items-center justify-center text-xs text-slate-400">
-        Loading Avadi Map...
-      </div>
-    ),
-  }
-);
+import "leaflet/dist/leaflet.css";
+import MapLocationPicker from "@/components/ui/MapLocationPicker";
+import { ALL_AVADI_STREETS, StreetItem } from "@/lib/wards";
 
 const DIETARY_OPTIONS = [
   "Vegetarian",
@@ -74,14 +63,54 @@ const CUISINE_OPTIONS = [
 
 // 12-Hour AM/PM Time Options for user-facing selection (no railway 24h timetable format)
 const TIME_OPTIONS_12H = [
-  "5:00 AM", "5:30 AM", "6:00 AM", "6:30 AM", "7:00 AM", "7:30 AM",
-  "8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM",
-  "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM", "1:30 PM",
-  "2:00 PM", "2:30 PM", "3:00 PM", "3:30 PM", "4:00 PM", "4:30 PM",
-  "5:00 PM", "5:30 PM", "6:00 PM", "6:30 PM", "7:00 PM", "7:30 PM",
-  "8:00 PM", "8:30 PM", "9:00 PM", "9:30 PM", "10:00 PM", "10:30 PM",
-  "11:00 PM", "11:30 PM", "12:00 AM", "12:30 AM", "1:00 AM", "1:30 AM",
-  "2:00 AM", "2:30 AM", "3:00 AM", "3:30 AM", "4:00 AM", "4:30 AM"
+  "5:00 AM",
+  "5:30 AM",
+  "6:00 AM",
+  "6:30 AM",
+  "7:00 AM",
+  "7:30 AM",
+  "8:00 AM",
+  "8:30 AM",
+  "9:00 AM",
+  "9:30 AM",
+  "10:00 AM",
+  "10:30 AM",
+  "11:00 AM",
+  "11:30 AM",
+  "12:00 PM",
+  "12:30 PM",
+  "1:00 PM",
+  "1:30 PM",
+  "2:00 PM",
+  "2:30 PM",
+  "3:00 PM",
+  "3:30 PM",
+  "4:00 PM",
+  "4:30 PM",
+  "5:00 PM",
+  "5:30 PM",
+  "6:00 PM",
+  "6:30 PM",
+  "7:00 PM",
+  "7:30 PM",
+  "8:00 PM",
+  "8:30 PM",
+  "9:00 PM",
+  "9:30 PM",
+  "10:00 PM",
+  "10:30 PM",
+  "11:00 PM",
+  "11:30 PM",
+  "12:00 AM",
+  "12:30 AM",
+  "1:00 AM",
+  "1:30 AM",
+  "2:00 AM",
+  "2:30 AM",
+  "3:00 AM",
+  "3:30 AM",
+  "4:00 AM",
+  "4:30 AM",
 ];
 
 // Late-Night serving range: 10:00 PM → 6:00 AM with 12-hour AM/PM format
@@ -102,7 +131,7 @@ const LATE_NIGHT_TIME_OPTIONS_12H = [
   "4:30 AM",
   "5:00 AM",
   "5:30 AM",
-  "6:00 AM"
+  "6:00 AM",
 ];
 
 interface AvadiStreetRecord {
@@ -143,7 +172,7 @@ const AVADI_WARD_COORDINATES: Record<number, { lat: number; lng: number }> = {
   26: { lat: 13.1342, lng: 80.1365 },
   27: { lat: 13.1305, lng: 80.1412 },
   28: { lat: 13.1268, lng: 80.1458 },
-  29: { lat: 13.1197, lng: 80.1500 },
+  29: { lat: 13.1197, lng: 80.15 },
   30: { lat: 13.1252, lng: 80.1548 },
   31: { lat: 13.1215, lng: 80.1605 },
   32: { lat: 13.1145, lng: 80.1545 },
@@ -181,43 +210,6 @@ interface AvadiWardItem {
   streets?: Array<{ value?: string; text?: string } | string>;
 }
 
-// Authoritative Street & Area dataset derived exclusively from @avadi-wards.json
-const AVADI_STREETS_CATALOG: AvadiStreetRecord[] = (() => {
-  const list: AvadiStreetRecord[] = [];
-  const rawWards = (avadiWardsData as { wards?: AvadiWardItem[] })?.wards;
-  if (Array.isArray(rawWards)) {
-    for (const w of rawWards) {
-      const wardNo = Number(w.ward_no);
-      if (!wardNo || wardNo < 1 || wardNo > 48 || !Array.isArray(w.streets)) continue;
-      const wardCode = String(w.ward_code || `WD-${String(wardNo).padStart(2, "0")}`);
-      const baseCoord = AVADI_WARD_COORDINATES[wardNo] || { lat: 13.1169, lng: 80.0972 };
-
-      for (let i = 0; i < w.streets.length; i++) {
-        const item = w.streets[i];
-        const rawName = typeof item === "string" ? item : item?.text;
-        const val = typeof item === "object" && item?.value ? String(item.value) : String(i);
-        const clean = rawName?.trim();
-        if (!clean) continue;
-
-        // Micro-offset distributes individual streets naturally across the ward's authentic geography
-        const charSum = val.split("").reduce((sum: number, c: string) => sum + c.charCodeAt(0), 0) + i;
-        const latOffset = ((charSum % 11) - 5) * 0.00025;
-        const lngOffset = ((Math.floor(charSum / 11) % 11) - 5) * 0.00025;
-
-        list.push({
-          id: `w${wardNo}-${val}-${i}`,
-          name: toTitleCase(clean),
-          wardNo,
-          wardCode,
-          lat: Number((baseCoord.lat + latOffset).toFixed(5)),
-          lng: Number((baseCoord.lng + lngOffset).toFixed(5)),
-        });
-      }
-    }
-  }
-  return list;
-})();
-
 export default function NewListingWizardPage() {
   const router = useRouter();
   const toast = useToast();
@@ -237,7 +229,10 @@ export default function NewListingWizardPage() {
     setCurrentStep(step);
     setTimeout(() => {
       if (wizardTopRef.current) {
-        wizardTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        wizardTopRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
       window.scrollTo({ top: 0, behavior: "smooth" });
     }, 50);
@@ -307,10 +302,18 @@ export default function NewListingWizardPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
+  const [streetQuery, setStreetQuery] = useState<string>("");
+  const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
+  const [selectedStreetItem, setSelectedStreetItem] =
+    useState<StreetItem | null>(null);
+  const [showManualFallback, setShowManualFallback] = useState<boolean>(false);
+
   // Sync ward if activeWard loads later and user hasn't selected another
   useEffect(() => {
     if (activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48) {
-      setWard((currentWard) => (currentWard === 1 ? activeWard.id : currentWard));
+      setWard((currentWard) =>
+        currentWard === 1 ? activeWard.id : currentWard,
+      );
     }
   }, [activeWard?.id]);
 
@@ -340,32 +343,63 @@ export default function NewListingWizardPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Filter Location Suggestions solely and strictly from @avadi-wards.json
-  const locationSuggestions = useMemo((): AvadiStreetRecord[] => {
-    const q = streetArea.trim().toLowerCase();
-    if (!q || q.length < 2) return [];
+  const handleStreetSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const searchTerm = e.target.value;
+    setStreetQuery(searchTerm);
+    setSelectedStreetItem(null);
 
-    const prefixMatches: AvadiStreetRecord[] = [];
-    const otherMatches: AvadiStreetRecord[] = [];
-    const seen = new Set<string>();
-
-    for (const street of AVADI_STREETS_CATALOG) {
-      const lower = street.name.toLowerCase();
-      if (seen.has(lower)) continue;
-
-      if (lower.startsWith(q)) {
-        seen.add(lower);
-        prefixMatches.push(street);
-      } else if (lower.includes(q)) {
-        seen.add(lower);
-        otherMatches.push(street);
-      }
-
-      if (prefixMatches.length + otherMatches.length >= 25) break;
+    if (!searchTerm.trim()) {
+      setStreetResults([]);
+      return;
     }
 
-    return [...prefixMatches, ...otherMatches].slice(0, 10);
-  }, [streetArea]);
+    // 1. Search in explicitly provided streets list
+    const directMatches = ALL_AVADI_STREETS.filter((item) =>
+      item.streetName.toLowerCase().includes(searchTerm),
+    );
+
+    if (directMatches.length > 0) {
+      setStreetResults(directMatches.slice(0, 15));
+      return;
+    }
+
+    // setStreetResults(wardMatches.slice(0, 15));
+  };
+
+  const handleSelectStreetItem = (item: StreetItem) => {
+    setSelectedStreetItem(item);
+    setStreetQuery(item.streetName);
+    setStreetResults([]);
+    setWard(item.wardNo);
+    setStreetArea(item.streetName);
+  };
+
+  // Filter Location Suggestions solely and strictly from @avadi-wards.json
+  // const locationSuggestions = useMemo((): AvadiStreetRecord[] => {
+  //   const q = streetArea.trim().toLowerCase();
+  //   if (!q || q.length < 2) return [];
+
+  //   const prefixMatches: AvadiStreetRecord[] = [];
+  //   const otherMatches: AvadiStreetRecord[] = [];
+  //   const seen = new Set<string>();
+
+  //   for (const street of AVADI_STREETS_CATALOG) {
+  //     const lower = street.name.toLowerCase();
+  //     if (seen.has(lower)) continue;
+
+  //     if (lower.startsWith(q)) {
+  //       seen.add(lower);
+  //       prefixMatches.push(street);
+  //     } else if (lower.includes(q)) {
+  //       seen.add(lower);
+  //       otherMatches.push(street);
+  //     }
+
+  //     if (prefixMatches.length + otherMatches.length >= 25) break;
+  //   }
+
+  //   return [...prefixMatches, ...otherMatches].slice(0, 10);
+  // }, [streetArea]);
 
   const handleSelectLocation = (suggestion: AvadiStreetRecord) => {
     setStreetArea(suggestion.name);
@@ -478,7 +512,9 @@ export default function NewListingWizardPage() {
       return;
     }
 
-    if (popularItems.some((item) => item.toLowerCase() === trimmed.toLowerCase())) {
+    if (
+      popularItems.some((item) => item.toLowerCase() === trimmed.toLowerCase())
+    ) {
       setPopularItemError("This item has already been added.");
       return;
     }
@@ -499,7 +535,8 @@ export default function NewListingWizardPage() {
   };
 
   // Step 1 Validation & Ready State
-  const isStep1Ready = selectedDietary.length > 0 && selectedCuisines.length > 0;
+  const isStep1Ready =
+    selectedDietary.length > 0 && selectedCuisines.length > 0;
 
   const validateStep1 = (): boolean => {
     const errors: Record<string, string> = {};
@@ -520,7 +557,9 @@ export default function NewListingWizardPage() {
     if (validateStep1()) {
       goToStep(2);
     } else {
-      toast.error("Please select at least one Dietary option and at least one Cuisine.");
+      toast.error(
+        "Please select at least one Dietary option and at least one Cuisine.",
+      );
     }
   };
 
@@ -573,12 +612,22 @@ export default function NewListingWizardPage() {
       errors.closingTime = "Closing Time is required.";
     }
 
-    if (socialLink.trim() && !socialLink.startsWith("http://") && !socialLink.startsWith("https://")) {
-      errors.socialLink = "Please enter a valid URL starting with http:// or https://";
+    if (
+      socialLink.trim() &&
+      !socialLink.startsWith("http://") &&
+      !socialLink.startsWith("https://")
+    ) {
+      errors.socialLink =
+        "Please enter a valid URL starting with http:// or https://";
     }
 
-    if (website.trim() && !website.startsWith("http://") && !website.startsWith("https://")) {
-      errors.website = "Please enter a valid URL starting with http:// or https://";
+    if (
+      website.trim() &&
+      !website.startsWith("http://") &&
+      !website.startsWith("https://")
+    ) {
+      errors.website =
+        "Please enter a valid URL starting with http:// or https://";
     }
 
     setFieldErrors(errors);
@@ -650,7 +699,9 @@ export default function NewListingWizardPage() {
       formData.append("phone", phone.trim());
       if (email.trim()) formData.append("email", email.trim());
 
-      const fullAddress = [shopAddress.trim(), streetArea.trim()].filter(Boolean).join(", ");
+      const fullAddress = [shopAddress.trim(), streetArea.trim()]
+        .filter(Boolean)
+        .join(", ");
       formData.append("address", fullAddress);
       formData.append("areaLandmark", streetArea.trim());
       formData.append("ward", ward.toString());
@@ -678,9 +729,18 @@ export default function NewListingWizardPage() {
         formData.append("lateNightStartTime", lateNightStartTime);
         formData.append("lateNightEndTime", lateNightEndTime);
       }
-      formData.append("lateNightDining", (isLateNight && lateNightDining) ? "true" : "false");
-      formData.append("lateNightTakeaway", (isLateNight && lateNightDining && lateNightTakeaway) ? "true" : "false");
-      formData.append("lateNightDelivery", (isLateNight && lateNightDining && lateNightDelivery) ? "true" : "false");
+      formData.append(
+        "lateNightDining",
+        isLateNight && lateNightDining ? "true" : "false",
+      );
+      formData.append(
+        "lateNightTakeaway",
+        isLateNight && lateNightDining && lateNightTakeaway ? "true" : "false",
+      );
+      formData.append(
+        "lateNightDelivery",
+        isLateNight && lateNightDining && lateNightDelivery ? "true" : "false",
+      );
       formData.append("popularItems", JSON.stringify(popularItems));
       formData.append("homeDelivery", homeDelivery ? "true" : "false");
       formData.append("takeaway", takeaway ? "true" : "false");
@@ -701,7 +761,9 @@ export default function NewListingWizardPage() {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        toast.error(result.message || "Unable to submit your listing. Please try again.");
+        toast.error(
+          result.message || "Unable to submit your listing. Please try again.",
+        );
         if (result.errors) {
           const mappedErrors: Record<string, string> = {};
           for (const key of Object.keys(result.errors)) {
@@ -717,7 +779,9 @@ export default function NewListingWizardPage() {
       // Show success modal popup
       setShowSuccessModal(true);
     } catch {
-      toast.error("Unable to submit your listing. Please check your network and try again.");
+      toast.error(
+        "Unable to submit your listing. Please check your network and try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -754,15 +818,15 @@ export default function NewListingWizardPage() {
                     stepNum < currentStep
                       ? "bg-emerald-500 shadow-xs shadow-emerald-500/30 cursor-pointer hover:opacity-80"
                       : stepNum === currentStep
-                      ? "bg-primary shadow-xs shadow-primary/30"
-                      : "bg-slate-100 dark:bg-slate-800"
+                        ? "bg-primary shadow-xs shadow-primary/30"
+                        : "bg-slate-100 dark:bg-slate-800"
                   }`}
                   title={
                     stepNum < currentStep
                       ? `Step ${stepNum} (Completed - Click to view)`
                       : stepNum === currentStep
-                      ? `Step ${stepNum} (Current)`
-                      : `Step ${stepNum}`
+                        ? `Step ${stepNum} (Current)`
+                        : `Step ${stepNum}`
                   }
                 />
               ))}
@@ -792,7 +856,6 @@ export default function NewListingWizardPage() {
           {/* ======================================================== */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-in fade-in duration-200">
-
               {/* Dietary Options (Selectable button / card / chip, NO checkboxes, NO ticks) */}
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
@@ -822,7 +885,9 @@ export default function NewListingWizardPage() {
                         {item === "Gluten-Free" && <GlutenFreeSymbol />}
                         {item === "Dairy-Free" && <DairyFreeSymbol />}
                         {item === "Egg-Free" && <EggFreeSymbol />}
-                        <span className="text-xs sm:text-sm font-semibold">{item}</span>
+                        <span className="text-xs sm:text-sm font-semibold">
+                          {item}
+                        </span>
                       </button>
                     );
                   })}
@@ -895,7 +960,6 @@ export default function NewListingWizardPage() {
           {/* ======================================================== */}
           {currentStep === 2 && (
             <div className="space-y-6 animate-in fade-in duration-200">
-
               {/* Shop Name */}
               <div>
                 <label
@@ -910,7 +974,8 @@ export default function NewListingWizardPage() {
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
-                    if (fieldErrors.name) setFieldErrors((prev) => ({ ...prev, name: "" }));
+                    if (fieldErrors.name)
+                      setFieldErrors((prev) => ({ ...prev, name: "" }));
                   }}
                   placeholder="e.g. Sri Krishna Bhavan, Aunty's Kitchen"
                   className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -940,10 +1005,11 @@ export default function NewListingWizardPage() {
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value);
-                    if (fieldErrors.description) setFieldErrors((prev) => ({ ...prev, description: "" }));
+                    if (fieldErrors.description)
+                      setFieldErrors((prev) => ({ ...prev, description: "" }));
                   }}
                   placeholder="Tell customers about your shop, food, specialties, and dining experience..."
-                  className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary resize-y min-h-[100px] ${
+                  className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary resize-y min-h-25 ${
                     fieldErrors.description
                       ? "border-rose-400 focus:ring-rose-400"
                       : "border-slate-200 dark:border-slate-800"
@@ -966,14 +1032,18 @@ export default function NewListingWizardPage() {
                     Phone Number <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
-                    <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <Phone
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                     <input
                       id="shop-phone-input"
                       type="tel"
                       value={phone}
                       onChange={(e) => {
                         setPhone(e.target.value);
-                        if (fieldErrors.phone) setFieldErrors((prev) => ({ ...prev, phone: "" }));
+                        if (fieldErrors.phone)
+                          setFieldErrors((prev) => ({ ...prev, phone: "" }));
                       }}
                       placeholder="e.g. 9876543210"
                       className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -995,17 +1065,24 @@ export default function NewListingWizardPage() {
                     htmlFor="shop-email-input"
                     className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                   >
-                    Email Address <span className="text-xs font-normal text-slate-400">(Optional)</span>
+                    Email Address{" "}
+                    <span className="text-xs font-normal text-slate-400">
+                      (Optional)
+                    </span>
                   </label>
                   <div className="relative">
-                    <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <Mail
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                     <input
                       id="shop-email-input"
                       type="email"
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
-                        if (fieldErrors.email) setFieldErrors((prev) => ({ ...prev, email: "" }));
+                        if (fieldErrors.email)
+                          setFieldErrors((prev) => ({ ...prev, email: "" }));
                       }}
                       placeholder="e.g. contact@mybusiness.com"
                       className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -1035,15 +1112,19 @@ export default function NewListingWizardPage() {
                   <input
                     id="shop-street-input"
                     type="text"
-                    value={streetArea}
-                    onFocus={() => {
-                      if (locationSuggestions.length > 0) setShowLocationSuggestions(true);
-                    }}
-                    onChange={(e) => {
-                      setStreetArea(e.target.value);
-                      setShowLocationSuggestions(true);
-                      if (fieldErrors.streetArea) setFieldErrors((prev) => ({ ...prev, streetArea: "" }));
-                    }}
+                    value={streetQuery}
+                    onChange={handleStreetSearchChange}
+                    // value={streetArea}
+                    // onFocus={() => {
+                    //   if (locationSuggestions.length > 0)
+                    //     setShowLocationSuggestions(true);
+                    // }}
+                    // onChange={(e) => {
+                    //   setStreetArea(e.target.value);
+                    //   setShowLocationSuggestions(true);
+                    //   if (fieldErrors.streetArea)
+                    //     setFieldErrors((prev) => ({ ...prev, streetArea: "" }));
+                    // }}
                     placeholder="Type street or area (e.g. Paruthipattu, Pattabiram, CTH Road)..."
                     className={`w-full pl-4 pr-10 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
                       fieldErrors.streetArea
@@ -1052,49 +1133,60 @@ export default function NewListingWizardPage() {
                     }`}
                     autoComplete="off"
                   />
-                  <Search size={16} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <Search
+                    size={16}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                  />
                 </div>
 
-                {/* Autocomplete Dropdown matching project get-started styling */}
-                {showLocationSuggestions && streetArea.trim().length >= 2 && (
-                  <div className="absolute left-0 right-0 top-full mt-2 bg-[#0c1322] border border-slate-800 rounded-2xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto">
-                    {locationSuggestions.length > 0 ? (
-                      <ul className="divide-y divide-slate-800/80 text-left">
-                        {locationSuggestions.map((item) => (
-                          <li
-                            key={item.id}
-                            onClick={() => handleSelectLocation(item)}
-                            className="p-3.5 hover:bg-slate-800/60 cursor-pointer flex items-start gap-3 transition group"
-                          >
-                            <div className="w-9 h-9 rounded-full bg-amber-500/10 border border-amber-500/25 flex items-center justify-center text-amber-500 shrink-0 mt-0.5 group-hover:bg-amber-500 group-hover:text-white transition shadow-sm">
-                              <MapPin size={16} />
-                            </div>
-                            <div className="flex-1 min-w-0 space-y-1.5">
-                              <p className="text-sm font-semibold text-slate-100 group-hover:text-amber-400 transition-colors truncate">
-                                {item.name}
-                              </p>
-                              <div className="flex items-center">
-                                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-slate-800/90 border border-slate-700/60 text-slate-300 text-[11px] font-bold transition">
-                                  <Building2 size={12} className="text-slate-400 shrink-0" />
-                                  <span>Ward {item.wardNo}</span>
-                                </span>
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="p-4 text-center space-y-1 bg-[#0c1322]">
-                        <p className="text-xs font-bold text-slate-200">
-                          No matching Avadi location found
-                        </p>
-                        <p className="text-[11px] text-slate-400">
-                          Only locations within Avadi Municipal Corporation are permitted.
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                {/* Live Street Search Auto-complete Suggestions */}
+                {streetResults.length > 0 && !selectedStreetItem && (
+                  <ul className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-slate-900 shadow-xl max-h-56 overflow-y-auto text-left">
+                    {streetResults.map((item) => (
+                      <li
+                        key={item.id}
+                        onClick={() => handleSelectStreetItem(item)}
+                        className="p-3 hover:bg-amber-50/70 dark:hover:bg-slate-800/80 cursor-pointer flex items-start gap-3 transition group"
+                      >
+                        <div className="p-2 rounded-xl bg-amber-100/60 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 group-hover:bg-primary group-hover:text-white transition">
+                          <MapPin size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0 space-y-1">
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate capitalize">
+                            {item.streetName.toLocaleLowerCase()}
+                          </p>
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold">
+                            <Building2 size={12} className="shrink-0" />
+                            <span>Ward {item.wardNo}</span>
+                          </span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
+
+                {/* Empty Search Result Fallback */}
+                {streetQuery.trim() &&
+                  streetResults.length === 0 &&
+                  !selectedStreetItem && (
+                    <div className="p-4 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                      <p className="text-xs font-medium text-slate-600 dark:text-slate-400">
+                        No street found matching &quot;{streetQuery}&quot;
+                      </p>
+                      {/* <button
+                                   type="button"
+                                   onClick={() => {
+                                     setShowManualFallback(true);
+                                     setValueWard("streetName", streetQuery, {
+                                       shouldValidate: true,
+                                     });
+                                   }}
+                                   className="text-[11px] text-primary hover:underline font-bold mt-1 inline-block cursor-pointer"
+                                 >
+                                   Pick your ward number manually instead →
+                                 </button> */}
+                    </div>
+                  )}
 
                 {fieldErrors.streetArea && (
                   <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
@@ -1113,9 +1205,8 @@ export default function NewListingWizardPage() {
                   </span>
                 </label>
                 <MapLocationPicker
-                  selectedLat={latitude}
-                  selectedLng={longitude}
-                  selectedAreaName={streetArea ? `${streetArea} (Ward ${ward})` : null}
+                  defaultLat={latitude}
+                  defaultLng={longitude}
                   onLocationSelect={(lat, lng) => {
                     setLatitude(lat);
                     setLongitude(lng);
@@ -1130,7 +1221,10 @@ export default function NewListingWizardPage() {
                 )}
                 {latitude && longitude && (
                   <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    Selected Location: <span className="font-semibold text-slate-700 dark:text-slate-300">{latitude.toFixed(5)}, {longitude.toFixed(5)}</span>
+                    Selected Location:{" "}
+                    <span className="font-semibold text-slate-700 dark:text-slate-300">
+                      {latitude.toFixed(5)}, {longitude.toFixed(5)}
+                    </span>
                   </p>
                 )}
               </div>
@@ -1149,7 +1243,8 @@ export default function NewListingWizardPage() {
                   value={shopAddress}
                   onChange={(e) => {
                     setShopAddress(e.target.value);
-                    if (fieldErrors.shopAddress) setFieldErrors((prev) => ({ ...prev, shopAddress: "" }));
+                    if (fieldErrors.shopAddress)
+                      setFieldErrors((prev) => ({ ...prev, shopAddress: "" }));
                   }}
                   placeholder="e.g. Door No. 12/4, Main Road, Near Bus Stop"
                   className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -1179,7 +1274,8 @@ export default function NewListingWizardPage() {
                     value={openingTime}
                     onChange={(val) => {
                       setOpeningTime(val);
-                      if (fieldErrors.openingTime) setFieldErrors((p) => ({ ...p, openingTime: "" }));
+                      if (fieldErrors.openingTime)
+                        setFieldErrors((p) => ({ ...p, openingTime: "" }));
                     }}
                     hasError={!!fieldErrors.openingTime}
                     placement="top"
@@ -1203,7 +1299,8 @@ export default function NewListingWizardPage() {
                     value={closingTime}
                     onChange={(val) => {
                       setClosingTime(val);
-                      if (fieldErrors.closingTime) setFieldErrors((p) => ({ ...p, closingTime: "" }));
+                      if (fieldErrors.closingTime)
+                        setFieldErrors((p) => ({ ...p, closingTime: "" }));
                     }}
                     hasError={!!fieldErrors.closingTime}
                     placement="top"
@@ -1223,17 +1320,24 @@ export default function NewListingWizardPage() {
                     htmlFor="shop-social-input"
                     className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                   >
-                    Social Media Link <span className="text-xs font-normal text-slate-400">(Optional)</span>
+                    Social Media Link{" "}
+                    <span className="text-xs font-normal text-slate-400">
+                      (Optional)
+                    </span>
                   </label>
                   <div className="relative">
-                    <Share2 size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <Share2
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                     <input
                       id="shop-social-input"
                       type="url"
                       value={socialLink}
                       onChange={(e) => {
                         setSocialLink(e.target.value);
-                        if (fieldErrors.socialLink) setFieldErrors((p) => ({ ...p, socialLink: "" }));
+                        if (fieldErrors.socialLink)
+                          setFieldErrors((p) => ({ ...p, socialLink: "" }));
                       }}
                       placeholder="https://instagram.com/myshop"
                       className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1251,17 +1355,24 @@ export default function NewListingWizardPage() {
                     htmlFor="shop-website-input"
                     className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                   >
-                    Website <span className="text-xs font-normal text-slate-400">(Optional)</span>
+                    Website{" "}
+                    <span className="text-xs font-normal text-slate-400">
+                      (Optional)
+                    </span>
                   </label>
                   <div className="relative">
-                    <Globe size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <Globe
+                      size={16}
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
                     <input
                       id="shop-website-input"
                       type="url"
                       value={website}
                       onChange={(e) => {
                         setWebsite(e.target.value);
-                        if (fieldErrors.website) setFieldErrors((p) => ({ ...p, website: "" }));
+                        if (fieldErrors.website)
+                          setFieldErrors((p) => ({ ...p, website: "" }));
                       }}
                       placeholder="https://mybusiness.in"
                       className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1302,7 +1413,6 @@ export default function NewListingWizardPage() {
           {/* ======================================================== */}
           {currentStep === 3 && (
             <div className="space-y-6 animate-in fade-in duration-200">
-
               {/* Upload Grid: Shop Photo & Menu Card */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {/* 1. Shop Image (MANDATORY) */}
@@ -1489,7 +1599,7 @@ export default function NewListingWizardPage() {
                           key={item}
                           className="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-xl bg-orange-50 dark:bg-slate-800/80 border border-orange-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold group shadow-2xs"
                         >
-                          <span className="truncate max-w-[220px]">{item}</span>
+                          <span className="truncate max-w-55">{item}</span>
                           <button
                             type="button"
                             onClick={() => handleRemovePopularItem(item)}
@@ -1529,7 +1639,10 @@ export default function NewListingWizardPage() {
                         setLateNightDelivery(false);
                       }
                       if (fieldErrors.lateNightHours) {
-                        setFieldErrors((prev) => ({ ...prev, lateNightHours: "" }));
+                        setFieldErrors((prev) => ({
+                          ...prev,
+                          lateNightHours: "",
+                        }));
                       }
                     }}
                     className="w-4 h-4 rounded text-primary border-slate-300 dark:border-slate-700 focus:ring-primary accent-primary"
@@ -1545,10 +1658,12 @@ export default function NewListingWizardPage() {
                   <div className="p-4 rounded-2xl border border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/10 space-y-3 animate-in fade-in">
                     <div>
                       <h4 className="text-xs font-bold text-amber-950 dark:text-amber-300">
-                        Late-Night Service Time <span className="text-rose-500">*</span>
+                        Late-Night Service Time{" "}
+                        <span className="text-rose-500">*</span>
                       </h4>
                       <p className="text-[11px] text-amber-800/80 dark:text-amber-400/80">
-                        Select your late-night operating hours (e.g. 10:00 PM to 2:00 AM). Overnight hours supported.
+                        Select your late-night operating hours (e.g. 10:00 PM to
+                        2:00 AM). Overnight hours supported.
                       </p>
                     </div>
 
@@ -1565,7 +1680,11 @@ export default function NewListingWizardPage() {
                           value={lateNightStartTime}
                           onChange={(val) => {
                             setLateNightStartTime(val);
-                            if (fieldErrors.lateNightHours) setFieldErrors((p) => ({ ...p, lateNightHours: "" }));
+                            if (fieldErrors.lateNightHours)
+                              setFieldErrors((p) => ({
+                                ...p,
+                                lateNightHours: "",
+                              }));
                           }}
                           placement="top"
                         />
@@ -1583,7 +1702,11 @@ export default function NewListingWizardPage() {
                           value={lateNightEndTime}
                           onChange={(val) => {
                             setLateNightEndTime(val);
-                            if (fieldErrors.lateNightHours) setFieldErrors((p) => ({ ...p, lateNightHours: "" }));
+                            if (fieldErrors.lateNightHours)
+                              setFieldErrors((p) => ({
+                                ...p,
+                                lateNightHours: "",
+                              }));
                           }}
                           placement="top"
                         />
@@ -1618,7 +1741,8 @@ export default function NewListingWizardPage() {
                       <span>Late Night Dining Available</span>
                     </div>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Customers can dine inside the shop during late-night hours.
+                      Customers can dine inside the shop during late-night
+                      hours.
                     </p>
                   </div>
                 </label>
@@ -1640,7 +1764,8 @@ export default function NewListingWizardPage() {
                           <span>Late Night Takeaway Available</span>
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Customers can collect takeaway orders during late-night hours.
+                          Customers can collect takeaway orders during
+                          late-night hours.
                         </p>
                       </div>
                     </label>
@@ -1659,7 +1784,8 @@ export default function NewListingWizardPage() {
                           <span>Late Night Food Delivery Available</span>
                         </div>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                          Customers can order food delivered during late-night hours.
+                          Customers can order food delivered during late-night
+                          hours.
                         </p>
                       </div>
                     </label>
@@ -1687,7 +1813,8 @@ export default function NewListingWizardPage() {
                     htmlFor="terms-checkbox"
                     className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed cursor-pointer select-none font-medium"
                   >
-                    I confirm that the information, shop details, images, menu, popular items, and services provided by me are accurate.
+                    I confirm that the information, shop details, images, menu,
+                    popular items, and services provided by me are accurate.
                   </label>
                 </div>
 
@@ -1699,7 +1826,11 @@ export default function NewListingWizardPage() {
 
                 {/* 9. Responsibility Notice */}
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 pl-8 leading-relaxed">
-                  By submitting this listing, you confirm that the information and images provided are accurate. Avadi Connect provides this platform for listing and discovery and is not responsible for the accuracy, quality, pricing, availability, or services offered by the listed business.
+                  By submitting this listing, you confirm that the information
+                  and images provided are accurate. Avadi Connect provides this
+                  platform for listing and discovery and is not responsible for
+                  the accuracy, quality, pricing, availability, or services
+                  offered by the listed business.
                 </p>
               </div>
 
@@ -1754,7 +1885,11 @@ export default function NewListingWizardPage() {
                 Listing submitted successfully!
               </h3>
               <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
-                ✅ <span className="text-primary font-bold">{name.trim() || "Your shop"}</span> has been submitted and is waiting for admin review.
+                ✅{" "}
+                <span className="text-primary font-bold">
+                  {name.trim() || "Your shop"}
+                </span>{" "}
+                has been submitted and is waiting for admin review.
               </p>
             </div>
             <div className="pt-2">

@@ -30,6 +30,7 @@ import { Modal } from "@/components/shared-components";
 import { toast } from "@/utils/toast";
 import { ALL_AVADI_STREETS } from "@/lib/wards";
 import { RICH_CIVIC_CATEGORIES } from "@/app/(auth)/complaints/page copy";
+import MapLocationPicker from "../MapLocationPicker";
 
 const complaintSchema = zod.object({
   category: zod.string(),
@@ -51,85 +52,6 @@ const complaintSchema = zod.object({
 });
 
 type ComplaintFormData = zod.infer<typeof complaintSchema>;
-
-// Map Component
-const MapLocationPicker = ({
-  onLocationSelect,
-  onError,
-}: {
-  onLocationSelect: (lat: number, lng: number) => void;
-  onError: (msg: string | null) => void;
-}) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
-  const markerInstance = useRef<any>(null);
-
-  useEffect(() => {
-    if (
-      typeof window !== "undefined" &&
-      mapRef.current &&
-      !mapInstance.current
-    ) {
-      const L = require("leaflet");
-      delete L.Icon.Default.prototype._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-      });
-
-      const defaultLat = 13.1169;
-      const defaultLng = 80.0972;
-      const avadiBounds = L.latLngBounds(
-        L.latLng(13.01, 79.99),
-        L.latLng(13.22, 80.2),
-      );
-
-      const map = L.map(mapRef.current, {
-        maxBounds: avadiBounds,
-        maxBoundsViscosity: 1.0,
-        minZoom: 12,
-      }).setView([defaultLat, defaultLng], 14);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
-      }).addTo(map);
-
-      const marker = L.marker([defaultLat, defaultLng], {
-        draggable: true,
-      }).addTo(map);
-
-      const validateAndSetLocation = (latlng: any) => {
-        if (avadiBounds.contains(latlng)) {
-          marker.setLatLng(latlng);
-          onLocationSelect(latlng.lat, latlng.lng);
-          onError(null);
-        } else {
-          marker.setLatLng([defaultLat, defaultLng]);
-          map.setView([defaultLat, defaultLng], 14);
-          onLocationSelect(defaultLat, defaultLng);
-          onError("Location must be within Avadi Corporation limits.");
-        }
-      };
-
-      marker.on("dragend", () => validateAndSetLocation(marker.getLatLng()));
-      map.on("click", (e: any) => validateAndSetLocation(e.latlng));
-
-      mapInstance.current = map;
-      markerInstance.current = marker;
-      onLocationSelect(defaultLat, defaultLng);
-    }
-  }, []);
-
-  return (
-    <div
-      ref={mapRef}
-      className="w-full h-64 rounded-2xl z-0 relative border border-slate-200 dark:border-slate-700 shadow-sm"
-    />
-  );
-};
 
 export default function ReportWizard({ onClose }: { onClose: () => void }) {
   const router = useRouter();
@@ -341,7 +263,7 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                             />
                             <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                               <div
-                                className={`p-2 rounded-xl bg-gradient-to-br ${cat.gradient} text-white shadow-sm flex items-center space-x-2 px-3 border border-white/20`}
+                                className={`p-2 rounded-xl bg-linear-to-br ${cat.gradient} text-white shadow-sm flex items-center space-x-2 px-3 border border-white/20`}
                               >
                                 <CatIcon size={14} />
                                 <span className="text-xs font-black tracking-wider uppercase">
@@ -585,7 +507,7 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                     Pinpoint Location on Map
                   </label>
                   <MapLocationPicker
-                    onLocationSelect={(lat, lng) => {
+                    onLocationSelect={(lat: number, lng: number) => {
                       setValue("lat", lat);
                       setValue("lng", lng);
                       setMapCoords({ lat, lng });
