@@ -42,6 +42,10 @@ model User {
   lostFoundItems      LostFoundItem[]
   claimRequests       LostFoundClaim[]    @relation("ClaimRequests")  // Claims sent by this user
   claimOwnership      LostFoundClaim[]    @relation("ClaimOwnership") // Claims received by this user (as item owner)
+  foodListings        FoodListing[]
+  foodReviews         FoodReview[]
+  foodFavorites       FoodFavorite[]
+  foodRecentlyViewed  FoodRecentlyViewed[]
 
   @@index([wardNumber])
   @@map("users")

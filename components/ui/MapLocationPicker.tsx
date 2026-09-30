@@ -1,34 +1,19 @@
 import { useRef, useEffect } from "react";
 
-interface MapLocationPickerProps {
-  onLocationSelect: (lat: number, lng: number, isUserAction?: boolean) => void;
-  onError: (msg: string | null) => void;
-  selectedCoords?: { lat: number; lng: number } | null;
-}
-
 const MapLocationPicker = ({
+  defaultLat = 13.1169,
+  defaultLng = 80.0972,
   onLocationSelect,
   onError,
-  selectedCoords,
-}: MapLocationPickerProps) => {
+}: {
+  defaultLat?: number;
+  defaultLng?: number;
+  onLocationSelect: (lat: number, lng: number) => void;
+  onError: (msg: string | null) => void;
+}) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
-
-  useEffect(() => {
-    if (
-      selectedCoords &&
-      typeof selectedCoords.lat === "number" &&
-      typeof selectedCoords.lng === "number" &&
-      mapInstance.current &&
-      markerInstance.current
-    ) {
-      markerInstance.current.setLatLng([selectedCoords.lat, selectedCoords.lng]);
-      mapInstance.current.setView([selectedCoords.lat, selectedCoords.lng], 16, {
-        animate: true,
-      });
-    }
-  }, [selectedCoords?.lat, selectedCoords?.lng]);
 
   useEffect(() => {
     if (
@@ -46,9 +31,6 @@ const MapLocationPicker = ({
         shadowUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
-
-      const defaultLat = selectedCoords?.lat || 13.1169;
-      const defaultLng = selectedCoords?.lng || 80.0972;
 
       // Define Avadi Bounding Box (~20km radius equivalent)
       const avadiBounds = L.latLngBounds(
@@ -71,26 +53,26 @@ const MapLocationPicker = ({
       }).addTo(map);
 
       // Validation Function
-      const validateAndSetLocation = (latlng: any, isUserAction = false) => {
+      const validateAndSetLocation = (latlng: any) => {
         if (avadiBounds.contains(latlng)) {
           marker.setLatLng(latlng);
-          onLocationSelect(latlng.lat, latlng.lng, isUserAction);
+          onLocationSelect(latlng.lat, latlng.lng);
           onError(null);
         } else {
           // Snap back to Avadi center if dragged outside limits
           marker.setLatLng([defaultLat, defaultLng]);
           map.setView([defaultLat, defaultLng], 14);
-          onLocationSelect(defaultLat, defaultLng, isUserAction);
+          onLocationSelect(defaultLat, defaultLng);
           onError("Location must be within Avadi Corporation limits.");
         }
       };
 
-      marker.on("dragend", () => validateAndSetLocation(marker.getLatLng(), true));
-      map.on("click", (e: any) => validateAndSetLocation(e.latlng, true));
+      marker.on("dragend", () => validateAndSetLocation(marker.getLatLng()));
+      map.on("click", (e: any) => validateAndSetLocation(e.latlng));
 
       mapInstance.current = map;
       markerInstance.current = marker;
-      onLocationSelect(defaultLat, defaultLng, false);
+      onLocationSelect(defaultLat, defaultLng);
     }
   }, []);
 

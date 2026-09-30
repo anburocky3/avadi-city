@@ -3,8 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --experimental-https",
-    "build": "prisma generate && next build",
+    "dev": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev --experimental-https",
+    "dev:webpack": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next dev --webpack --experimental-https",
+    "build": "prisma generate && cross-env NODE_OPTIONS=--max-old-space-size=4096 next build",
     "start": "next start",
     "postinstall": "prisma generate"
   },
@@ -30,7 +31,7 @@
     "oxlint": "^1.75.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "sharp": "^0.35.4",
+    "sharp": "0.33.5",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -39,17 +40,13 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "prisma": "^7.9.1",
     "tailwindcss": "^4.3.3",
     "typescript": "^5",
     "@types/bun": "latest"
   },
-  "ignoreScripts": [
-    "sharp",
-    "unrs-resolver"
-  ],
   "trustedDependencies": [
-    "sharp",
-    "unrs-resolver"
+    "sharp"
   ]
 }

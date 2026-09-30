@@ -1192,7 +1192,7 @@ export function ServiceRegisterClient() {
                 {/* Live Camera Viewfinder */}
                 {isCameraOpen ? (
                   <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-950 text-white space-y-3 animate-in fade-in">
-                    <div className="relative rounded-lg overflow-hidden bg-black aspect-square max-w-[220px] mx-auto border border-slate-800 flex items-center justify-center">
+                    <div className="relative rounded-lg overflow-hidden bg-black aspect-square max-w-55 mx-auto border border-slate-800 flex items-center justify-center">
                       <video
                         ref={videoRef}
                         autoPlay
@@ -1640,7 +1640,7 @@ export function ServiceRegisterClient() {
                         key={cat.id}
                         type="button"
                         onClick={() => handleSelectCategory(cat.id)}
-                        className={`min-h-[62px] p-3 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer select-none active:scale-[0.98] ${
+                        className={`min-h-15.5 p-3 rounded-2xl border text-left transition flex items-center gap-3 cursor-pointer select-none active:scale-[0.98] ${
                           isSelected
                             ? "bg-primary/10 border-primary text-primary dark:text-orange-400 ring-2 ring-primary/20 shadow-xs font-bold"
                             : "bg-slate-50 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 font-semibold"
@@ -1729,7 +1729,7 @@ export function ServiceRegisterClient() {
                               }`}
                             >
                               {isChecked && (
-                                <Check size={11} className="stroke-[3]" />
+                                <Check size={11} className="stroke-3" />
                               )}
                             </div>
                             <span className="text-xs truncate">{skill}</span>

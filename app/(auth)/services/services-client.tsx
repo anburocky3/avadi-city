@@ -20,7 +20,6 @@ import {
   UserPlus,
   CheckCircle2,
   Award,
-  X,
   MapPin,
   LucideIcon,
   X,
