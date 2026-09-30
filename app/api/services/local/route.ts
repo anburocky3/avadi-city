@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json(
         { error: "No valid user found to associate this registration with." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -60,23 +60,33 @@ export async function POST(request: Request) {
     if (!fullName || !category || !phone) {
       return NextResponse.json(
         { error: "Full Name, Category, and Phone are required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const fullAddress = address || (streetName ? `${streetName}, Ward ${servingWard || 14}` : `Ward ${servingWard || 14}`);
-    const hours = startTime && endTime ? `${startTime} - ${endTime}` : undefined;
+    const fullAddress =
+      address ||
+      (streetName
+        ? `${streetName}, Ward ${servingWard || 14}`
+        : `Ward ${servingWard || 14}`);
+    const hours =
+      startTime && endTime ? `${startTime} - ${endTime}` : undefined;
     const specialty = Array.isArray(services) ? services.join(", ") : undefined;
     const rate = visitingCharge ? String(visitingCharge) : undefined;
 
     const fullDescription = [
       description ? description.trim() : "",
       fullAddress ? `Address: ${fullAddress}` : "",
-    ].filter(Boolean).join(" | ");
+    ]
+      .filter(Boolean)
+      .join(" | ");
 
     let finalImageUrl: string | null = null;
     if (profilePhoto && typeof profilePhoto === "string") {
-      if (profilePhoto.startsWith("http://") || profilePhoto.startsWith("https://")) {
+      if (
+        profilePhoto.startsWith("http://") ||
+        profilePhoto.startsWith("https://")
+      ) {
         finalImageUrl = profilePhoto;
       } else if (profilePhoto.startsWith("data:image/")) {
         try {
@@ -90,7 +100,7 @@ export async function POST(request: Request) {
                 Key: fileKey,
                 Body: buffer,
                 ContentType: "image/webp",
-              })
+              }),
             );
             finalImageUrl = `${PUBLIC_R2_DOMAIN}/${fileKey}`;
           }
@@ -101,7 +111,7 @@ export async function POST(request: Request) {
     }
 
     // Save into the MySQL service_profiles table
-    const serviceWorker = await prisma.serviceWorker.create({
+    const serviceWorker = await prisma.localServiceProfile.create({
       data: {
         name: fullName.trim(),
         category: category.trim(),
@@ -118,15 +128,12 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json(
-      { success: true, serviceWorker },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, serviceWorker }, { status: 201 });
   } catch (error: any) {
-    console.error("Error creating service worker:", error);
+    console.error("Error creating service worker:", error?.message || error);
     return NextResponse.json(
       { error: error?.message || "Failed to register service worker" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -145,7 +152,7 @@ export async function GET(request: Request) {
       where.category = category;
     }
 
-    const workers = await prisma.serviceWorker.findMany({
+    const workers = await prisma.localServiceProfile.findMany({
       where,
       orderBy: { createdAt: "desc" },
     });

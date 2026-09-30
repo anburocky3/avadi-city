@@ -212,21 +212,21 @@ export const EXPERIENCE_OPTIONS = [
   "10+ Years",
 ];
 
-export const TIME_OPTIONS: { value: string; label: string }[] = (() => {
-  const options: { value: string; label: string }[] = [];
-  for (let h = 6; h <= 23; h++) {
-    for (let m = 0; m < 60; m += 30) {
-      const hh = h.toString().padStart(2, "0");
-      const mm = m.toString().padStart(2, "0");
-      const val = `${hh}:${mm}`;
-      const period = h >= 12 ? "PM" : "AM";
-      const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
-      const label = `${displayHour.toString().padStart(2, "0")}:${mm} ${period}`;
-      options.push({ value: val, label });
-    }
-  }
-  return options;
-})();
+// export const TIME_OPTIONS: { value: string; label: string }[] = (() => {
+//   const options: { value: string; label: string }[] = [];
+//   for (let h = 6; h <= 23; h++) {
+//     for (let m = 0; m < 60; m += 30) {
+//       const hh = h.toString().padStart(2, "0");
+//       const mm = m.toString().padStart(2, "0");
+//       const val = `${hh}:${mm}`;
+//       const period = h >= 12 ? "PM" : "AM";
+//       const displayHour = h === 0 ? 12 : h > 12 ? h - 12 : h;
+//       const label = `${displayHour.toString().padStart(2, "0")}:${mm} ${period}`;
+//       options.push({ value: val, label });
+//     }
+//   }
+//   return options;
+// })();
 
 export const formatTimeTo12hr = (timeStr: string): string => {
   if (!timeStr) return "";
@@ -242,7 +242,7 @@ export function ServiceRegisterClient() {
   const router = useRouter();
   const t = useTranslations("services");
   const locale = useLocale();
-  const { activeWard, authUser, registerServiceWorker } = useWard();
+  const { activeWard, authUser, registerLocalServiceProfile } = useWard();
 
   // Natural flow:
   // Step 1: Profile Details & Ward (First!)
@@ -328,7 +328,7 @@ export function ServiceRegisterClient() {
     address: "",
     lat: 13.1169,
     lng: 80.0972,
-    experience: "5 Years",
+    experience: "0–1 Year",
     startTime: "08:00",
     endTime: "20:00",
     visitingCharge: "350",
@@ -641,6 +641,7 @@ export function ServiceRegisterClient() {
 
   // Validation according to step sequence
   const validateStep = (step: 1 | 2 | 3): boolean => {
+    scrollToTop();
     // Step 1: Profile & Serving Ward
     if (step === 1) {
       if (
@@ -909,7 +910,7 @@ export function ServiceRegisterClient() {
       setIsSubmitting(true);
       setRegError(null);
 
-      await registerServiceWorker({
+      await registerLocalServiceProfile({
         ...regData,
         serviceRates,
       });
@@ -923,7 +924,7 @@ export function ServiceRegisterClient() {
         err?.message ||
           (locale === "ta"
             ? "பதிவைச் சமர்ப்பிக்க முடியவில்லை. தயவுசெய்து மீண்டும் முயற்சிக்கவும்."
-            : "Failed to submit registration. Please try again.")
+            : "Failed to submit registration. Please try again."),
       );
     } finally {
       setIsSubmitting(false);
@@ -1555,7 +1556,9 @@ export function ServiceRegisterClient() {
               {/* Primary Serving Ward (with Interactive Find Your Street Search) */}
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                  {locale === "ta" ? "முதன்மை சேவை வார்டு *" : "Primary Serving Ward *"}
+                  {locale === "ta"
+                    ? "முதன்மை சேவை வார்டு *"
+                    : "Primary Serving Ward *"}
                 </label>
                 <div
                   onClick={() => setIsStreetWardModalOpen(true)}
@@ -1574,7 +1577,9 @@ export function ServiceRegisterClient() {
                             : "Select street name"}
                       </span>
                       <span className="text-[10px] text-slate-400 block truncate">
-                        {locale === "ta" ? "தெருவைத் தேடி வார்டு மாற்றுக" : "Search street to change"}
+                        {locale === "ta"
+                          ? "தெருவைத் தேடி வார்டு மாற்றுக"
+                          : "Search street to change"}
                       </span>
                     </div>
                   </div>
@@ -1592,7 +1597,10 @@ export function ServiceRegisterClient() {
                   </span>
                 </div>
                 <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5 leading-normal">
-                  <Info size={13} className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0" />
+                  <Info
+                    size={13}
+                    className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0"
+                  />
                   <span>
                     {locale === "ta"
                       ? "உங்கள் பகுதியில் உள்ள சேவைகள் மற்றும் ஆதரவைக் காட்ட உங்கள் சேவை வார்டைப் பயன்படுத்துகிறோம்."
@@ -1932,7 +1940,15 @@ export function ServiceRegisterClient() {
                     <span className="text-[10px] text-slate-400 block mb-1">
                       {locale === "ta" ? "தொடங்கும் நேரம்" : "Starts at"}
                     </span>
-                    <select
+                    <input
+                      type="time"
+                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-medium focus:ring-2 focus:ring-primary focus:outline-none text-xs"
+                      value={regData.startTime}
+                      onChange={(e) =>
+                        setRegData({ ...regData, startTime: e.target.value })
+                      }
+                    />
+                    {/* <select
                       value={regData.startTime}
                       onChange={(e) =>
                         setRegData({ ...regData, startTime: e.target.value })
@@ -1944,13 +1960,21 @@ export function ServiceRegisterClient() {
                           {t.label}
                         </option>
                       ))}
-                    </select>
+                    </select> */}
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block mb-1">
                       {locale === "ta" ? "முடியும் நேரம்" : "Closes at"}
                     </span>
-                    <select
+                    <input
+                      type="time"
+                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-medium focus:ring-2 focus:ring-primary focus:outline-none text-xs"
+                      value={regData.endTime}
+                      onChange={(e) =>
+                        setRegData({ ...regData, endTime: e.target.value })
+                      }
+                    />
+                    {/* <select
                       value={regData.endTime}
                       onChange={(e) =>
                         setRegData({ ...regData, endTime: e.target.value })
@@ -1962,7 +1986,7 @@ export function ServiceRegisterClient() {
                           {t.label}
                         </option>
                       ))}
-                    </select>
+                    </select> */}
                   </div>
                 </div>
               </div>
@@ -2071,7 +2095,7 @@ export function ServiceRegisterClient() {
                         {locale === "ta" ? "சேவை பகுதி:" : "Service Area:"}
                       </span>
                       <span className="font-semibold text-slate-700 dark:text-slate-300 text-right">
-                        {regData.address}
+                        {regData.address} &amp; nearby areas
                       </span>
                     </div>
                   )}
@@ -2227,7 +2251,9 @@ export function ServiceRegisterClient() {
                 )}
                 <span>
                   {isSubmitting
-                    ? (locale === "ta" ? "சமர்ப்பிக்கிறது..." : "Submitting...")
+                    ? locale === "ta"
+                      ? "சமர்ப்பிக்கிறது..."
+                      : "Submitting..."
                     : t("submitForReview")}
                 </span>
               </button>

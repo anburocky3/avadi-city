@@ -66,11 +66,6 @@ export interface ServiceCategory {
   icon: LucideIcon;
 }
 
-export interface ServicesClientProps {
-  initialProviders: ServiceProvider[];
-  wardsList?: { id: number; name: string }[];
-}
-
 // Category filter configurations
 const CATEGORIES: ServiceCategory[] = [
   {
@@ -210,18 +205,23 @@ const getCategorySpecialty = (
   }
 };
 
-export const ServicesClient: React.FC<ServicesClientProps> = ({
-  initialProviders,
-  wardsList = [],
-}) => {
+export const ServicesClient: React.FC<{}> = () => {
   const t = useTranslations("services");
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const [localServiceProfiles, setLocalServiceProfiles] = useState<
+    ServiceProvider[]
+  >([]);
+
+  const { getLocalServiceProfile } = useWard(); // Custom hook to access ward context
+
+  getLocalServiceProfile().then((profiles) =>
+    setLocalServiceProfiles(profiles),
+  );
+
   // Local state initialized with server props
-  const [providers, setProviders] =
-    useState<ServiceProvider[]>(initialProviders);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedProvider, setSelectedProvider] =
@@ -239,7 +239,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
   }, [searchParams, router, t]);
 
   const filteredProviders = useMemo(() => {
-    let list = [...providers];
+    let list = localServiceProfiles || [];
 
     if (selectedCategory !== "All") {
       list = list.filter((p) => p.category === selectedCategory);
@@ -256,7 +256,7 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
     }
 
     return list;
-  }, [providers, selectedCategory, searchQuery]);
+  }, [localServiceProfiles, selectedCategory, searchQuery]);
 
   const handleCallProvider = (
     provider: ServiceProvider,
@@ -459,7 +459,9 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
                       {provider.skills && provider.skills.length > 0 && (
                         <div className="space-y-1">
                           <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block">
-                            {locale === "ta" ? "சேவை கட்டணங்கள்:" : "Service Rates:"}
+                            {locale === "ta"
+                              ? "சேவை கட்டணங்கள்:"
+                              : "Service Rates:"}
                           </span>
                           <div className="flex flex-wrap gap-1.5">
                             {provider.skills.map((s, idx) => (
@@ -482,7 +484,10 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
                   {/* Bottom Action Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
                     <span className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-[50%] flex items-center">
-                      <MapPin size={12} className="mr-1 shrink-0 text-slate-400" />
+                      <MapPin
+                        size={12}
+                        className="mr-1 shrink-0 text-slate-400"
+                      />
                       <span className="truncate">
                         {provider.address
                           ? `${provider.address} · Ward ${provider.ward}`
@@ -514,8 +519,6 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
           )}
         </div>
       </div>
-
-
 
       {/* PROVIDER DETAIL MODAL */}
       {selectedProvider && (
@@ -592,28 +595,31 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
               </div>
 
               {/* Service Rates Breakdown in Modal */}
-              {selectedProvider.skills && selectedProvider.skills.length > 0 && (
-                <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block">
-                    {locale === "ta" ? "சேவை வேலைகளின் கட்டண பட்டியல்:" : "Service Rate Card:"}
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {selectedProvider.skills.map((s, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px]"
-                      >
-                        <span className="font-semibold text-slate-700 dark:text-slate-300 truncate pr-2">
-                          {s.name}
-                        </span>
-                        <span className="font-black text-primary dark:text-orange-400 shrink-0">
-                          ₹{s.price}
-                        </span>
-                      </div>
-                    ))}
+              {selectedProvider.skills &&
+                selectedProvider.skills.length > 0 && (
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200 block">
+                      {locale === "ta"
+                        ? "சேவை வேலைகளின் கட்டண பட்டியல்:"
+                        : "Service Rate Card:"}
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {selectedProvider.skills.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="flex items-center justify-between p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-[11px]"
+                        >
+                          <span className="font-semibold text-slate-700 dark:text-slate-300 truncate pr-2">
+                            {s.name}
+                          </span>
+                          <span className="font-black text-primary dark:text-orange-400 shrink-0">
+                            ₹{s.price}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
               <div className="flex justify-between">
                 <span className="text-slate-400 font-semibold">
                   {t("servingArea")}:
@@ -713,7 +719,11 @@ export const ServicesClient: React.FC<ServicesClientProps> = ({
               {/* Status pill indicator */}
               <div className="mt-2.5 flex items-center gap-1.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2 py-0.5 rounded-full w-fit">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>{locale === "ta" ? "சமர்ப்பிக்கப்பட்டது — பரிசீலனையில் உள்ளது" : "Submitted — Under Review"}</span>
+                <span>
+                  {locale === "ta"
+                    ? "சமர்ப்பிக்கப்பட்டது — பரிசீலனையில் உள்ளது"
+                    : "Submitted — Under Review"}
+                </span>
               </div>
             </div>
           </motion.div>

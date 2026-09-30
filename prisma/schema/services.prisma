@@ -5,7 +5,7 @@ enum ApprovalStatus {
   REJECTED
 }
 
-model ServiceWorker {
+model LocalServiceProfile {
   id              String         @id @default(cuid())
   name            String         @default("")
   category        String

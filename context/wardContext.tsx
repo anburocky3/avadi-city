@@ -137,7 +137,8 @@ interface WardContextType {
   ) => Promise<boolean>;
 
   // Service Registration
-  registerServiceWorker: (serviceData: any) => Promise<boolean>;
+  getLocalServiceProfile: () => Promise<any>;
+  registerLocalServiceProfile: (serviceData: any) => Promise<boolean>;
 
   // Session State
   activeWard: { id: number; name: string; hints?: string };
@@ -652,9 +653,34 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
-  const registerServiceWorker = async (serviceData: any): Promise<boolean> => {
+  const getLocalServiceProfile = async (): Promise<any> => {
     try {
-      const res = await fetch("/api/services", {
+      const res = await fetch("/api/services/local", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          err.error || err.message || "Failed to fetch service profile",
+        );
+      }
+      return await res.json();
+    } catch (error: any) {
+      console.error(
+        "Fetching local service profile failed:",
+        error.message || error,
+      );
+      throw error;
+    }
+  };
+
+  const registerLocalServiceProfile = async (
+    serviceData: any,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/services/local", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -662,12 +688,17 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || err.message || "Failed to register service");
+        throw new Error(
+          err.error || err.message || "Failed to register service",
+        );
       }
       queryClient.invalidateQueries({ queryKey: ["services"] });
       return true;
-    } catch (error) {
-      console.error("Service worker registration failed:", error);
+    } catch (error: any) {
+      console.error(
+        "Service worker registration failed:",
+        error.message || error,
+      );
       throw error;
     }
   };
@@ -723,7 +754,8 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         bloodGroup,
         addBloodRequest,
         addVolunteer,
-        registerServiceWorker,
+        getLocalServiceProfile,
+        registerLocalServiceProfile,
         wards,
         selectWard,
         volunteers: [],
