@@ -1,0 +1,31 @@
+// Approval workflow status for admin-moderated submissions
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model LocalServiceProfile {
+  id              String         @id @default(cuid())
+  name            String         @default("")
+  category        String
+  phone           String
+  ward            Int
+  experience      String?
+  hours           String?
+  description     String?        @db.Text
+  specialty       String?
+  rate            String?
+  imageUrl        String?
+  status          ApprovalStatus @default(PENDING)
+  submittedById   String
+  rejectionReason String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([ward])
+  @@index([status])
+  @@map("service_profiles")
+}

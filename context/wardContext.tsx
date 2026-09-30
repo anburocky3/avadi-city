@@ -136,6 +136,10 @@ interface WardContextType {
     newRequest: Partial<{ name: string; bloodGroup: string; contact: string }>,
   ) => Promise<boolean>;
 
+  // Service Registration
+  getLocalServiceProfile: () => Promise<any>;
+  registerLocalServiceProfile: (serviceData: any) => Promise<boolean>;
+
   // Session State
   activeWard: { id: number; name: string; hints?: string };
   userProfile: { name: string; wardNumber: number };
@@ -649,6 +653,56 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
     }
   };
 
+  const getLocalServiceProfile = async (): Promise<any> => {
+    try {
+      const res = await fetch("/api/services/local", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          err.error || err.message || "Failed to fetch service profile",
+        );
+      }
+      return await res.json();
+    } catch (error: any) {
+      console.error(
+        "Fetching local service profile failed:",
+        error.message || error,
+      );
+      throw error;
+    }
+  };
+
+  const registerLocalServiceProfile = async (
+    serviceData: any,
+  ): Promise<boolean> => {
+    try {
+      const res = await fetch("/api/services/local", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(serviceData),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(
+          err.error || err.message || "Failed to register service",
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ["services"] });
+      return true;
+    } catch (error: any) {
+      console.error(
+        "Service worker registration failed:",
+        error.message || error,
+      );
+      throw error;
+    }
+  };
+
   const bloodGroup = authUser?.bloodGroup || "Unknown";
 
   // Generated all 48 wards of Avadi Municipal Corporation
@@ -700,6 +754,8 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         bloodGroup,
         addBloodRequest,
         addVolunteer,
+        getLocalServiceProfile,
+        registerLocalServiceProfile,
         wards,
         selectWard,
         volunteers: [],

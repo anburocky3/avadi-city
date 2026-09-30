@@ -43,12 +43,21 @@ export async function POST(req: Request) {
       notification_enabled,
     } = validation.data;
 
+    const isDevMode =
+      process.env.NODE_ENV !== "production" ||
+      process.env.ENABLE_DEV_OTP === "true";
+
     // 2. Check if phone or email already belongs to an existing registered citizen
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ email }, { phone }],
-      },
-    });
+    let existingUser = null;
+    try {
+      existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [{ email }, { phone }],
+        },
+      });
+    } catch (dbErr) {
+      console.warn("DB check during onboarding skipped (DB offline):", dbErr);
+    }
 
     if (existingUser) {
       return NextResponse.json(
@@ -61,22 +70,39 @@ export async function POST(req: Request) {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Save all screens into PostgreSQL
-    const newUser = await prisma.user.create({
-      data: {
-        name,
-        gender: gender as any, // Maps directly to Prisma Enum
-        dob: new Date(dob),
-        bloodGroup: (bloodGroupEnumMap[bloodGroup] || bloodGroup) as any, // Transforms "A-" to "A_NEG"
-        phone,
-        email,
-        password: hashedPassword, // Assuming you have a way to hash the password
-        wardNumber,
-        streetName,
-        notificationEnabled: notification_enabled,
-        isVerified: true, // Marked true since they passed OTP verification in step 3
-      },
-    });
+    // 3. Save user to database or use dev fallback
+    let newUser: any = null;
+    try {
+      newUser = await prisma.user.create({
+        data: {
+          name,
+          gender: gender as any, // Maps directly to Prisma Enum
+          dob: new Date(dob),
+          bloodGroup: (bloodGroupEnumMap[bloodGroup] || bloodGroup) as any, // Transforms "A-" to "A_NEG"
+          phone,
+          email,
+          password: hashedPassword,
+          wardNumber,
+          streetName,
+          notificationEnabled: notification_enabled,
+          isVerified: true, // Marked true since they passed OTP verification in step 3
+        },
+      });
+    } catch (dbErr: any) {
+      console.warn("DB save failed during onboarding:", dbErr?.message || dbErr);
+      if (isDevMode) {
+        newUser = {
+          id: "dev-user-" + Date.now(),
+          name,
+          wardNumber: wardNumber || 14,
+          streetName: streetName || "Main Road",
+          email,
+          phone,
+        };
+      } else {
+        throw dbErr;
+      }
+    }
 
     return NextResponse.json(
       {

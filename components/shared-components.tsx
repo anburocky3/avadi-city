@@ -18,6 +18,7 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  zIndex?: string;
 }
 
 export interface BadgeProps {
@@ -78,12 +79,13 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   maxWidth = "sm:max-w-lg",
+  zIndex = "z-60",
 }) => {
   return (
     <AnimatePresence>
       {isOpen && (
         // 1. Removed 'backdrop-blur-xs' from this static layout wrapper
-        <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div className={`fixed inset-0 ${zIndex} flex items-end sm:items-center justify-center p-0 sm:p-4`}>
           {/* 2. Added 'backdrop-blur-xs' here so it fades in/out with opacity */}
           <motion.div
             initial={{ opacity: 0 }}
