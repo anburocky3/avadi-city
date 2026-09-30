@@ -45,3 +45,13 @@ next-env.d.ts
 /prisma/generated
 
 certificates
+
+# IDE / AI assistants
+.windsurf/
+.agents/
+.claude/
+skills-lock.json
+
+# package managers - using bun only
+package-lock.json
+yarn.lock
