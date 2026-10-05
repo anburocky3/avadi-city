@@ -19,6 +19,7 @@ export interface ModalProps {
   children: React.ReactNode;
   maxWidth?: string;
   zIndex?: string;
+  contentRef?: React.RefObject<any>;
 }
 
 export interface BadgeProps {
@@ -80,12 +81,15 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   maxWidth = "sm:max-w-lg",
   zIndex = "z-[100]",
+  contentRef,
 }) => {
   return (
     <AnimatePresence>
       {isOpen && (
         // 1. Removed 'backdrop-blur-xs' from this static layout wrapper
-        <div className={`fixed inset-0 ${zIndex} flex items-end sm:items-center justify-center p-0 sm:p-4`}>
+        <div
+          className={`fixed inset-0 ${zIndex} flex items-end sm:items-center justify-center p-0 sm:p-4`}
+        >
           {/* 2. Added 'backdrop-blur-xs' here so it fades in/out with opacity */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -118,7 +122,9 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
 
             {/* Content (Scrollable) */}
-            <div className="p-6 overflow-y-auto flex-1">{children}</div>
+            <div className="p-6 overflow-y-auto flex-1" ref={contentRef}>
+              {children}
+            </div>
           </motion.div>
         </div>
       )}
