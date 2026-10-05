@@ -1,0 +1,67 @@
+model HealthcareFacility {
+  id                String   @id @default(cuid())
+  name              String
+  facilityType      String   // "Hospital" | "Clinic" | "Pharmacy" | "Medical Centre" | "Diagnostic Centre" | "Pet Hospital" | "Pet Clinic"
+  category          String   // e.g. "Hospitals", "Pharmacies", "Clinics", "Diagnostics", "Pet Hospitals", "Pet Clinics"
+  description       String   @db.Text
+  phone             String
+  alternatePhone    String?
+  email             String?
+  address           String   @db.Text
+  areaLandmark      String?
+  ward              Int
+  latitude          Float?
+  longitude         Float?
+
+  // Timings
+  is24x7            Boolean  @default(false)
+  openingTime       String?
+  closingTime       String?
+
+  // Media
+  imageUrl          String?  @db.Text
+  additionalImages  Json?
+
+  // Services & Specializations
+  services          Json?
+  emergencyAvailable Boolean  @default(false)
+  ambulanceAvailable Boolean  @default(false)
+  ambulancePhone    String?
+  appointments      String?
+  homeDelivery      Boolean  @default(false)
+  paymentMethods    Json?
+  website           String?
+  socialLink        String?
+  keyServices       Json?
+  additionalDetails String?  @db.Text
+
+  // Moderation & Ownership
+  status            String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  ownerId           String
+  user              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([ward])
+  @@index([facilityType])
+  @@index([category])
+  @@index([status])
+  @@index([ownerId])
+  @@map("healthcare_facilities")
+}
+
+model HealthcareRecentlyViewed {
+  id          String   @id @default(cuid())
+  facilityId  String
+  userId      String
+  viewedAt    DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([facilityId, userId])
+  @@index([facilityId])
+  @@index([userId])
+  @@index([viewedAt])
+  @@map("healthcare_recently_viewed")
+}
