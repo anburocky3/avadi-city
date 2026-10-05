@@ -18,6 +18,7 @@ export interface ModalProps {
   title: string;
   children: React.ReactNode;
   maxWidth?: string;
+  contentRef?: React.RefObject<any>;
 }
 
 export interface BadgeProps {
@@ -78,6 +79,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   maxWidth = "sm:max-w-lg",
+  contentRef,
 }) => {
   return (
     <AnimatePresence>
@@ -116,7 +118,9 @@ export const Modal: React.FC<ModalProps> = ({
             </div>
 
             {/* Content (Scrollable) */}
-            <div className="p-6 overflow-y-auto flex-1">{children}</div>
+            <div className="p-6 overflow-y-auto flex-1" ref={contentRef}>
+              {children}
+            </div>
           </motion.div>
         </div>
       )}

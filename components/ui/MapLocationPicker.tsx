@@ -45,12 +45,12 @@ const MapLocationPicker = ({
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
-      const defaultLat = 13.1169;
+      const defaultLat = 13.1168;
       const defaultLng = 80.0972;
 
       const avadiBounds = L.latLngBounds(
         L.latLng(13.01, 79.99), // South-West
-        L.latLng(13.22, 80.2),  // North-East
+        L.latLng(13.22, 80.2), // North-East
       );
 
       const map = L.map(mapRef.current, {
@@ -59,7 +59,7 @@ const MapLocationPicker = ({
         minZoom: 12,
         // Disable mousewheel zoom — avoids page-scroll conflict on desktop too
         scrollWheelZoom: false,
-      }).setView([defaultLat, defaultLng], 14);
+      }).setView([defaultLat, defaultLng], 15);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
@@ -87,7 +87,7 @@ const MapLocationPicker = ({
       };
 
       marker.on("dragend", () =>
-        validateAndSet(marker.getLatLng(), !isExternalUpdate.current)
+        validateAndSet(marker.getLatLng(), !isExternalUpdate.current),
       );
       map.on("click", (e: any) => validateAndSet(e.latlng, true));
 
@@ -115,7 +115,7 @@ const MapLocationPicker = ({
                 map.touchZoom.enable();
               }, 160);
             },
-            { passive: true }
+            { passive: true },
           );
           el.addEventListener(
             "touchend",
@@ -127,7 +127,7 @@ const MapLocationPicker = ({
                 map.touchZoom.disable();
               }, 300);
             },
-            { passive: true }
+            { passive: true },
           );
           el.addEventListener(
             "touchcancel",
@@ -136,7 +136,7 @@ const MapLocationPicker = ({
               map.dragging.disable();
               map.touchZoom.disable();
             },
-            { passive: true }
+            { passive: true },
           );
         }
       }
@@ -145,26 +145,26 @@ const MapLocationPicker = ({
   }, []);
 
   // ── Sync when external coords arrive (autocomplete / ward select) ──────────
-  useEffect(() => {
-    if (selectedCoords && mapInstance.current && markerInstance.current) {
-      const { lat, lng } = selectedCoords;
-      const current = markerInstance.current.getLatLng();
-      if (
-        Math.abs(current.lat - lat) < 0.0001 &&
-        Math.abs(current.lng - lng) < 0.0001
-      ) {
-        return;
-      }
-      isExternalUpdate.current = true;
-      mapInstance.current.setView([lat, lng], 15);
-      markerInstance.current.setLatLng([lat, lng]);
-      onError(null);
-      setTimeout(() => {
-        isExternalUpdate.current = false;
-      }, 500);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedCoords?.lat, selectedCoords?.lng]);
+  // useEffect(() => {
+  //   if (selectedCoords && mapInstance.current && markerInstance.current) {
+  //     const { lat, lng } = selectedCoords;
+  //     const current = markerInstance.current.getLatLng();
+  //     if (
+  //       Math.abs(current.lat - lat) < 0.0001 &&
+  //       Math.abs(current.lng - lng) < 0.0001
+  //     ) {
+  //       return;
+  //     }
+  //     isExternalUpdate.current = true;
+  //     mapInstance.current.setView([lat, lng], 15);
+  //     markerInstance.current.setLatLng([lat, lng]);
+  //     onError(null);
+  //     setTimeout(() => {
+  //       isExternalUpdate.current = false;
+  //     }, 500);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [selectedCoords?.lat, selectedCoords?.lng]);
 
   // ── GPS: Use My Current Location ──────────────────────────────────────────
   const handleGPS = () => {
@@ -177,8 +177,10 @@ const MapLocationPicker = ({
 
     // Avadi Corporation bounding box (matches MapLocationPicker map bounds)
     const AVADI_GPS_BOUNDS = {
-      minLat: 13.01, maxLat: 13.22,
-      minLng: 79.99, maxLng: 80.2,
+      minLat: 13.01,
+      maxLat: 13.22,
+      minLng: 79.99,
+      maxLng: 80.2,
     };
 
     navigator.geolocation.getCurrentPosition(
@@ -189,12 +191,14 @@ const MapLocationPicker = ({
 
         // ── Boundary guard: reject if outside Avadi ──────────────────────
         const isInsideAvadi =
-          lat >= AVADI_GPS_BOUNDS.minLat && lat <= AVADI_GPS_BOUNDS.maxLat &&
-          lng >= AVADI_GPS_BOUNDS.minLng && lng <= AVADI_GPS_BOUNDS.maxLng;
+          lat >= AVADI_GPS_BOUNDS.minLat &&
+          lat <= AVADI_GPS_BOUNDS.maxLat &&
+          lng >= AVADI_GPS_BOUNDS.minLng &&
+          lng <= AVADI_GPS_BOUNDS.maxLng;
 
         if (!isInsideAvadi) {
           setGpsError(
-            "Your current GPS location is outside Avadi Corporation limits. Please choose a location within Avadi."
+            "Your current GPS location is outside Avadi Corporation limits. Please choose a location within Avadi.",
           );
           return;
         }
@@ -211,10 +215,9 @@ const MapLocationPicker = ({
         setGpsLoading(false);
         if (err.code === err.PERMISSION_DENIED)
           setGpsError("Location access denied. Please allow GPS.");
-        else
-          setGpsError("Could not get your location. Try again.");
+        else setGpsError("Could not get your location. Try again.");
       },
-      { timeout: 10000, maximumAge: 30000 }
+      { timeout: 10000, maximumAge: 30000 },
     );
   };
 
@@ -227,12 +230,12 @@ const MapLocationPicker = ({
       />
 
       {/* 🎯 GPS floating button — top-right inside map */}
-      <button
+      {/* <button
         type="button"
         onClick={handleGPS}
         disabled={gpsLoading}
         title="Use my current GPS location"
-        className={`absolute top-2.5 right-2.5 z-[400] flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg transition cursor-pointer select-none ${
+        className={`absolute top-2.5 right-2.5 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-lg transition cursor-pointer select-none ${
           gpsLoading
             ? "bg-white/80 dark:bg-slate-900/80 text-slate-400"
             : "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800"
@@ -246,7 +249,7 @@ const MapLocationPicker = ({
         ) : (
           <>🎯 My Location</>
         )}
-      </button>
+      </button> */}
 
       {/* GPS error */}
       {gpsError && (
@@ -256,7 +259,7 @@ const MapLocationPicker = ({
       )}
 
       {/* Mobile scroll hint */}
-      <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500 text-center select-none">
+      <p className="mt-2 text-[10px] text-slate-400 dark:text-slate-400 text-center select-none">
         📱 Hold map to drag · Tap to pin · 🎯 for GPS
       </p>
     </div>
