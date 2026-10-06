@@ -50,18 +50,3 @@ model HealthcareFacility {
   @@index([ownerId])
   @@map("healthcare_facilities")
 }
-
-model HealthcareRecentlyViewed {
-  id          String   @id @default(cuid())
-  facilityId  String
-  userId      String
-  viewedAt    DateTime @default(now())
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([facilityId, userId])
-  @@index([facilityId])
-  @@index([userId])
-  @@index([viewedAt])
-  @@map("healthcare_recently_viewed")
-}

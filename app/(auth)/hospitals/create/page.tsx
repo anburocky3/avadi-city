@@ -279,9 +279,59 @@ export default function CreateFacilityPage() {
     }, 50);
   };
 
+  // Scroll directly to the first invalid field/container in the visible viewport
+  const scrollToFirstError = (errorKeys: string[]) => {
+    if (!errorKeys || errorKeys.length === 0) return;
+
+    const fieldIdMap: Record<string, string> = {
+      // Step 1
+      facilityType: "field-facility-type",
+      services: "field-services",
+      // Step 2
+      name: "facility-name-input",
+      description: "facility-description-input",
+      phone: "facility-phone-input",
+      email: "facility-email-input",
+      streetArea: "street-search-input",
+      facilityAddress: "facility-address-input",
+      openingTime: "field-timings",
+      closingTime: "field-timings",
+      // Step 3
+      primaryImage: "field-primary-image",
+      ambulancePhone: "ambulance-phone-input",
+      terms: "field-terms",
+    };
+
+    setTimeout(() => {
+      for (const key of errorKeys) {
+        const elId = fieldIdMap[key] || key;
+        const targetEl = document.getElementById(elId);
+        if (targetEl) {
+          const rect = targetEl.getBoundingClientRect();
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const targetY = scrollTop + rect.top - 100;
+
+          window.scrollTo({
+            top: Math.max(0, targetY),
+            behavior: "smooth",
+          });
+
+          if (
+            targetEl instanceof HTMLInputElement ||
+            targetEl instanceof HTMLTextAreaElement ||
+            targetEl instanceof HTMLSelectElement
+          ) {
+            targetEl.focus({ preventScroll: true });
+          }
+          break;
+        }
+      }
+    }, 60);
+  };
+
   // Directly navigate to public cards page
   const handleTopBack = () => {
-    router.push("/healthcare");
+    router.push("/hospitals");
   };
 
   // ==========================================
@@ -423,25 +473,30 @@ export default function CreateFacilityPage() {
     });
   };
 
-  const validateStep1 = (): boolean => {
+  const validateStep1 = (): string[] => {
     const errors: Record<string, string> = {};
+    const errorKeys: string[] = [];
 
     if (selectedFacilityTypes.length === 0) {
       errors.facilityType = "Please select a Facility Type.";
+      errorKeys.push("facilityType");
     }
 
     if (selectedServices.length === 0) {
       errors.services = "Please select at least one Healthcare Service.";
+      errorKeys.push("services");
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
+    return errorKeys;
   };
 
   const handleContinueStep1 = () => {
-    if (validateStep1()) {
+    const errorKeys = validateStep1();
+    if (errorKeys.length === 0) {
       goToStep(2);
     } else {
+      scrollToFirstError(errorKeys);
       toast.error(
         "Please select a Facility Type and at least one relevant Service to continue."
       );
@@ -488,59 +543,74 @@ export default function CreateFacilityPage() {
     }
   };
 
-  const validateStep2 = (): boolean => {
+  const validateStep2 = (): string[] => {
     const errors: Record<string, string> = {};
+    const errorKeys: string[] = [];
 
     if (!name.trim()) {
       errors.name = "Facility Name is required.";
+      errorKeys.push("name");
     } else if (name.trim().length < 2) {
       errors.name = "Facility Name must be at least 2 characters.";
+      errorKeys.push("name");
     }
 
     if (!description.trim()) {
       errors.description = "Facility Description is required.";
+      errorKeys.push("description");
     } else if (description.trim().length < 10) {
       errors.description = "Please provide a detailed description (at least 10 characters).";
+      errorKeys.push("description");
     }
 
     const cleanPhone = phone.replace(/[^0-9+]/g, "");
     if (!cleanPhone) {
       errors.phone = "Phone number is required.";
+      errorKeys.push("phone");
     } else if (cleanPhone.replace(/[^0-9]/g, "").length < 10) {
       errors.phone = "Phone number must be at least 10 digits.";
+      errorKeys.push("phone");
     }
 
     if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
       errors.email = "Please enter a valid email address.";
+      errorKeys.push("email");
     }
 
     if (!streetArea.trim()) {
       errors.streetArea = "Area / Street from Avadi is required.";
+      errorKeys.push("streetArea");
     }
 
     if (!facilityAddress.trim()) {
       errors.facilityAddress = "Facility Address is required.";
+      errorKeys.push("facilityAddress");
     } else if (facilityAddress.trim().length < 3) {
       errors.facilityAddress = "Facility Address must be at least 3 characters.";
+      errorKeys.push("facilityAddress");
     }
 
     if (!isOpen24Hours) {
       if (!openingTime) {
         errors.openingTime = "Opening Time is required.";
+        errorKeys.push("openingTime");
       }
       if (!closingTime) {
         errors.closingTime = "Closing Time is required.";
+        errorKeys.push("closingTime");
       }
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
+    return errorKeys;
   };
 
   const handleContinueStep2 = () => {
-    if (validateStep2()) {
+    const errorKeys = validateStep2();
+    if (errorKeys.length === 0) {
       goToStep(3);
     } else {
+      scrollToFirstError(errorKeys);
       toast.error("Please fill in all required facility details.");
     }
   };
@@ -609,23 +679,27 @@ export default function CreateFacilityPage() {
     setKeyServices((prev) => prev.filter((s) => s !== serviceToRemove));
   };
 
-  const validateStep3 = (): boolean => {
+  const validateStep3 = (): string[] => {
     const errors: Record<string, string> = {};
+    const errorKeys: string[] = [];
 
     if (!primaryImageFile) {
       errors.primaryImage = "Facility image is mandatory.";
+      errorKeys.push("primaryImage");
     }
 
     if (ambulanceAvailable && !ambulancePhone.trim()) {
       errors.ambulancePhone = "Ambulance contact number is required when ambulance is available.";
+      errorKeys.push("ambulancePhone");
     }
 
     if (!termsAccepted) {
       errors.terms = "Please agree to the Terms & Verification before submitting.";
+      errorKeys.push("terms");
     }
 
-    setFieldErrors(errors);
-    return Object.keys(errors).length === 0;
+    setFieldErrors((prev) => ({ ...prev, ...errors }));
+    return errorKeys;
   };
 
   // ==========================================
@@ -634,20 +708,26 @@ export default function CreateFacilityPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateStep1()) {
+    const errs1 = validateStep1();
+    if (errs1.length > 0) {
       goToStep(1);
+      scrollToFirstError(errs1);
       toast.error("Please select facility type and services in Step 1.");
       return;
     }
 
-    if (!validateStep2()) {
+    const errs2 = validateStep2();
+    if (errs2.length > 0) {
       goToStep(2);
+      scrollToFirstError(errs2);
       toast.error("Please fill all required facility information in Step 2.");
       return;
     }
 
-    if (!validateStep3()) {
-      toast.error("Please upload facility image and accept the Terms.");
+    const errs3 = validateStep3();
+    if (errs3.length > 0) {
+      scrollToFirstError(errs3);
+      toast.error("Please complete the required information before submitting.");
       return;
     }
 
@@ -724,27 +804,22 @@ export default function CreateFacilityPage() {
 
   return (
     <div ref={wizardTopRef} className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6">
-      {/* Top Header / Step-by-Step Back Navigation */}
-      <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
-        <button
-          type="button"
-          onClick={handleTopBack}
-          className="inline-flex items-center text-xs font-bold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition gap-1.5 cursor-pointer py-1 hover:underline"
-        >
-          <ArrowLeft size={16} />
-          <span>Back to Hospitals & Pharmacies</span>
-        </button>
-        <span className="text-[11px] font-black uppercase tracking-wider text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200 dark:border-rose-900">
-          Avadi Municipal Healthcare
-        </span>
-      </div>
-
       {/* Main Title */}
-      <div className="space-y-1">
+      <div className="space-y-2">
         <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
           <HeartPulse size={24} className="text-rose-600" />
           <span>Register New Healthcare Facility</span>
         </h1>
+        <div>
+          <button
+            type="button"
+            onClick={() => router.push("/hospitals")}
+            aria-label="Back to Hospitals & Pharmacies"
+            className="inline-flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white text-xl font-bold transition cursor-pointer hover:-translate-x-1"
+          >
+            ←
+          </button>
+        </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
           Add hospitals, clinics, 24/7 pharmacies, or medical centres to Avadi Connect.
           Submissions undergo official verification before appearing publicly.
@@ -807,7 +882,14 @@ export default function CreateFacilityPage() {
           {currentStep === 1 && (
             <div className="space-y-6 animate-in fade-in duration-200">
               {/* Facility Type */}
-              <div className="space-y-3">
+              <div
+                id="field-facility-type"
+                className={`space-y-3 p-3 -m-3 rounded-2xl transition duration-150 ${
+                  fieldErrors.facilityType
+                    ? "ring-2 ring-rose-500/40 bg-rose-50/30 dark:bg-rose-950/20"
+                    : ""
+                }`}
+              >
                 <div>
                   <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                     Facility Type <span className="text-rose-500">*</span>
@@ -869,7 +951,14 @@ export default function CreateFacilityPage() {
               </div>
 
               {/* Dynamic Healthcare Services */}
-              <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <div
+                id="field-services"
+                className={`space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800 p-3 -m-3 rounded-2xl transition duration-150 ${
+                  fieldErrors.services
+                    ? "ring-2 ring-rose-500/40 bg-rose-50/30 dark:bg-rose-950/20"
+                    : ""
+                }`}
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
@@ -1002,12 +1091,7 @@ export default function CreateFacilityPage() {
                 <button
                   type="button"
                   onClick={handleContinueStep1}
-                  disabled={!isStep1Valid}
-                  className={`w-full sm:w-auto px-7 py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 ${
-                    isStep1Valid
-                      ? "bg-rose-600 hover:bg-rose-700 text-white cursor-pointer active:scale-98"
-                      : "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed shadow-none"
-                  }`}
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer active:scale-98"
                 >
                   <span>Continue to Facility Information</span>
                   <ArrowRight size={16} />
@@ -1322,7 +1406,7 @@ export default function CreateFacilityPage() {
               </div>
 
               {/* Business Hours */}
-              <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <div id="field-timings" className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
@@ -1428,7 +1512,14 @@ export default function CreateFacilityPage() {
           {currentStep === 3 && (
             <div className="space-y-6 animate-in fade-in duration-200">
               {/* Primary Image Upload (Required) */}
-              <div className="space-y-3">
+              <div
+                id="field-primary-image"
+                className={`space-y-3 p-3 -m-3 rounded-2xl transition duration-150 ${
+                  fieldErrors.primaryImage
+                    ? "ring-2 ring-rose-500/40 bg-rose-50/30 dark:bg-rose-950/20"
+                    : ""
+                }`}
+              >
                 <div>
                   <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                     Facility Image <span className="text-rose-500">*</span>
@@ -1797,7 +1888,14 @@ export default function CreateFacilityPage() {
               </div>
 
               {/* Terms and Verification Checkbox */}
-              <div className="p-4 sm:p-5 bg-slate-50/70 dark:bg-slate-950/60 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-2">
+              <div
+                id="field-terms"
+                className={`p-4 sm:p-5 rounded-2xl border transition space-y-2 ${
+                  fieldErrors.terms
+                    ? "bg-rose-50/50 dark:bg-rose-950/20 border-rose-400 dark:border-rose-800"
+                    : "bg-slate-50/70 dark:bg-slate-950/60 border-slate-200 dark:border-slate-800"
+                }`}
+              >
                 <label className="flex items-start gap-3 cursor-pointer">
                   <input
                     type="checkbox"
