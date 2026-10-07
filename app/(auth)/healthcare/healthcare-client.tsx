@@ -70,6 +70,7 @@ export interface HealthcareFacility {
   hasPharmacy?: boolean;
   hasHomeDelivery?: boolean;
   appointments?: string;
+  consultationFee?: number | null;
   status?: string;
   isVerified?: boolean;
 }
@@ -234,6 +235,13 @@ const PublicFacilityCard: React.FC<PublicFacilityCardProps> = ({
                 {facility.appointments}
               </span>
             )}
+            {facility.consultationFee !== undefined && facility.consultationFee !== null && (
+              <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-900">
+                {facility.consultationFee === 0
+                  ? "Fee: Free"
+                  : `Consultation Fee: ₹${facility.consultationFee}`}
+              </span>
+            )}
           </div>
 
           {/* Time & Distance Row */}
@@ -253,8 +261,8 @@ const PublicFacilityCard: React.FC<PublicFacilityCardProps> = ({
         </div>
 
         {/* Bottom Action Footer */}
-        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
-          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate max-w-[45%] flex items-center">
+        <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800 gap-2">
+          <span className="text-xs font-medium text-slate-400 dark:text-slate-500 truncate flex-1 min-w-0 flex items-center">
             <MapPin size={12} className="mr-1 shrink-0" />
             <span className="truncate">{facility.address}</span>
           </span>
@@ -432,7 +440,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
   ]);
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 pb-28 sm:pb-32">
       {/* Title Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -477,7 +485,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 max-w-2xl mx-auto">
+          <div className="grid grid-cols-1 gap-4 w-full">
             {emergencyFacilities.slice(0, 3).map((facility) => {
               const openStatus = checkFacilityOpenStatus(facility);
               const dist = getFacilityDistance(facility);
@@ -597,7 +605,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 gap-4 max-w-2xl mx-auto"
+              className="grid grid-cols-1 gap-4 w-full"
             >
               {filteredFacilities.map((facility) => {
                 const openStatus = checkFacilityOpenStatus(facility);
@@ -728,6 +736,31 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
                   )}
                 </div>
               </div>
+
+              {/* Appointments & Consultation Fee */}
+              {(selectedFacility.appointments ||
+                (selectedFacility.consultationFee !== undefined &&
+                  selectedFacility.consultationFee !== null)) && (
+                <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
+                  {selectedFacility.appointments && (
+                    <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+                      <span className="text-slate-400 font-medium">Appointments:</span>
+                      <span>{selectedFacility.appointments}</span>
+                    </div>
+                  )}
+                  {selectedFacility.consultationFee !== undefined &&
+                    selectedFacility.consultationFee !== null && (
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                        <span className="text-slate-400 font-medium">Consultation Fee:</span>
+                        <span>
+                          {selectedFacility.consultationFee === 0
+                            ? "Free"
+                            : `₹${selectedFacility.consultationFee}`}
+                        </span>
+                      </div>
+                    )}
+                </div>
+              )}
 
               {/* Healthcare Services */}
               {selectedFacility.services && selectedFacility.services.length > 0 && (

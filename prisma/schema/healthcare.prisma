@@ -28,6 +28,7 @@ model HealthcareFacility {
   ambulanceAvailable Boolean  @default(false)
   ambulancePhone    String?
   appointments      String?
+  consultationFee   Float?
   homeDelivery      Boolean  @default(false)
   paymentMethods    Json?
   website           String?

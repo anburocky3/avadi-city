@@ -38,6 +38,11 @@ const createHospitalSchema = zod.object({
   ambulanceAvailable: zod.coerce.boolean().optional(),
   ambulancePhone: zod.string().trim().max(20).optional().nullable(),
   appointments: zod.string().trim().max(50).optional().nullable(),
+  consultationFee: zod.coerce
+    .number()
+    .min(0, "Consultation fee cannot be negative")
+    .optional()
+    .nullable(),
   homeDelivery: zod.coerce.boolean().optional(),
   paymentMethods: zod.string().optional().nullable(),
   website: zod.string().trim().max(250).optional().nullable(),
@@ -324,6 +329,7 @@ export async function POST(request: Request) {
       ambulanceAvailable: valid.ambulanceAvailable || false,
       ambulancePhone: valid.ambulanceAvailable ? valid.ambulancePhone : null,
       appointments: valid.appointments || null,
+      consultationFee: valid.consultationFee ?? null,
       homeDelivery: valid.homeDelivery || false,
       is24x7: valid.is24x7 || false,
       openingTime: valid.is24x7 ? "Open 24 Hours" : valid.openingTime,
@@ -361,6 +367,7 @@ export async function POST(request: Request) {
         ambulanceAvailable: valid.ambulanceAvailable || false,
         ambulancePhone: valid.ambulanceAvailable ? valid.ambulancePhone : null,
         appointments: valid.appointments || null,
+        consultationFee: valid.consultationFee ?? null,
         homeDelivery: valid.homeDelivery || false,
         paymentMethods: parsedPaymentMethods,
         website: valid.website || null,

@@ -153,7 +153,7 @@ export const BottomTabBar: React.FC = () => {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className={`fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] pb-[max(0.25rem,env(safe-area-inset-bottom))] transition-all duration-200 ease-in-out ${
+      className={`fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] pb-[max(0.25rem,env(safe-area-inset-bottom))] transition-all duration-200 ease-in-out ${
         isKeyboardOpen
           ? "translate-y-full opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100"

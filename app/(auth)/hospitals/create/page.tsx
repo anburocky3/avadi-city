@@ -280,7 +280,7 @@ export default function CreateFacilityPage() {
   };
 
   // Scroll directly to the first invalid field/container in the visible viewport
-  const scrollToFirstError = (errorKeys: string[]) => {
+  const scrollToFirstError = (errorKeys: string[], delay = 60) => {
     if (!errorKeys || errorKeys.length === 0) return;
 
     const fieldIdMap: Record<string, string> = {
@@ -307,31 +307,41 @@ export default function CreateFacilityPage() {
         const elId = fieldIdMap[key] || key;
         const targetEl = document.getElementById(elId);
         if (targetEl) {
-          const rect = targetEl.getBoundingClientRect();
-          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-          const targetY = scrollTop + rect.top - 100;
-
-          window.scrollTo({
-            top: Math.max(0, targetY),
+          targetEl.scrollIntoView({
             behavior: "smooth",
+            block: "center",
           });
 
-          if (
+          // Focus first invalid input if focusable
+          const focusable =
             targetEl instanceof HTMLInputElement ||
             targetEl instanceof HTMLTextAreaElement ||
             targetEl instanceof HTMLSelectElement
-          ) {
-            targetEl.focus({ preventScroll: true });
+              ? targetEl
+              : targetEl.querySelector<HTMLElement>("input, textarea, select, button");
+
+          if (focusable && typeof focusable.focus === "function") {
+            setTimeout(() => {
+              try {
+                focusable.focus({ preventScroll: true });
+              } catch {}
+            }, 250);
           }
           break;
         }
       }
-    }, 60);
+    }, delay);
+  };
+
+  // Switch step and scroll smoothly to the first error in that step
+  const switchStepAndScrollToError = (step: 1 | 2 | 3, errorKeys: string[]) => {
+    setCurrentStep(step);
+    scrollToFirstError(errorKeys, 120);
   };
 
   // Directly navigate to public cards page
   const handleTopBack = () => {
-    router.push("/hospitals");
+    router.push("/healthcare");
   };
 
   // ==========================================
@@ -375,6 +385,7 @@ export default function CreateFacilityPage() {
   const [ambulanceAvailable, setAmbulanceAvailable] = useState(false);
   const [ambulancePhone, setAmbulancePhone] = useState("");
   const [appointmentType, setAppointmentType] = useState<string>("Walk-in");
+  const [consultationFee, setConsultationFee] = useState<number>(100);
   const [homeDeliveryAvailable, setHomeDeliveryAvailable] = useState(false);
   const selectedPayments = ["Cash", "UPI"];
   const [website, setWebsite] = useState("");
@@ -710,17 +721,23 @@ export default function CreateFacilityPage() {
 
     const errs1 = validateStep1();
     if (errs1.length > 0) {
-      goToStep(1);
-      scrollToFirstError(errs1);
-      toast.error("Please select facility type and services in Step 1.");
+      if (currentStep !== 1) {
+        switchStepAndScrollToError(1, errs1);
+      } else {
+        scrollToFirstError(errs1);
+      }
+      toast.error("Please select a Facility Type and relevant services.");
       return;
     }
 
     const errs2 = validateStep2();
     if (errs2.length > 0) {
-      goToStep(2);
-      scrollToFirstError(errs2);
-      toast.error("Please fill all required facility information in Step 2.");
+      if (currentStep !== 2) {
+        switchStepAndScrollToError(2, errs2);
+      } else {
+        scrollToFirstError(errs2);
+      }
+      toast.error("Please fill all required facility information.");
       return;
     }
 
@@ -764,6 +781,7 @@ export default function CreateFacilityPage() {
         formData.append("ambulancePhone", ambulancePhone.trim());
       }
       formData.append("appointments", appointmentType);
+      formData.append("consultationFee", String(Math.max(0, consultationFee || 0)));
       formData.append("homeDelivery", homeDeliveryAvailable ? "true" : "false");
       formData.append("paymentMethods", JSON.stringify(selectedPayments));
 
@@ -805,22 +823,21 @@ export default function CreateFacilityPage() {
   return (
     <div ref={wizardTopRef} className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6">
       {/* Main Title */}
-      <div className="space-y-2">
-        <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-          <HeartPulse size={24} className="text-rose-600" />
-          <span>Register New Healthcare Facility</span>
-        </h1>
-        <div>
+      <div className="space-y-1.5">
+        <div className="flex items-center gap-2.5">
           <button
             type="button"
-            onClick={() => router.push("/hospitals")}
-            aria-label="Back to Hospitals & Pharmacies"
-            className="inline-flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white text-xl font-bold transition cursor-pointer hover:-translate-x-1"
+            onClick={() => router.push("/healthcare")}
+            aria-label="Back"
+            className="inline-flex items-center justify-center text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-white text-xl sm:text-2xl font-bold transition cursor-pointer hover:-translate-x-1 active:scale-95 shrink-0"
           >
             ←
           </button>
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
+            <span>Register New Healthcare Facility</span>
+          </h1>
         </div>
-        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+        <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium pl-7 sm:pl-8">
           Add hospitals, clinics, 24/7 pharmacies, or medical centres to Avadi Connect.
           Submissions undergo official verification before appearing publicly.
         </p>
@@ -1738,6 +1755,74 @@ export default function CreateFacilityPage() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* Consultation / Appointment Fee */}
+              <div id="field-consultation-fee" className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                  <div>
+                    <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
+                      Consultation / Appointment Fee
+                    </h2>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Enter the applicable consultation or appointment fee (₹0 represents Free consultation).
+                    </p>
+                  </div>
+                  <span
+                    className={`text-[11px] font-black px-2.5 py-1 rounded-full border w-fit ${
+                      consultationFee === 0
+                        ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                        : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
+                    }`}
+                  >
+                    {consultationFee === 0 ? "Free / No Consultation Fee" : `₹${consultationFee}`}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3 max-w-xs pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setConsultationFee((prev) => Math.max(0, (prev || 0) - 50))}
+                    disabled={consultationFee <= 0}
+                    aria-label="Decrease fee"
+                    className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-800 dark:text-slate-100 font-black text-lg transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700 select-none shadow-xs shrink-0"
+                  >
+                    −
+                  </button>
+
+                  <div className="flex-1 relative flex items-center justify-center">
+                    <span className="absolute left-4 text-xs sm:text-sm font-extrabold text-slate-400 select-none pointer-events-none">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      step={50}
+                      value={consultationFee}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10);
+                        if (isNaN(val)) {
+                          setConsultationFee(0);
+                        } else {
+                          setConsultationFee(Math.max(0, val));
+                        }
+                      }}
+                      className="w-full pl-8 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-center font-black text-base sm:text-lg bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-rose-500"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setConsultationFee((prev) => Math.max(0, (prev || 0) + 50))}
+                    aria-label="Increase fee"
+                    className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-lg transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700 select-none shadow-xs shrink-0"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                  Use the <span className="font-bold">− / +</span> buttons (₹50 step) or enter amount directly.
+                </p>
               </div>
 
               {/* Pharmacy Home Delivery */}

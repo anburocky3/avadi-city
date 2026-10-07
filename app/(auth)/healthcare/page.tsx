@@ -68,6 +68,7 @@ export default async function HealthcarePage() {
         hasPharmacy,
         hasHomeDelivery: f.homeDelivery,
         appointments: f.appointments || undefined,
+        consultationFee: f.consultationFee ?? null,
         status: f.status,
         isVerified: f.status === "APPROVED",
       };
