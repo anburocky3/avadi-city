@@ -12,6 +12,8 @@ export const metadata = {
   description: "Secure administrative management console for Avadi City Corporation.",
 };
 
+import { prisma } from "@/lib/prisma";
+
 export default async function AdminPortalLayout({
   children,
 }: {
@@ -25,11 +27,27 @@ export default async function AdminPortalLayout({
     redirect("/admin/login");
   }
 
+  // Count pending items for badges in navigation
+  const isSuperAdmin = session.role === "SUPER_ADMIN";
+  const wardFilter = isSuperAdmin ? {} : { ward: session.wardNumber };
+
+  let pendingCounts = { foods: 0, services: 0, rentals: 0 };
+  try {
+    const [foods, services, rentals] = await Promise.all([
+      prisma.foodListing.count({ where: { status: "PENDING", ...wardFilter } }),
+      prisma.localServiceProfile.count({ where: { status: "PENDING", ...wardFilter } }),
+      prisma.rentalListing.count({ where: { status: "PENDING", ...wardFilter } }),
+    ]);
+    pendingCounts = { foods, services, rentals };
+  } catch {
+    // Graceful fallback
+  }
+
   return (
     <QueryProvider>
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans antialiased selection:bg-indigo-500 selection:text-white">
-        {/* Full-width Horizontal Admin Navigation Header */}
-        <AdminHorizontalNav session={session} />
+        {/* Full-width Horizontal Admin Navigation Header with Sub-menus */}
+        <AdminHorizontalNav session={session} pendingApprovalsCount={pendingCounts} />
 
         {/* Horizontal Admin Content Area */}
         <main className="flex-1 w-full mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">

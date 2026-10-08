@@ -280,6 +280,11 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
   // --- 🛡️ SECURITY GUARDRAIL EFFECT ---
   // If MySQL tables are wiped or user record is deleted, kick them to login immediately!
   useEffect(() => {
+    // Admin routes handle their own server and edge authentication
+    if (pathname.startsWith("/admin")) {
+      return;
+    }
+
     // Define your public pages where unauthenticated guests are allowed
     const publicRoutes = [
       "/",

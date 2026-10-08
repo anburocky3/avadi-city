@@ -54,34 +54,37 @@ export default function AdminLoginPage() {
 
       if (!res.ok) {
         throw new Error(
-          data.message || "Authentication failed. Please verify administrative credentials.",
+          data.message ||
+            "Authentication failed. Please verify administrative credentials.",
         );
       }
 
-      setSuccessMessage("Administrative credentials verified. Redirecting to console...");
+      setSuccessMessage(
+        "Administrative credentials verified. Redirecting to console...",
+      );
+      const targetUrl =
+        data.user?.role === "SUPER_ADMIN"
+          ? "/admin/super-admin"
+          : "/admin/dashboard";
+
       setTimeout(() => {
-        router.push("/admin");
+        router.push(targetUrl);
         router.refresh();
-      }, 600);
+      }, 500);
     } catch (err: any) {
       setErrorMessage(
-        err.message || "An unexpected error occurred during administrative login.",
+        err.message ||
+          "An unexpected error occurred during administrative login.",
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDevQuickFill = () => {
-    setEmail("anbuceo@gmail.com");
-    setPassword("password123");
-    setErrorMessage("");
-  };
-
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative overflow-hidden">
       {/* Background Ambient Glow */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-linear-to-b from-indigo-900/30 via-violet-900/10 to-transparent blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-100 bg-linear-to-b from-indigo-900/30 via-violet-900/10 to-transparent blur-3xl pointer-events-none -z-10" />
 
       {/* Top Bar with Corporation Name and Theme */}
       <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
@@ -127,18 +130,23 @@ export default function AdminLoginPage() {
                 Admin Panel Login
               </h1>
               <p className="text-xs text-slate-400 mt-1 max-w-xs leading-relaxed">
-                Dedicated gateway for Ward Administrators & Super Administrators. Citizen accounts are not permitted.
+                Dedicated gateway for Ward Administrators & Super
+                Administrators. Citizen accounts are not permitted.
               </p>
             </div>
 
             {/* Error Message Alert */}
             {errorMessage && (
               <div className="mb-5 rounded-xl bg-rose-950/60 border border-rose-800/80 p-3.5 flex items-start gap-3 text-xs text-rose-200 animate-in fade-in slide-in-from-top-1">
-                <AlertTriangle size={16} className="text-rose-400 shrink-0 mt-0.5" />
+                <AlertTriangle
+                  size={16}
+                  className="text-rose-400 shrink-0 mt-0.5"
+                />
                 <div className="flex-1">
                   <p className="font-semibold text-rose-300">Access Denied</p>
                   <p className="mt-0.5 text-rose-200/90">{errorMessage}</p>
-                  {errorMessage.includes("citizen") || errorMessage.includes("denied") ? (
+                  {errorMessage.includes("citizen") ||
+                  errorMessage.includes("denied") ? (
                     <Link
                       href="/login"
                       className="mt-2 inline-block font-semibold text-white underline hover:text-rose-200"
@@ -226,24 +234,14 @@ export default function AdminLoginPage() {
                 )}
               </button>
             </form>
-
-            {/* Quick Dev Button */}
-            <div className="mt-6 pt-5 border-t border-slate-800/80 text-center">
-              <button
-                type="button"
-                onClick={handleDevQuickFill}
-                className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors font-mono"
-              >
-                ⚡ Dev: Auto-fill Super Admin (anbuceo@gmail.com)
-              </button>
-            </div>
           </div>
 
           {/* Security Notice */}
           <div className="mt-4 text-center">
             <p className="text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
               <ShieldAlert size={12} className="text-amber-500" />
-              All login attempts and administrative actions are logged with IP audit trails.
+              All login attempts and administrative actions are logged with IP
+              logs.
             </p>
           </div>
         </div>
@@ -251,7 +249,14 @@ export default function AdminLoginPage() {
 
       {/* Footer */}
       <footer className="w-full max-w-7xl mx-auto px-6 py-4 text-center text-xs text-slate-500">
-        Avadi City Corporation Municipal Administration Console · Version 2.4-RBAC
+        All rights reserved &copy; {new Date().getFullYear()} - developed by{" "}
+        <a
+          href="https://cyberdudenetworks.com"
+          target="_blank"
+          className="text-indigo-400 hover:text-indigo-300 transition-colors"
+        >
+          CyberDude Networks Pvt. Ltd.
+        </a>
       </footer>
     </div>
   );

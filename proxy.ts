@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 import type { Role } from "@/types/auth";
-import { hasMinimumRole } from "@/types/auth";
 
 // ---------------------------------------------------------------------------
 // Secret for edge-compatible JWT verification (same key as lib/auth.ts)
@@ -26,12 +25,15 @@ async function getEdgeSession(req: NextRequest): Promise<EdgeSession | null> {
 
   try {
     const { payload } = await jwtVerify(token, SECRET_KEY);
+
+    console.log("JWT payload:", payload);
     return {
       userId: payload.userId as string,
       role: (payload.role as Role) ?? "USER",
       wardNumber: (payload.wardNumber as number) ?? 0,
     };
-  } catch {
+  } catch (error) {
+    console.log("JWT verification failed:", error);
     return null; // Expired or tampered
   }
 }
@@ -55,29 +57,51 @@ async function handleProxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Normalize path by stripping trailing slashes for clean matching
+  const cleanPath =
+    pathname.length > 1 && pathname.endsWith("/")
+      ? pathname.replace(/\/+$/, "")
+      : pathname;
+
   // 2. Resolve session (lightweight edge-compatible JWT check)
   const session = await getEdgeSession(req);
 
   // 3. Redirect legacy /super-admin to /admin/super-admin
-  if (pathname === "/super-admin" || pathname.startsWith("/super-admin/")) {
+  if (cleanPath === "/super-admin" || cleanPath.startsWith("/super-admin/")) {
     return NextResponse.redirect(new URL("/admin/super-admin", req.url));
   }
 
-  // 4. Dedicated Admin Login handling
-  if (pathname === "/admin/login") {
-    // If an administrator is already logged in, redirect straight to /admin
-    if (
-      session &&
-      (session.role === "ADMIN" || session.role === "SUPER_ADMIN")
-    ) {
-      return NextResponse.redirect(new URL("/admin", req.url));
+  // 4. Dedicated Admin Login handling (/admin/login)
+  if (cleanPath === "/admin/login") {
+    // If an administrator is already logged in, redirect them to their dashboard
+    if (session) {
+      if (session.role === "SUPER_ADMIN") {
+        return NextResponse.redirect(new URL("/admin/super-admin", req.url));
+      }
+      if (session.role === "ADMIN") {
+        return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+      }
     }
-    // Allow guest or normal users to view the admin login page
+    // Allow unauthenticated guests and standard citizens to view the admin login page
     return NextResponse.next();
   }
 
-  // 5. Admin portal routes (/admin, /admin/complaints, /admin/super-admin, etc.)
-  if (pathname.startsWith("/admin")) {
+  // 5. Root /admin redirect to /admin/dashboard or /admin/super-admin
+  if (cleanPath === "/admin") {
+    if (!session) {
+      return NextResponse.redirect(new URL("/admin/login", req.url));
+    }
+    if (session.role === "SUPER_ADMIN") {
+      return NextResponse.redirect(new URL("/admin/super-admin", req.url));
+    }
+    if (session.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+    }
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  // 6. Admin portal routes (/admin/dashboard, /admin/complaints, /admin/super-admin, etc.)
+  if (cleanPath.startsWith("/admin")) {
     // Unauthenticated -> bounce to dedicated admin login
     if (!session) {
       return NextResponse.redirect(new URL("/admin/login", req.url));
@@ -90,10 +114,10 @@ async function handleProxy(req: NextRequest) {
 
     // Super Admin route requires SUPER_ADMIN role
     if (
-      pathname.startsWith("/admin/super-admin") &&
+      cleanPath.startsWith("/admin/super-admin") &&
       session.role !== "SUPER_ADMIN"
     ) {
-      return NextResponse.redirect(new URL("/admin", req.url));
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
 
     // Authorized admin user
@@ -103,31 +127,34 @@ async function handleProxy(req: NextRequest) {
     return response;
   }
 
-  // 6. Public/Citizen auth routes (/login, /get-started, /forgot-password)
+  // 7. Public/Citizen auth routes (/login, /get-started, /forgot-password)
   const isCitizenAuthRoute =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/get-started") ||
-    pathname.startsWith("/forgot-password");
+    cleanPath.startsWith("/login") ||
+    cleanPath.startsWith("/get-started") ||
+    cleanPath.startsWith("/forgot-password");
 
   if (session && isCitizenAuthRoute) {
-    if (session.role === "ADMIN" || session.role === "SUPER_ADMIN") {
-      return NextResponse.redirect(new URL("/admin", req.url));
+    if (session.role === "SUPER_ADMIN") {
+      return NextResponse.redirect(new URL("/admin/super-admin", req.url));
+    }
+    if (session.role === "ADMIN") {
+      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
     }
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
-  // 7. Protected Citizen routes
+  // 8. Protected Citizen routes
   const isCitizenProtectedRoute =
-    pathname.startsWith("/dashboard") ||
-    pathname.startsWith("/complaints") ||
-    pathname.startsWith("/feed") ||
-    pathname.startsWith("/profile");
+    cleanPath.startsWith("/dashboard") ||
+    cleanPath.startsWith("/complaints") ||
+    cleanPath.startsWith("/feed") ||
+    cleanPath.startsWith("/profile");
 
   if (!session && isCitizenProtectedRoute) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  // 8. Inject headers for all other authenticated requests
+  // 9. Inject headers for all other authenticated requests
   const response = NextResponse.next();
   if (session) {
     response.headers.set("x-user-role", session.role);
