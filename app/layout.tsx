@@ -9,6 +9,8 @@ import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import QueryProvider from "@/providers/QueryProvider";
 import { WardProvider } from "@/context/wardContext";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 
 export const metadata: Metadata = {
   title: "Avadi City App",
@@ -69,8 +71,10 @@ export default async function RootLayout({
               </ThemeProvider>
               <PwaInstallBanner />
 
-              {/* Vercel Analytics */}
+              {/* Vercel Web Analytics & Core Web Vitals Speed Insights */}
               <Analytics />
+              <SpeedInsights />
+              <PageViewTracker />
             </WardProvider>
           </QueryProvider>
         </NextIntlClientProvider>

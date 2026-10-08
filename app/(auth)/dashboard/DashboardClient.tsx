@@ -44,6 +44,7 @@ import {
   IceCreamSymbol,
 } from "@/components/food-icons";
 import { Feed, useWard } from "@/context/wardContext";
+import { trackEvent } from "@/lib/analytics";
 
 // --- TYPESCRIPT DEFINITIONS ---
 
@@ -801,7 +802,10 @@ export const DashboardClient: React.FC = () => {
 
         {/* CLICKABLE Weather & Desktop Refresh Widget */}
         <div
-          onClick={() => setIsWeatherDetailsOpen(true)}
+          onClick={() => {
+            setIsWeatherDetailsOpen(true);
+            trackEvent("weather_details_opened");
+          }}
           title="Click to view 24-hour weather forecast"
           className="relative z-20 flex items-center gap-4 self-stretch sm:self-auto border-t sm:border-t-0 sm:border-l border-slate-200/70 dark:border-slate-800 pt-3 sm:pt-0 sm:pl-6 justify-between sm:justify-end w-full sm:w-auto cursor-pointer group hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-2xl sm:-mr-2 sm:pr-2 transition-all p-2 -mx-2"
         >

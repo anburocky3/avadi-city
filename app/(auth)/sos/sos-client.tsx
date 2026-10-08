@@ -37,6 +37,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/shared-components";
 import { useWard } from "@/context/wardContext";
 import { avadiPoliceStationsData } from "@/data/sosContacts";
+import {
+  trackEvent,
+  trackSosDial,
+  trackBloodBroadcast,
+  AnalyticsEvents,
+} from "@/lib/analytics";
 
 // --- TYPESCRIPT DEFINITIONS ---
 
@@ -144,6 +150,7 @@ export const SosClient: React.FC<SosClientProps> = ({ initialContacts }) => {
 
   const handleCallTrigger = (card: { title: string; number: string }) => {
     setSelectedCallCard(card);
+    trackSosDial(card.title, card.number);
 
     setTimeout(() => {
       window.location.href = `tel:${card.number}`;
@@ -154,6 +161,7 @@ export const SosClient: React.FC<SosClientProps> = ({ initialContacts }) => {
     if (addBloodRequest) {
       addBloodRequest(data);
     }
+    trackBloodBroadcast(data.bloodGroup, data.hospitalName);
     setBroadcastedData(data);
     setIsBloodModalOpen(false);
     setShowBroadcastAlert(true);
@@ -216,6 +224,7 @@ export const SosClient: React.FC<SosClientProps> = ({ initialContacts }) => {
         }, 350);
 
         setIsSirenActive(true);
+        trackEvent(AnalyticsEvents.SOS_SIREN_TOGGLED, { active: true });
       } catch (err) {
         console.error("Audio error:", err);
       }
@@ -251,6 +260,10 @@ export const SosClient: React.FC<SosClientProps> = ({ initialContacts }) => {
         const mapsLink = `https://maps.google.com/?q=${latitude},${longitude}`;
         const message = `🚨 EMERGENCY SOS! I need immediate help in Avadi. My current GPS location: ${mapsLink}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
+        trackEvent(AnalyticsEvents.SOS_GPS_SHARED, {
+          latitude,
+          longitude,
+        });
         window.open(whatsappUrl, "_blank");
       },
       (error) => {
