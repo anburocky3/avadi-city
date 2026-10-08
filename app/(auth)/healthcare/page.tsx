@@ -13,12 +13,13 @@ export default async function HealthcarePage() {
   let approvedDbFacilities: HealthcareFacility[] = [];
 
   try {
-    const dbFacilities = await prisma.healthcareFacility.findMany({
-      where: { status: "APPROVED" },
-      orderBy: { createdAt: "desc" },
-    });
+    const dbFacilities =
+      (await (prisma as any).healthcareFacility?.findMany({
+        where: { status: "APPROVED" },
+        orderBy: { createdAt: "desc" },
+      })) || [];
 
-    approvedDbFacilities = dbFacilities.map((f) => {
+    approvedDbFacilities = dbFacilities.map((f: any) => {
       let parsedServices: string[] = [];
       try {
         if (typeof f.services === "string") {

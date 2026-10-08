@@ -43,7 +43,8 @@ export const BottomTabBar: React.FC = () => {
     // 2. Detect visual viewport height shrink (mobile virtual keyboard open)
     const handleViewportResize = () => {
       if (typeof window !== "undefined" && window.visualViewport) {
-        const isKeyboard = window.visualViewport.height < window.innerHeight * 0.85;
+        const isKeyboard =
+          window.visualViewport.height < window.innerHeight * 0.85;
         setIsKeyboardOpen(isKeyboard);
       }
     };
@@ -58,7 +59,10 @@ export const BottomTabBar: React.FC = () => {
       window.removeEventListener("focusin", handleFocusIn);
       window.removeEventListener("focusout", handleFocusOut);
       if (typeof window !== "undefined" && window.visualViewport) {
-        window.visualViewport.removeEventListener("resize", handleViewportResize);
+        window.visualViewport.removeEventListener(
+          "resize",
+          handleViewportResize,
+        );
       }
     };
   }, []);
@@ -153,7 +157,7 @@ export const BottomTabBar: React.FC = () => {
   return (
     <nav
       aria-label="Bottom Navigation"
-      className={`fixed bottom-0 left-0 right-0 z-50 md:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] pb-[max(0.25rem,env(safe-area-inset-bottom))] transition-all duration-200 ease-in-out ${
+      className={`fixed bottom-0 left-0 right-0 z-50  bg-white/95 dark:bg-slate-950/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800/80 shadow-[0_-4px_16px_rgba(0,0,0,0.03)] pb-[max(0.25rem,env(safe-area-inset-bottom))] transition-all duration-200 ease-in-out ${
         isKeyboardOpen
           ? "translate-y-full opacity-0 pointer-events-none"
           : "translate-y-0 opacity-100"

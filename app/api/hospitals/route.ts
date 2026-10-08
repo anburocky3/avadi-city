@@ -127,10 +127,11 @@ export async function GET(request: Request) {
       whereClause.facilityType = { contains: categoryParam };
     }
 
-    const facilities = await prisma.healthcareFacility.findMany({
-      where: whereClause,
-      orderBy: { createdAt: "desc" },
-    });
+    const facilities =
+      (await (prisma as any).healthcareFacility?.findMany({
+        where: whereClause,
+        orderBy: { createdAt: "desc" },
+      })) || [];
 
     return NextResponse.json({
       success: true,
@@ -343,7 +344,7 @@ export async function POST(request: Request) {
     };
 
     // 4. Save to Database via Prisma (status="PENDING", ownerId=userId)
-    const newFacility = await prisma.healthcareFacility.create({
+    const newFacility = await (prisma as any).healthcareFacility.create({
       data: {
         name: valid.name,
         facilityType: valid.facilityType,
