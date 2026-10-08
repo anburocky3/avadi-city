@@ -8,6 +8,7 @@ import { RegisterServiceWorker } from "@/components/pwa/register-sw";
 import { PwaInstallBanner } from "@/components/pwa/pwa-install-banner";
 import QueryProvider from "@/providers/QueryProvider";
 import { WardProvider } from "@/context/wardContext";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Avadi City App",
@@ -40,7 +41,12 @@ export default async function RootLayout({
   const messages = await getMessages();
 
   return (
-    <html lang="en" className={` h-full antialiased`} data-scroll-behavior="smooth" suppressHydrationWarning>
+    <html
+      lang="en"
+      className={` h-full antialiased`}
+      data-scroll-behavior="smooth"
+      suppressHydrationWarning
+    >
       <head>
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         {/* Enable Web App Standalone Mode on iOS */}
@@ -62,6 +68,9 @@ export default async function RootLayout({
                 <ToastProvider>{children}</ToastProvider>
               </ThemeProvider>
               <PwaInstallBanner />
+
+              {/* Vercel Analytics */}
+              <Analytics />
             </WardProvider>
           </QueryProvider>
         </NextIntlClientProvider>
