@@ -2,7 +2,7 @@ import React, { Suspense } from "react";
 
 import { SkeletonLoader } from "@/components/shared-components";
 import { HealthcareClient, HealthcareFacility } from "./healthcare-client";
-import { initialHealthcareSpots } from "@/data/healthcareSpots";
+// import { initialHealthcareSpots } from "@/data/healthcareSpots";
 import { prisma } from "@/lib/prisma";
 import { WARD_COORDINATES } from "@/lib/healthcare-discovery";
 
@@ -56,7 +56,8 @@ export default async function HealthcarePage() {
         ward: f.ward,
         timings: f.is24x7
           ? "Open 24/7 (24 Hours Emergency)"
-          : [f.openingTime, f.closingTime].filter(Boolean).join(" – ") || "9:00 AM – 9:00 PM",
+          : [f.openingTime, f.closingTime].filter(Boolean).join(" – ") ||
+            "9:00 AM – 9:00 PM",
         is24x7: f.is24x7,
         openingTime: f.openingTime,
         closingTime: f.closingTime,
@@ -78,21 +79,23 @@ export default async function HealthcarePage() {
   }
 
   // Prepend approved facilities before initial spots, ensuring initial spots have coordinates and verified status
-  const mappedSeedFacilities: HealthcareFacility[] = (initialHealthcareSpots as unknown as HealthcareFacility[]).map((spot) => {
-    const lat = spot.latitude ?? WARD_COORDINATES[spot.ward]?.lat ?? 13.1169;
-    const lng = spot.longitude ?? WARD_COORDINATES[spot.ward]?.lng ?? 80.0972;
-    return {
-      ...spot,
-      latitude: lat,
-      longitude: lng,
-      status: "APPROVED",
-      isVerified: true,
-    };
-  });
+  // const mappedSeedFacilities: HealthcareFacility[] = (
+  //   initialHealthcareSpots as unknown as HealthcareFacility[]
+  // ).map((spot) => {
+  //   const lat = spot.latitude ?? WARD_COORDINATES[spot.ward]?.lat ?? 13.1169;
+  //   const lng = spot.longitude ?? WARD_COORDINATES[spot.ward]?.lng ?? 80.0972;
+  //   return {
+  //     ...spot,
+  //     latitude: lat,
+  //     longitude: lng,
+  //     status: "APPROVED",
+  //     isVerified: true,
+  //   };
+  // });
 
   const facilities: HealthcareFacility[] = [
     ...approvedDbFacilities,
-    ...mappedSeedFacilities,
+    // ...mappedSeedFacilities,
   ];
 
   return (

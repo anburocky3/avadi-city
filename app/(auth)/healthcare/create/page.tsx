@@ -43,18 +43,53 @@ const MapLocationPicker = dynamic(
         Loading Avadi Interactive Map...
       </div>
     ),
-  }
+  },
 );
 
 // Facility Types configuration
 const FACILITY_TYPES = [
-  { id: "Hospital", label: "Hospital", icon: HeartPulse, desc: "Multispeciality or general hospital" },
-  { id: "Clinic", label: "Clinic", icon: Stethoscope, desc: "Consultation, outpatient & specialized care" },
-  { id: "Pharmacy", label: "Pharmacy", icon: Pill, desc: "Medical store & pharmaceuticals" },
-  { id: "Medical Centre", label: "Medical Centre", icon: Activity, desc: "Primary healthcare & family care" },
-  { id: "Diagnostic Centre", label: "Diagnostic Centre", icon: Building2, desc: "Pathology, scans, X-ray & lab" },
-  { id: "Pet Hospital", label: "Pet Hospital", icon: PawPrint, desc: "Veterinary emergency & surgery" },
-  { id: "Pet Clinic", label: "Pet Clinic", icon: PawPrint, desc: "Veterinary care & pet vaccines" },
+  {
+    id: "Hospital",
+    label: "Hospital",
+    icon: HeartPulse,
+    desc: "Multispeciality or general hospital",
+  },
+  {
+    id: "Clinic",
+    label: "Clinic",
+    icon: Stethoscope,
+    desc: "Consultation, outpatient & specialized care",
+  },
+  {
+    id: "Pharmacy",
+    label: "Pharmacy",
+    icon: Pill,
+    desc: "Medical store & pharmaceuticals",
+  },
+  {
+    id: "Medical Centre",
+    label: "Medical Centre",
+    icon: Activity,
+    desc: "Primary healthcare & family care",
+  },
+  {
+    id: "Diagnostic Centre",
+    label: "Diagnostic Centre",
+    icon: Building2,
+    desc: "Pathology, scans, X-ray & lab",
+  },
+  {
+    id: "Pet Hospital",
+    label: "Pet Hospital",
+    icon: PawPrint,
+    desc: "Veterinary emergency & surgery",
+  },
+  {
+    id: "Pet Clinic",
+    label: "Pet Clinic",
+    icon: PawPrint,
+    desc: "Veterinary care & pet vaccines",
+  },
 ];
 
 // Interface for dynamic healthcare services
@@ -85,7 +120,11 @@ const DYNAMIC_SERVICES_BY_TYPE: Record<string, HealthcareServiceItem[]> = {
     { name: "General Surgery", icon: "🩸", group: "Medical Specialties" },
 
     // Diagnostic & Support
-    { name: "Laboratory / Blood Tests", icon: "🧪", group: "Diagnostic & Support" },
+    {
+      name: "Laboratory / Blood Tests",
+      icon: "🧪",
+      group: "Diagnostic & Support",
+    },
     { name: "X-Ray", icon: "🩻", group: "Diagnostic & Support" },
     { name: "Scanning / Imaging", icon: "🖥️", group: "Diagnostic & Support" },
     { name: "In-house Pharmacy", icon: "💊", group: "Diagnostic & Support" },
@@ -318,7 +357,9 @@ export default function CreateFacilityPage() {
             targetEl instanceof HTMLTextAreaElement ||
             targetEl instanceof HTMLSelectElement
               ? targetEl
-              : targetEl.querySelector<HTMLElement>("input, textarea, select, button");
+              : targetEl.querySelector<HTMLElement>(
+                  "input, textarea, select, button",
+                );
 
           if (focusable && typeof focusable.focus === "function") {
             setTimeout(() => {
@@ -347,7 +388,9 @@ export default function CreateFacilityPage() {
   // ==========================================
   // STEP 1 STATE: FACILITY PROFILE
   // ==========================================
-  const [selectedFacilityTypes, setSelectedFacilityTypes] = useState<string[]>([]);
+  const [selectedFacilityTypes, setSelectedFacilityTypes] = useState<string[]>(
+    [],
+  );
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
 
   // ==========================================
@@ -371,13 +414,16 @@ export default function CreateFacilityPage() {
   // Location Autocomplete state
   const [streetQuery, setStreetQuery] = useState("");
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
-  const [selectedStreetItem, setSelectedStreetItem] = useState<StreetItem | null>(null);
+  const [selectedStreetItem, setSelectedStreetItem] =
+    useState<StreetItem | null>(null);
 
   // ==========================================
   // STEP 3 STATE: DETAILS & CONFIRMATION
   // ==========================================
   const [primaryImageFile, setPrimaryImageFile] = useState<File | null>(null);
-  const [primaryImagePreview, setPrimaryImagePreview] = useState<string | null>(null);
+  const [primaryImagePreview, setPrimaryImagePreview] = useState<string | null>(
+    null,
+  );
 
   const additionalImageFiles: File[] = [];
 
@@ -440,11 +486,12 @@ export default function CreateFacilityPage() {
 
   // Is pharmacy selected in Step 1?
   const isPharmacySelected = selectedFacilityTypes.some((t) =>
-    t.toLowerCase().includes("pharmacy")
+    t.toLowerCase().includes("pharmacy"),
   );
 
   // Step 1 Validation Check for enabling/disabling Continue button
-  const isStep1Valid = selectedFacilityTypes.length > 0 && selectedServices.length > 0;
+  const isStep1Valid =
+    selectedFacilityTypes.length > 0 && selectedServices.length > 0;
 
   // ==========================================
   // HANDLERS: STEP 1
@@ -461,7 +508,7 @@ export default function CreateFacilityPage() {
         : [];
 
       setSelectedServices((prevServices) =>
-        prevServices.filter((s) => validServicesForNewType.includes(s))
+        prevServices.filter((s) => validServicesForNewType.includes(s)),
       );
 
       if (fieldErrors.facilityType) {
@@ -509,7 +556,7 @@ export default function CreateFacilityPage() {
     } else {
       scrollToFirstError(errorKeys);
       toast.error(
-        "Please select a Facility Type and at least one relevant Service to continue."
+        "Please select a Facility Type and at least one relevant Service to continue.",
       );
     }
   };
@@ -529,7 +576,7 @@ export default function CreateFacilityPage() {
     }
 
     const matches = ALL_AVADI_STREETS.filter((item) =>
-      item.streetName.toLowerCase().includes(q.toLowerCase().trim())
+      item.streetName.toLowerCase().includes(q.toLowerCase().trim()),
     );
 
     setStreetResults(matches.slice(0, 15));
@@ -544,7 +591,10 @@ export default function CreateFacilityPage() {
     setWard(item.wardNo);
 
     // Update map to selected ward coordinates
-    const coords = AVADI_WARD_COORDINATES[item.wardNo] || { lat: 13.1169, lng: 80.0972 };
+    const coords = AVADI_WARD_COORDINATES[item.wardNo] || {
+      lat: 13.1169,
+      lng: 80.0972,
+    };
     setLatitude(coords.lat);
     setLongitude(coords.lng);
     setMapError(null);
@@ -570,7 +620,8 @@ export default function CreateFacilityPage() {
       errors.description = "Facility Description is required.";
       errorKeys.push("description");
     } else if (description.trim().length < 10) {
-      errors.description = "Please provide a detailed description (at least 10 characters).";
+      errors.description =
+        "Please provide a detailed description (at least 10 characters).";
       errorKeys.push("description");
     }
 
@@ -597,7 +648,8 @@ export default function CreateFacilityPage() {
       errors.facilityAddress = "Facility Address is required.";
       errorKeys.push("facilityAddress");
     } else if (facilityAddress.trim().length < 3) {
-      errors.facilityAddress = "Facility Address must be at least 3 characters.";
+      errors.facilityAddress =
+        "Facility Address must be at least 3 characters.";
       errorKeys.push("facilityAddress");
     }
 
@@ -700,12 +752,14 @@ export default function CreateFacilityPage() {
     }
 
     if (ambulanceAvailable && !ambulancePhone.trim()) {
-      errors.ambulancePhone = "Ambulance contact number is required when ambulance is available.";
+      errors.ambulancePhone =
+        "Ambulance contact number is required when ambulance is available.";
       errorKeys.push("ambulancePhone");
     }
 
     if (!termsAccepted) {
-      errors.terms = "Please agree to the Terms & Verification before submitting.";
+      errors.terms =
+        "Please agree to the Terms & Verification before submitting.";
       errorKeys.push("terms");
     }
 
@@ -744,7 +798,9 @@ export default function CreateFacilityPage() {
     const errs3 = validateStep3();
     if (errs3.length > 0) {
       scrollToFirstError(errs3);
-      toast.error("Please complete the required information before submitting.");
+      toast.error(
+        "Please complete the required information before submitting.",
+      );
       return;
     }
 
@@ -757,7 +813,8 @@ export default function CreateFacilityPage() {
       formData.append("category", selectedFacilityTypes[0] || "Hospitals");
       formData.append("description", description.trim());
       formData.append("phone", phone.trim());
-      if (alternatePhone.trim()) formData.append("alternatePhone", alternatePhone.trim());
+      if (alternatePhone.trim())
+        formData.append("alternatePhone", alternatePhone.trim());
       if (email.trim()) formData.append("email", email.trim());
 
       const fullAddress = [facilityAddress.trim(), streetArea.trim()]
@@ -771,17 +828,32 @@ export default function CreateFacilityPage() {
       if (longitude) formData.append("longitude", longitude.toString());
 
       formData.append("is24x7", isOpen24Hours ? "true" : "false");
-      formData.append("openingTime", isOpen24Hours ? "Open 24 Hours" : openingTime);
-      formData.append("closingTime", isOpen24Hours ? "Open 24 Hours" : closingTime);
+      formData.append(
+        "openingTime",
+        isOpen24Hours ? "Open 24 Hours" : openingTime,
+      );
+      formData.append(
+        "closingTime",
+        isOpen24Hours ? "Open 24 Hours" : closingTime,
+      );
 
       formData.append("services", JSON.stringify(selectedServices));
-      formData.append("emergencyAvailable", emergencyAvailable ? "true" : "false");
-      formData.append("ambulanceAvailable", ambulanceAvailable ? "true" : "false");
+      formData.append(
+        "emergencyAvailable",
+        emergencyAvailable ? "true" : "false",
+      );
+      formData.append(
+        "ambulanceAvailable",
+        ambulanceAvailable ? "true" : "false",
+      );
       if (ambulanceAvailable && ambulancePhone.trim()) {
         formData.append("ambulancePhone", ambulancePhone.trim());
       }
       formData.append("appointments", appointmentType);
-      formData.append("consultationFee", String(Math.max(0, consultationFee || 0)));
+      formData.append(
+        "consultationFee",
+        String(Math.max(0, consultationFee || 0)),
+      );
       formData.append("homeDelivery", homeDeliveryAvailable ? "true" : "false");
       formData.append("paymentMethods", JSON.stringify(selectedPayments));
 
@@ -813,7 +885,10 @@ export default function CreateFacilityPage() {
 
       setShowSuccessModal(true);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "An error occurred during submission.";
+      const message =
+        err instanceof Error
+          ? err.message
+          : "An error occurred during submission.";
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -821,7 +896,10 @@ export default function CreateFacilityPage() {
   };
 
   return (
-    <div ref={wizardTopRef} className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6">
+    <div
+      ref={wizardTopRef}
+      className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6"
+    >
       {/* Main Title */}
       <div className="space-y-1.5">
         <div className="flex items-center gap-2.5">
@@ -838,8 +916,8 @@ export default function CreateFacilityPage() {
           </h1>
         </div>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-medium pl-7 sm:pl-8">
-          Add hospitals, clinics, 24/7 pharmacies, or medical centres to Avadi Connect.
-          Submissions undergo official verification before appearing publicly.
+          Add hospitals, clinics, 24/7 pharmacies, or medical centres to Avadi
+          City.
         </p>
       </div>
 
@@ -860,15 +938,15 @@ export default function CreateFacilityPage() {
                     stepNum < currentStep
                       ? "bg-emerald-500 shadow-xs shadow-emerald-500/30 cursor-pointer hover:opacity-85"
                       : stepNum === currentStep
-                      ? "bg-orange-500 shadow-sm shadow-orange-500/40"
-                      : "bg-slate-100 dark:bg-slate-800"
+                        ? "bg-orange-500 shadow-sm shadow-orange-500/40"
+                        : "bg-slate-100 dark:bg-slate-800"
                   }`}
                   title={
                     stepNum < currentStep
                       ? `Step ${stepNum} (Completed - Click to return)`
                       : stepNum === currentStep
-                      ? `Step ${stepNum} (Current)`
-                      : `Step ${stepNum}`
+                        ? `Step ${stepNum} (Current)`
+                        : `Step ${stepNum}`
                   }
                 />
               ))}
@@ -912,7 +990,8 @@ export default function CreateFacilityPage() {
                     Facility Type <span className="text-rose-500">*</span>
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Select the category that best describes your healthcare facility.
+                    Select the category that best describes your healthcare
+                    facility.
                   </p>
                 </div>
 
@@ -979,7 +1058,8 @@ export default function CreateFacilityPage() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                      Healthcare Services <span className="text-rose-500">*</span>
+                      Healthcare Services{" "}
+                      <span className="text-rose-500">*</span>
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                       {selectedFacilityTypes.length > 0
@@ -987,31 +1067,38 @@ export default function CreateFacilityPage() {
                         : "Select a Facility Type above to display relevant healthcare services."}
                     </p>
                   </div>
-                  {selectedFacilityTypes.length > 0 && selectedServices.length > 0 && (
-                    <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/80 dark:border-rose-900/60 w-fit">
-                      {selectedServices.length} selected
-                    </span>
-                  )}
+                  {selectedFacilityTypes.length > 0 &&
+                    selectedServices.length > 0 && (
+                      <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-2.5 py-1 rounded-full border border-rose-200/80 dark:border-rose-900/60 w-fit">
+                        {selectedServices.length} selected
+                      </span>
+                    )}
                 </div>
 
                 {selectedFacilityTypes.length === 0 ? (
                   <div className="p-8 rounded-2xl border border-dashed border-slate-300 dark:border-slate-800 text-center bg-slate-50/50 dark:bg-slate-900/30">
-                    <HeartPulse className="mx-auto text-slate-400 dark:text-slate-600 mb-2" size={28} />
+                    <HeartPulse
+                      className="mx-auto text-slate-400 dark:text-slate-600 mb-2"
+                      size={28}
+                    />
                     <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
                       Select a Facility Type above
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Relevant healthcare services will appear dynamically based on your choice.
+                      Relevant healthcare services will appear dynamically based
+                      on your choice.
                     </p>
                   </div>
                 ) : (
                   (() => {
                     const currentType = selectedFacilityTypes[0];
-                    const serviceList = DYNAMIC_SERVICES_BY_TYPE[currentType] || [];
+                    const serviceList =
+                      DYNAMIC_SERVICES_BY_TYPE[currentType] || [];
                     const hasGroups = serviceList.some((s) => Boolean(s.group));
 
                     if (hasGroups) {
-                      const groupsMap: Record<string, HealthcareServiceItem[]> = {};
+                      const groupsMap: Record<string, HealthcareServiceItem[]> =
+                        {};
                       serviceList.forEach((s) => {
                         const g = s.group || "Other Services";
                         if (!groupsMap[g]) groupsMap[g] = [];
@@ -1020,43 +1107,52 @@ export default function CreateFacilityPage() {
 
                       return (
                         <div className="space-y-4 pt-1">
-                          {Object.entries(groupsMap).map(([groupTitle, items]) => (
-                            <div key={groupTitle} className="space-y-2">
-                              <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                                {groupTitle}
-                              </h3>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
-                                {items.map((service) => {
-                                  const isSelected = selectedServices.includes(service.name);
-                                  return (
-                                    <button
-                                      key={service.name}
-                                      type="button"
-                                      onClick={() => toggleService(service.name)}
-                                      className={`p-3 rounded-2xl border text-left transition duration-150 cursor-pointer flex items-center gap-2.5 ${
-                                        isSelected
-                                          ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 dark:border-rose-500 text-rose-900 dark:text-rose-100 ring-2 ring-rose-500/20 shadow-xs scale-[1.01]"
-                                          : "bg-slate-50/60 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/50"
-                                      }`}
-                                    >
-                                      <span className="text-lg leading-none shrink-0" role="img" aria-label={service.name}>
-                                        {service.icon}
-                                      </span>
-                                      <span
-                                        className={`text-xs font-bold leading-tight line-clamp-2 ${
+                          {Object.entries(groupsMap).map(
+                            ([groupTitle, items]) => (
+                              <div key={groupTitle} className="space-y-2">
+                                <h3 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                  {groupTitle}
+                                </h3>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5">
+                                  {items.map((service) => {
+                                    const isSelected =
+                                      selectedServices.includes(service.name);
+                                    return (
+                                      <button
+                                        key={service.name}
+                                        type="button"
+                                        onClick={() =>
+                                          toggleService(service.name)
+                                        }
+                                        className={`p-3 rounded-2xl border text-left transition duration-150 cursor-pointer flex items-center gap-2.5 ${
                                           isSelected
-                                            ? "text-rose-700 dark:text-rose-300"
-                                            : "text-slate-800 dark:text-slate-200"
+                                            ? "bg-rose-50 dark:bg-rose-950/40 border-rose-500 dark:border-rose-500 text-rose-900 dark:text-rose-100 ring-2 ring-rose-500/20 shadow-xs scale-[1.01]"
+                                            : "bg-slate-50/60 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/50"
                                         }`}
                                       >
-                                        {service.name}
-                                      </span>
-                                    </button>
-                                  );
-                                })}
+                                        <span
+                                          className="text-lg leading-none shrink-0"
+                                          role="img"
+                                          aria-label={service.name}
+                                        >
+                                          {service.icon}
+                                        </span>
+                                        <span
+                                          className={`text-xs font-bold leading-tight line-clamp-2 ${
+                                            isSelected
+                                              ? "text-rose-700 dark:text-rose-300"
+                                              : "text-slate-800 dark:text-slate-200"
+                                          }`}
+                                        >
+                                          {service.name}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            ),
+                          )}
                         </div>
                       );
                     }
@@ -1064,7 +1160,9 @@ export default function CreateFacilityPage() {
                     return (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 pt-1">
                         {serviceList.map((service) => {
-                          const isSelected = selectedServices.includes(service.name);
+                          const isSelected = selectedServices.includes(
+                            service.name,
+                          );
                           return (
                             <button
                               key={service.name}
@@ -1076,7 +1174,11 @@ export default function CreateFacilityPage() {
                                   : "bg-slate-50/60 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 hover:bg-slate-100/60 dark:hover:bg-slate-800/50"
                               }`}
                             >
-                              <span className="text-lg leading-none shrink-0" role="img" aria-label={service.name}>
+                              <span
+                                className="text-lg leading-none shrink-0"
+                                role="img"
+                                aria-label={service.name}
+                              >
                                 {service.icon}
                               </span>
                               <span
@@ -1137,7 +1239,8 @@ export default function CreateFacilityPage() {
                     value={name}
                     onChange={(e) => {
                       setName(e.target.value);
-                      if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: "" }));
+                      if (fieldErrors.name)
+                        setFieldErrors((p) => ({ ...p, name: "" }));
                     }}
                     placeholder="e.g. Sri Lakshmi Hospital, ABC Medicals"
                     className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-rose-500 ${
@@ -1204,7 +1307,8 @@ export default function CreateFacilityPage() {
                         value={phone}
                         onChange={(e) => {
                           setPhone(e.target.value);
-                          if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" }));
+                          if (fieldErrors.phone)
+                            setFieldErrors((p) => ({ ...p, phone: "" }));
                         }}
                         placeholder="e.g. 044 2638 0255 or 98400 12345"
                         className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-xs sm:text-sm font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-rose-500 ${
@@ -1226,7 +1330,10 @@ export default function CreateFacilityPage() {
                       htmlFor="facility-alt-phone-input"
                       className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                     >
-                      Alternate Phone <span className="text-slate-400 font-normal">(Optional)</span>
+                      Alternate Phone{" "}
+                      <span className="text-slate-400 font-normal">
+                        (Optional)
+                      </span>
                     </label>
                     <div className="relative">
                       <Phone
@@ -1251,7 +1358,10 @@ export default function CreateFacilityPage() {
                     htmlFor="facility-email-input"
                     className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                   >
-                    Email <span className="text-slate-400 font-normal">(Optional)</span>
+                    Email{" "}
+                    <span className="text-slate-400 font-normal">
+                      (Optional)
+                    </span>
                   </label>
                   <div className="relative">
                     <Mail
@@ -1264,7 +1374,8 @@ export default function CreateFacilityPage() {
                       value={email}
                       onChange={(e) => {
                         setEmail(e.target.value);
-                        if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" }));
+                        if (fieldErrors.email)
+                          setFieldErrors((p) => ({ ...p, email: "" }));
                       }}
                       placeholder="contact@facility.com"
                       className={`w-full pl-10 pr-4 py-3 rounded-2xl border text-xs sm:text-sm font-semibold bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-rose-500 ${
@@ -1289,12 +1400,16 @@ export default function CreateFacilityPage() {
                     Location &amp; Coordinates
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Search Avadi street or area from the official municipal registry.
+                    Search Avadi street or area from the official municipal
+                    registry.
                   </p>
                 </div>
 
                 {/* Area / Street Autocomplete */}
-                <div ref={locationContainerRef} className="relative space-y-1.5">
+                <div
+                  ref={locationContainerRef}
+                  className="relative space-y-1.5"
+                >
                   <label
                     htmlFor="street-search-input"
                     className="block text-xs font-bold text-slate-700 dark:text-slate-200"
@@ -1331,7 +1446,10 @@ export default function CreateFacilityPage() {
                           className="p-3 hover:bg-rose-50/60 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-between transition"
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <MapPin size={15} className="text-rose-600 shrink-0" />
+                            <MapPin
+                              size={15}
+                              className="text-rose-600 shrink-0"
+                            />
                             <span className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate capitalize">
                               {item.streetName}
                             </span>
@@ -1423,7 +1541,10 @@ export default function CreateFacilityPage() {
               </div>
 
               {/* Business Hours */}
-              <div id="field-timings" className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <div
+                id="field-timings"
+                className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800"
+              >
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
@@ -1495,7 +1616,9 @@ export default function CreateFacilityPage() {
                   <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 flex items-center gap-2.5 text-rose-800 dark:text-rose-300">
                     <ShieldAlert size={18} className="shrink-0 text-rose-600" />
                     <p className="text-xs font-semibold">
-                      Facility will be displayed as <span className="font-black">Open 24 Hours</span> for emergency and round-the-clock care.
+                      Facility will be displayed as{" "}
+                      <span className="font-black">Open 24 Hours</span> for
+                      emergency and round-the-clock care.
                     </p>
                   </div>
                 )}
@@ -1542,7 +1665,8 @@ export default function CreateFacilityPage() {
                     Facility Image <span className="text-rose-500">*</span>
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Upload high quality photo of hospital front, clinic entrance, or pharmacy storefront (max 5MB).
+                    Upload high quality photo of hospital front, clinic
+                    entrance, or pharmacy storefront (max 5MB).
                   </p>
                 </div>
 
@@ -1582,7 +1706,9 @@ export default function CreateFacilityPage() {
                     <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
                       Click to upload main facility image
                     </p>
-                    <p className="text-[11px] text-slate-400">JPG, PNG, or WebP up to 5MB</p>
+                    <p className="text-[11px] text-slate-400">
+                      JPG, PNG, or WebP up to 5MB
+                    </p>
                   </label>
                 )}
 
@@ -1592,8 +1718,6 @@ export default function CreateFacilityPage() {
                   </p>
                 )}
               </div>
-
-
 
               {/* Read-Only Services Summary */}
               <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -1634,7 +1758,8 @@ export default function CreateFacilityPage() {
                     Emergency &amp; Critical Care
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Select available emergency capabilities. Do not claim services not provided.
+                    Select available emergency capabilities. Do not claim
+                    services not provided.
                   </p>
                 </div>
 
@@ -1658,7 +1783,9 @@ export default function CreateFacilityPage() {
                       <ShieldAlert size={18} />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm font-bold">Emergency Care Available</p>
+                      <p className="text-xs sm:text-sm font-bold">
+                        Emergency Care Available
+                      </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         Trauma, casualty or urgent medical care
                       </p>
@@ -1684,7 +1811,9 @@ export default function CreateFacilityPage() {
                       <Ambulance size={18} />
                     </div>
                     <div>
-                      <p className="text-xs sm:text-sm font-bold">Ambulance Available</p>
+                      <p className="text-xs sm:text-sm font-bold">
+                        Ambulance Available
+                      </p>
                       <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                         Dedicated ambulance on standby
                       </p>
@@ -1698,7 +1827,8 @@ export default function CreateFacilityPage() {
                       htmlFor="ambulance-phone-input"
                       className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                     >
-                      Ambulance Direct Contact Number <span className="text-rose-500">*</span>
+                      Ambulance Direct Contact Number{" "}
+                      <span className="text-rose-500">*</span>
                     </label>
                     <input
                       id="ambulance-phone-input"
@@ -1758,14 +1888,18 @@ export default function CreateFacilityPage() {
               </div>
 
               {/* Consultation / Appointment Fee */}
-              <div id="field-consultation-fee" className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
+              <div
+                id="field-consultation-fee"
+                className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800"
+              >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                   <div>
                     <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                       Consultation / Appointment Fee
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Enter the applicable consultation or appointment fee (₹0 represents Free consultation).
+                      Enter the applicable consultation or appointment fee (₹0
+                      represents Free consultation).
                     </p>
                   </div>
                   <span
@@ -1775,14 +1909,20 @@ export default function CreateFacilityPage() {
                         : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800"
                     }`}
                   >
-                    {consultationFee === 0 ? "Free / No Consultation Fee" : `₹${consultationFee}`}
+                    {consultationFee === 0
+                      ? "Free / No Consultation Fee"
+                      : `₹${consultationFee}`}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3 max-w-xs pt-1">
                   <button
                     type="button"
-                    onClick={() => setConsultationFee((prev) => Math.max(0, (prev || 0) - 50))}
+                    onClick={() =>
+                      setConsultationFee((prev) =>
+                        Math.max(0, (prev || 0) - 50),
+                      )
+                    }
                     disabled={consultationFee <= 0}
                     aria-label="Decrease fee"
                     className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed text-slate-800 dark:text-slate-100 font-black text-lg transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700 select-none shadow-xs shrink-0"
@@ -1813,7 +1953,11 @@ export default function CreateFacilityPage() {
 
                   <button
                     type="button"
-                    onClick={() => setConsultationFee((prev) => Math.max(0, (prev || 0) + 50))}
+                    onClick={() =>
+                      setConsultationFee((prev) =>
+                        Math.max(0, (prev || 0) + 50),
+                      )
+                    }
                     aria-label="Increase fee"
                     className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 font-black text-lg transition flex items-center justify-center cursor-pointer active:scale-95 border border-slate-200 dark:border-slate-700 select-none shadow-xs shrink-0"
                   >
@@ -1821,7 +1965,8 @@ export default function CreateFacilityPage() {
                   </button>
                 </div>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                  Use the <span className="font-bold">− / +</span> buttons (₹50 step) or enter amount directly.
+                  Use the <span className="font-bold">− / +</span> buttons (₹50
+                  step) or enter amount directly.
                 </p>
               </div>
 
@@ -1839,20 +1984,22 @@ export default function CreateFacilityPage() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => setHomeDeliveryAvailable(!homeDeliveryAvailable)}
+                      onClick={() =>
+                        setHomeDeliveryAvailable(!homeDeliveryAvailable)
+                      }
                       className={`px-4 py-2 rounded-2xl text-xs font-black border transition cursor-pointer ${
                         homeDeliveryAvailable
                           ? "bg-emerald-600 border-emerald-600 text-white"
                           : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700"
                       }`}
                     >
-                      {homeDeliveryAvailable ? "Delivery Active" : "No Delivery"}
+                      {homeDeliveryAvailable
+                        ? "Delivery Active"
+                        : "No Delivery"}
                     </button>
                   </div>
                 </div>
               )}
-
-
 
               {/* Key Services */}
               <div className="space-y-3 pt-6 border-t border-slate-100 dark:border-slate-800">
@@ -1861,7 +2008,8 @@ export default function CreateFacilityPage() {
                     Key Services &amp; Packages
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Add highlighted treatments or tests (e.g. Full Body Checkup, ECG, Blood Test).
+                    Add highlighted treatments or tests (e.g. Full Body Checkup,
+                    ECG, Blood Test).
                   </p>
                 </div>
 
@@ -1922,7 +2070,10 @@ export default function CreateFacilityPage() {
               <div className="space-y-4 pt-6 border-t border-slate-100 dark:border-slate-800">
                 <div>
                   <h2 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                    Online Links <span className="text-slate-400 font-normal">(Optional)</span>
+                    Online Links{" "}
+                    <span className="text-slate-400 font-normal">
+                      (Optional)
+                    </span>
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     Official website or Google profile / social media page.
@@ -1987,12 +2138,17 @@ export default function CreateFacilityPage() {
                     checked={termsAccepted}
                     onChange={(e) => {
                       setTermsAccepted(e.target.checked);
-                      if (fieldErrors.terms) setFieldErrors((p) => ({ ...p, terms: "" }));
+                      if (fieldErrors.terms)
+                        setFieldErrors((p) => ({ ...p, terms: "" }));
                     }}
                     className="mt-1 h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
                   />
                   <span className="text-xs text-slate-700 dark:text-slate-300 font-medium leading-relaxed">
-                    I confirm that all details, license information, phone numbers, and operational timings provided above are authentic and accurate for this healthcare establishment in Avadi Corporation. I understand this listing requires administrator review before going live.
+                    I confirm that all details, license information, phone
+                    numbers, and operational timings provided above are
+                    authentic and accurate for this healthcare establishment in
+                    Avadi Corporation. I understand this listing requires
+                    administrator review before going live.
                   </span>
                 </label>
                 {fieldErrors.terms && (

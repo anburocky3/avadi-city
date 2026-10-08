@@ -153,10 +153,7 @@ const PublicFacilityCard: React.FC<PublicFacilityCardProps> = ({
 
         {facility.rating ? (
           <div className="absolute top-3 right-3 bg-amber-500 text-slate-950 px-2.5 py-1 rounded-lg text-xs font-black flex items-center shadow-md">
-            <Star
-              size={12}
-              className="fill-slate-950 text-slate-950 mr-1"
-            />
+            <Star size={12} className="fill-slate-950 text-slate-950 mr-1" />
             <span>{facility.rating}</span>
           </div>
         ) : null}
@@ -180,7 +177,9 @@ const PublicFacilityCard: React.FC<PublicFacilityCardProps> = ({
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  openStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
+                  openStatus.isOpen
+                    ? "bg-emerald-500 animate-pulse"
+                    : "bg-slate-400"
                 }`}
               />
               <span>{openStatus.label}</span>
@@ -199,7 +198,9 @@ const PublicFacilityCard: React.FC<PublicFacilityCardProps> = ({
 
           {facility.services && facility.services.length > 0 && (
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium line-clamp-1">
-              <span className="font-bold text-slate-700 dark:text-slate-300">Services: </span>
+              <span className="font-bold text-slate-700 dark:text-slate-300">
+                Services:{" "}
+              </span>
               {facility.services.slice(0, 4).join(" · ")}
             </p>
           )}
@@ -230,18 +231,20 @@ const PublicFacilityCard: React.FC<PublicFacilityCardProps> = ({
                 Home Delivery
               </span>
             )}
-            {facility.appointments && facility.appointments !== "Not Available" && (
-              <span className="px-2 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[10px] font-extrabold border border-violet-200 dark:border-violet-900">
-                {facility.appointments}
-              </span>
-            )}
-            {facility.consultationFee !== undefined && facility.consultationFee !== null && (
-              <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-900">
-                {facility.consultationFee === 0
-                  ? "Fee: Free"
-                  : `Consultation Fee: ₹${facility.consultationFee}`}
-              </span>
-            )}
+            {facility.appointments &&
+              facility.appointments !== "Not Available" && (
+                <span className="px-2 py-0.5 rounded-md bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 text-[10px] font-extrabold border border-violet-200 dark:border-violet-900">
+                  {facility.appointments}
+                </span>
+              )}
+            {facility.consultationFee !== undefined &&
+              facility.consultationFee !== null && (
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[10px] font-extrabold border border-emerald-200 dark:border-emerald-900">
+                  {facility.consultationFee === 0
+                    ? "Fee: Free"
+                    : `Consultation Fee: ₹${facility.consultationFee}`}
+                </span>
+              )}
           </div>
 
           {/* Time & Distance Row */}
@@ -312,9 +315,13 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // User location: defaults to active ward coordinates, enhanced via browser geolocation if granted
-  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(() => {
-    return WARD_COORDINATES[activeWard?.id || 14] || { lat: 13.1169, lng: 80.0972 };
-  });
+  const [userCoords, setUserCoords] = useState<{ lat: number; lng: number }>(
+    () => {
+      return (
+        WARD_COORDINATES[activeWard?.id || 14] || { lat: 13.1169, lng: 80.0972 }
+      );
+    },
+  );
 
   useEffect(() => {
     // Sync with active ward if user changes ward
@@ -335,7 +342,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
         () => {
           // If denied, fallback remains activeWard coordinates
         },
-        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 }
+        { enableHighAccuracy: false, timeout: 5000, maximumAge: 60000 },
       );
     }
   }, [activeWard?.id]);
@@ -345,7 +352,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
     (facility: HealthcareFacility) => {
       setSelectedFacility(facility);
     },
-    []
+    [],
   );
 
   // Smooth filter simulation trigger
@@ -367,20 +374,28 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
       }
       return null;
     },
-    [userCoords]
+    [userCoords],
   );
 
   // Helper to get exact coordinates for facility directions
-  const getFacilityCoords = (facility: HealthcareFacility): { lat: number; lng: number } => {
-    const lat = facility.latitude ?? WARD_COORDINATES[facility.ward]?.lat ?? 13.1169;
-    const lng = facility.longitude ?? WARD_COORDINATES[facility.ward]?.lng ?? 80.0972;
+  const getFacilityCoords = (
+    facility: HealthcareFacility,
+  ): { lat: number; lng: number } => {
+    const lat =
+      facility.latitude ?? WARD_COORDINATES[facility.ward]?.lat ?? 13.1169;
+    const lng =
+      facility.longitude ?? WARD_COORDINATES[facility.ward]?.lng ?? 80.0972;
     return { lat, lng };
   };
 
   // Emergency Facilities (Approved with emergency care)
   const emergencyFacilities = useMemo(() => {
     return initialFacilities
-      .filter((f) => (f.status === "APPROVED" || f.isVerified) && (f.hasEmergencyUnit || f.is24x7))
+      .filter(
+        (f) =>
+          (f.status === "APPROVED" || f.isVerified) &&
+          (f.hasEmergencyUnit || f.is24x7),
+      )
       .sort((a, b) => {
         const distA = getFacilityDistance(a) ?? 999;
         const distB = getFacilityDistance(b) ?? 999;
@@ -412,7 +427,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
           f.specialty.toLowerCase().includes(q) ||
           f.description.toLowerCase().includes(q) ||
           f.address.toLowerCase().includes(q) ||
-          (f.services && f.services.some((s) => s.toLowerCase().includes(q)))
+          (f.services && f.services.some((s) => s.toLowerCase().includes(q))),
       );
     }
 
@@ -448,14 +463,17 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
             {t("title")}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 flex items-center font-medium">
-            <HeartPulse size={14} className="text-rose-500 mr-1 animate-pulse" />
+            <HeartPulse
+              size={14}
+              className="text-rose-500 mr-1 animate-pulse"
+            />
             <span>{t("subtitle")}</span>
           </p>
         </div>
 
         {/* New Facilities Action - Orange Theme Style */}
         <Link
-          href="/hospitals/create"
+          href="/healthcare/create"
           className="px-3.5 py-2 sm:px-4 sm:py-2.5 bg-primary hover:bg-orange-600 text-white font-extrabold rounded-2xl text-xs sm:text-sm shadow-md transition flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-98"
         >
           <Plus size={16} />
@@ -479,7 +497,8 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
                   </span>
                 </h2>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-                  Healthcare centres with round-the-clock emergency, casualty or ICU care.
+                  Healthcare centres with round-the-clock emergency, casualty or
+                  ICU care.
                 </p>
               </div>
             </div>
@@ -650,175 +669,186 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
       </div>
 
       {/* FACILITY DETAIL MODAL */}
-      {selectedFacility && (() => {
-        const modalOpenStatus = checkFacilityOpenStatus(selectedFacility);
-        const modalDist = getFacilityDistance(selectedFacility);
-        const modalDistStr = formatDistance(modalDist);
-        const { lat: mLat, lng: mLng } = getFacilityCoords(selectedFacility);
+      {selectedFacility &&
+        (() => {
+          const modalOpenStatus = checkFacilityOpenStatus(selectedFacility);
+          const modalDist = getFacilityDistance(selectedFacility);
+          const modalDistStr = formatDistance(modalDist);
+          const { lat: mLat, lng: mLng } = getFacilityCoords(selectedFacility);
 
-        return (
-          <Modal
-            isOpen={!!selectedFacility}
-            onClose={() => setSelectedFacility(null)}
-            title={selectedFacility.name}
-          >
-            <div className="space-y-4">
-              <div className="h-48 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 relative bg-slate-100 dark:bg-slate-800">
-                <img
-                  src={selectedFacility.imageUrl}
-                  alt={selectedFacility.name}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
-                  {selectedFacility.is24x7 && (
-                    <span className="bg-rose-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1">
-                      <ShieldAlert size={12} />
-                      24/7 Emergency
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <Badge
-                  variant={selectedFacility.is24x7 ? "danger" : "secondary"}
-                  className="uppercase font-bold"
-                >
-                  {selectedFacility.category}
-                </Badge>
-
-                {/* Open Status & Timings */}
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide border shadow-2xs ${
-                      modalOpenStatus.isOpen
-                        ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
-                        : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`w-1.5 h-1.5 rounded-full ${
-                        modalOpenStatus.isOpen ? "bg-emerald-500 animate-pulse" : "bg-slate-400"
-                      }`}
-                    />
-                    <span>{modalOpenStatus.label}</span>
-                  </span>
-
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center">
-                    <Clock size={12} className="mr-1 text-rose-500" />
-                    <span>{modalOpenStatus.displayTimings}</span>
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                {selectedFacility.description}
-              </p>
-
-              {/* Location & Distance */}
-              <div className="bg-slate-50 dark:bg-slate-900/80 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-start space-x-2">
-                    <MapPin size={15} className="text-rose-500 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-normal">
-                        {selectedFacility.address}
-                      </p>
-                      <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
-                        Ward {selectedFacility.ward} · Avadi Corporation
-                      </p>
-                    </div>
+          return (
+            <Modal
+              isOpen={!!selectedFacility}
+              onClose={() => setSelectedFacility(null)}
+              title={selectedFacility.name}
+            >
+              <div className="space-y-4">
+                <div className="h-48 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 relative bg-slate-100 dark:bg-slate-800">
+                  <img
+                    src={selectedFacility.imageUrl}
+                    alt={selectedFacility.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                    {selectedFacility.is24x7 && (
+                      <span className="bg-rose-600 text-white text-[10px] font-black uppercase px-2.5 py-1 rounded-lg shadow-md flex items-center gap-1">
+                        <ShieldAlert size={12} />
+                        24/7 Emergency
+                      </span>
+                    )}
                   </div>
-                  {modalDistStr && (
-                    <span className="text-[10px] font-extrabold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
-                      {modalDistStr}
-                    </span>
-                  )}
                 </div>
-              </div>
 
-              {/* Appointments & Consultation Fee */}
-              {(selectedFacility.appointments ||
-                (selectedFacility.consultationFee !== undefined &&
-                  selectedFacility.consultationFee !== null)) && (
-                <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
-                  {selectedFacility.appointments && (
-                    <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
-                      <span className="text-slate-400 font-medium">Appointments:</span>
-                      <span>{selectedFacility.appointments}</span>
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <Badge
+                    variant={selectedFacility.is24x7 ? "danger" : "secondary"}
+                    className="uppercase font-bold"
+                  >
+                    {selectedFacility.category}
+                  </Badge>
+
+                  {/* Open Status & Timings */}
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wide border shadow-2xs ${
+                        modalOpenStatus.isOpen
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          modalOpenStatus.isOpen
+                            ? "bg-emerald-500 animate-pulse"
+                            : "bg-slate-400"
+                        }`}
+                      />
+                      <span>{modalOpenStatus.label}</span>
+                    </span>
+
+                    <span className="text-xs font-bold text-slate-500 dark:text-slate-400 flex items-center">
+                      <Clock size={12} className="mr-1 text-rose-500" />
+                      <span>{modalOpenStatus.displayTimings}</span>
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
+                  {selectedFacility.description}
+                </p>
+
+                {/* Location & Distance */}
+                <div className="bg-slate-50 dark:bg-slate-900/80 p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 space-y-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start space-x-2">
+                      <MapPin
+                        size={15}
+                        className="text-rose-500 shrink-0 mt-0.5"
+                      />
+                      <div>
+                        <p className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-normal">
+                          {selectedFacility.address}
+                        </p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 font-medium">
+                          Ward {selectedFacility.ward} · Avadi Corporation
+                        </p>
+                      </div>
                     </div>
-                  )}
-                  {selectedFacility.consultationFee !== undefined &&
-                    selectedFacility.consultationFee !== null && (
-                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
-                        <span className="text-slate-400 font-medium">Consultation Fee:</span>
-                        <span>
-                          {selectedFacility.consultationFee === 0
-                            ? "Free"
-                            : `₹${selectedFacility.consultationFee}`}
+                    {modalDistStr && (
+                      <span className="text-[10px] font-extrabold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700 shrink-0">
+                        {modalDistStr}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Appointments & Consultation Fee */}
+                {(selectedFacility.appointments ||
+                  (selectedFacility.consultationFee !== undefined &&
+                    selectedFacility.consultationFee !== null)) && (
+                  <div className="bg-slate-50 dark:bg-slate-900/80 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 flex items-center justify-between text-xs flex-wrap gap-2">
+                    {selectedFacility.appointments && (
+                      <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-300">
+                        <span className="text-slate-400 font-medium">
+                          Appointments:
                         </span>
+                        <span>{selectedFacility.appointments}</span>
                       </div>
                     )}
-                </div>
-              )}
-
-              {/* Healthcare Services */}
-              {selectedFacility.services && selectedFacility.services.length > 0 && (
-                <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Healthcare Services
-                  </h4>
-                  <div className="flex flex-wrap gap-1.5">
-                    {selectedFacility.services.map((srv) => (
-                      <span
-                        key={srv}
-                        className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs"
-                      >
-                        {srv}
-                      </span>
-                    ))}
+                    {selectedFacility.consultationFee !== undefined &&
+                      selectedFacility.consultationFee !== null && (
+                        <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-emerald-400">
+                          <span className="text-slate-400 font-medium">
+                            Consultation Fee:
+                          </span>
+                          <span>
+                            {selectedFacility.consultationFee === 0
+                              ? "Free"
+                              : `₹${selectedFacility.consultationFee}`}
+                          </span>
+                        </div>
+                      )}
                   </div>
+                )}
+
+                {/* Healthcare Services */}
+                {selectedFacility.services &&
+                  selectedFacility.services.length > 0 && (
+                    <div className="space-y-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Healthcare Services
+                      </h4>
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedFacility.services.map((srv) => (
+                          <span
+                            key={srv}
+                            className="px-2.5 py-1 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs"
+                          >
+                            {srv}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                {/* Action Buttons - Green Call Style */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
+                  {selectedFacility.phone && (
+                    <a
+                      href={`tel:${selectedFacility.phone}`}
+                      className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
+                    >
+                      <Phone size={14} />
+                      <span>Call ({selectedFacility.phone})</span>
+                    </a>
+                  )}
+
+                  {selectedFacility.alternatePhone && (
+                    <a
+                      href={`tel:${selectedFacility.alternatePhone}`}
+                      className="py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-98"
+                    >
+                      <Phone size={14} className="text-slate-500" />
+                      <span>Alt ({selectedFacility.alternatePhone})</span>
+                    </a>
+                  )}
+
+                  <a
+                    href={getDirectionsUrl(mLat, mLng, selectedFacility.name)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`py-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm active:scale-98 ${
+                      !selectedFacility.phone ? "col-span-full" : ""
+                    }`}
+                  >
+                    <Navigation size={14} />
+                    <span>Open in Google Maps</span>
+                  </a>
                 </div>
-              )}
-
-              {/* Action Buttons - Green Call Style */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2">
-                {selectedFacility.phone && (
-                  <a
-                    href={`tel:${selectedFacility.phone}`}
-                    className="py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm active:scale-98"
-                  >
-                    <Phone size={14} />
-                    <span>Call ({selectedFacility.phone})</span>
-                  </a>
-                )}
-
-                {selectedFacility.alternatePhone && (
-                  <a
-                    href={`tel:${selectedFacility.alternatePhone}`}
-                    className="py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm border border-slate-200 dark:border-slate-700 active:scale-98"
-                  >
-                    <Phone size={14} className="text-slate-500" />
-                    <span>Alt ({selectedFacility.alternatePhone})</span>
-                  </a>
-                )}
-
-                <a
-                  href={getDirectionsUrl(mLat, mLng, selectedFacility.name)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`py-3 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 text-white rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm active:scale-98 ${
-                    !selectedFacility.phone ? "col-span-full" : ""
-                  }`}
-                >
-                  <Navigation size={14} />
-                  <span>Open in Google Maps</span>
-                </a>
               </div>
-            </div>
-          </Modal>
-        );
-      })()}
+            </Modal>
+          );
+        })()}
     </div>
   );
 };
