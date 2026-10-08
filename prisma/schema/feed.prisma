@@ -1,0 +1,58 @@
+model Feed {
+  id           String     @id @default(cuid())
+  authorId     String    // Foreign key to User
+  ward         Int
+  text         String     @db.LongText // Use LongText for MySQL base64 images
+  imageUrl     String?    @db.LongText
+  isEmergency  Boolean    @default(false)
+  category     String     @default("general")
+  likesCount   Int        @default(0) @map("likes_count")
+  timestamp    DateTime   @default(now())
+
+  complaintId  String?    @map("complaint_id") // Change to Int? if Complaint.id is an Int
+  complaint    Complaint? @relation(fields: [complaintId], references: [id], onDelete: SetNull)
+
+  // Relations
+  author       User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments     Comment[]
+  likes        FeedLike[]
+
+  @@index([authorId])
+  @@index([ward])
+  @@index([category, timestamp])
+  @@index([complaintId])
+  @@map("feeds")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  feedId    String   @map("feed_id")
+  authorId  String?  @map("author_id")
+  author    String   // Fallback name preserved even if user account is deleted
+  text      String   @db.Text
+  timestamp DateTime @default(now())
+
+  // Relations
+  feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([feedId])
+  @@index([authorId])
+  @@map("comments")
+}
+
+model FeedLike {
+  id        String   @id @default(cuid())
+  feedId    String   @map("feed_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now())
+
+  // Foreign Key Relations
+  feed      Feed     @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([feedId, userId]) // Prevents double-liking at the DB level
+  @@index([feedId])
+  @@index([userId])
+  @@map("feed_likes")
+}
