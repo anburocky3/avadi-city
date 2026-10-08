@@ -204,8 +204,15 @@
     "categories": {
       "allProperties": "அனைத்து இடங்கள்",
       "residential": "குடியிருப்பு வீடுகள்",
-      "commercial": "வணிகக் கடைகள்"
-    }
+      "commercial": "வணிகக் கடைகள்",
+      "lease": "குத்தகை (Lease)",
+      "pgHostels": "PG & விடுதிகள்",
+      "salePlots": "மனைகள் & விற்பனை"
+    },
+    "viewDetails": "முழு விவரங்கள்",
+    "whatsappOwner": "வாட்ஸ்அப்",
+    "filterBtn": "வடிகட்டி",
+    "scheduleVisit": "நேரில் பார்வையிட"
   },
   "jobs": {
     "title": "வேலை வாய்ப்புகள்",

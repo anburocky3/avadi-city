@@ -204,8 +204,15 @@
     "categories": {
       "allProperties": "All Properties",
       "residential": "Residential",
-      "commercial": "Commercial"
-    }
+      "commercial": "Commercial",
+      "lease": "Lease",
+      "pgHostels": "PG & Hostels",
+      "salePlots": "Plots & Sale"
+    },
+    "viewDetails": "View Details",
+    "whatsappOwner": "WhatsApp",
+    "filterBtn": "Filters",
+    "scheduleVisit": "Schedule Visit"
   },
   "jobs": {
     "title": "Local Job Vacancies",
