@@ -114,6 +114,11 @@ interface WeatherData {
   code: string;
   hourly: HourlyForecast[];
   willRainToday: boolean;
+  upcomingRain?: {
+    time: string;
+    chanceOfRain: string;
+    desc: string;
+  } | null;
 }
 
 // --- STATIC DATA CONFIGURATIONS ---
@@ -320,6 +325,39 @@ const formatMilitaryTime = (timeStr: string) => {
   return `${formattedHour}:00 ${ampm}`;
 };
 
+// Daily weather advisory dismissal helpers (shown only once per day)
+const getTodayDateKey = () => {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const isWeatherAlertDismissedToday = () => {
+  if (typeof window === "undefined") return false;
+  try {
+    const dismissedDate = localStorage.getItem(
+      "avadi_weather_alert_dismissed_date",
+    );
+    return dismissedDate === getTodayDateKey();
+  } catch {
+    return false;
+  }
+};
+
+const markWeatherAlertDismissed = () => {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(
+      "avadi_weather_alert_dismissed_date",
+      getTodayDateKey(),
+    );
+  } catch (e) {
+    console.warn("Failed to save weather dismissal:", e);
+  }
+};
+
 export const DashboardClient: React.FC = () => {
   const t = useTranslations();
   const locale = useLocale();
@@ -350,11 +388,17 @@ export const DashboardClient: React.FC = () => {
   const [isRainAlertOpen, setIsRainAlertOpen] = useState<boolean>(false);
   const [showPastHours, setShowPastHours] = useState<boolean>(false);
 
+  const handleDismissRainAlert = () => {
+    setIsRainAlertOpen(false);
+    markWeatherAlertDismissed();
+  };
+
   // Weather API Fetcher (wttr.in) with Hourly JSON extraction
   const fetchWeather = async (forceUpdate: boolean = false) => {
     const cacheKey = "avadi_weather_data";
     const cacheExpiry = 24 * 60 * 60 * 1000; // 24 hours
     const now = new Date().getTime();
+    const currentHour = new Date().getHours();
 
     try {
       if (!forceUpdate) {
@@ -363,7 +407,18 @@ export const DashboardClient: React.FC = () => {
           const cached = JSON.parse(cachedStr);
           if (now - cached.timestamp < cacheExpiry) {
             setWeather(cached.data);
-            if (cached.data.willRainToday) setIsRainAlertOpen(true);
+            // ONLY check upcoming/future hours (not earlier past hours)
+            const upcomingRainIntervals = cached.data.hourly?.filter(
+              (h: HourlyForecast) =>
+                h.rawHour + 3 > currentHour && parseInt(h.chanceOfRain) >= 40,
+            );
+            if (
+              upcomingRainIntervals &&
+              upcomingRainIntervals.length > 0 &&
+              !isWeatherAlertDismissedToday()
+            ) {
+              setIsRainAlertOpen(true);
+            }
             return;
           }
         }
@@ -386,7 +441,13 @@ export const DashboardClient: React.FC = () => {
         code: h.weatherCode,
       }));
 
-      // High Rain Alert Condition: If any hour today has >= 40% chance of rain
+      // High Rain Alert Condition: ONLY upcoming hours (rawHour + 3 > currentHour), not earlier past hours
+      const upcomingRainIntervals = hourlyData.filter(
+        (h) => h.rawHour + 3 > currentHour && parseInt(h.chanceOfRain) >= 40,
+      );
+      const hasUpcomingRain = upcomingRainIntervals.length > 0;
+      const firstUpcomingRain = upcomingRainIntervals[0] || null;
+
       const willRainToday = todayHourly.some(
         (h: any) => parseInt(h.chanceofrain) >= 40,
       );
@@ -398,6 +459,13 @@ export const DashboardClient: React.FC = () => {
         code: current.weatherCode,
         hourly: hourlyData,
         willRainToday: willRainToday,
+        upcomingRain: firstUpcomingRain
+          ? {
+              time: firstUpcomingRain.time,
+              chanceOfRain: firstUpcomingRain.chanceOfRain,
+              desc: firstUpcomingRain.desc,
+            }
+          : null,
       };
 
       localStorage.setItem(
@@ -409,52 +477,71 @@ export const DashboardClient: React.FC = () => {
       );
 
       setWeather(newWeather);
-      if (willRainToday) setIsRainAlertOpen(true);
+      if (hasUpcomingRain && !isWeatherAlertDismissedToday()) {
+        setIsRainAlertOpen(true);
+      }
     } catch (error) {
       console.warn("Weather fetch fallback:", error);
       // Fallback state if API fails or rate-limits
+      const fallbackHourly: HourlyForecast[] = [
+        {
+          time: "9:00 AM",
+          rawHour: 9,
+          temp: "30",
+          desc: "Cloudy",
+          chanceOfRain: "10",
+          code: "119",
+        },
+        {
+          time: "12:00 PM",
+          rawHour: 12,
+          temp: "33",
+          desc: "Sunny",
+          chanceOfRain: "10",
+          code: "113",
+        },
+        {
+          time: "3:00 PM",
+          rawHour: 15,
+          temp: "34",
+          desc: "Scattered Thunderstorms",
+          chanceOfRain: "50",
+          code: "389",
+        },
+        {
+          time: "6:00 PM",
+          rawHour: 18,
+          temp: "31",
+          desc: "Rain",
+          chanceOfRain: "80",
+          code: "356",
+        },
+      ];
+
+      const upcomingFallbackRain = fallbackHourly.filter(
+        (h) => h.rawHour + 3 > currentHour && parseInt(h.chanceOfRain) >= 40,
+      );
+      const hasUpcomingFallbackRain = upcomingFallbackRain.length > 0;
+
       setWeather({
         temp: "32",
         desc: "CLOUDY",
         isHumid: true,
         code: "119",
-        willRainToday: true,
-        hourly: [
-          {
-            time: "9:00 AM",
-            rawHour: 9,
-            temp: "30",
-            desc: "Cloudy",
-            chanceOfRain: "10",
-            code: "119",
-          },
-          {
-            time: "12:00 PM",
-            rawHour: 12,
-            temp: "33",
-            desc: "Sunny",
-            chanceOfRain: "10",
-            code: "113",
-          },
-          {
-            time: "3:00 PM",
-            rawHour: 15,
-            temp: "34",
-            desc: "Scattered Thunderstorms",
-            chanceOfRain: "50",
-            code: "389",
-          },
-          {
-            time: "6:00 PM",
-            rawHour: 18,
-            temp: "31",
-            desc: "Rain",
-            chanceOfRain: "80",
-            code: "356",
-          },
-        ],
+        willRainToday: hasUpcomingFallbackRain,
+        hourly: fallbackHourly,
+        upcomingRain: upcomingFallbackRain[0]
+          ? {
+              time: upcomingFallbackRain[0].time,
+              chanceOfRain: upcomingFallbackRain[0].chanceOfRain,
+              desc: upcomingFallbackRain[0].desc,
+            }
+          : null,
       });
-      setIsRainAlertOpen(true);
+
+      if (hasUpcomingFallbackRain && !isWeatherAlertDismissedToday()) {
+        setIsRainAlertOpen(true);
+      }
     }
   };
 
@@ -1239,7 +1326,7 @@ export const DashboardClient: React.FC = () => {
       {/* Rain & Umbrella Alert Modal */}
       <Modal
         isOpen={isRainAlertOpen}
-        onClose={() => setIsRainAlertOpen(false)}
+        onClose={handleDismissRainAlert}
         title="Weather Advisory"
       >
         <div className="space-y-4 text-center pb-2">
@@ -1253,7 +1340,7 @@ export const DashboardClient: React.FC = () => {
             variant="info"
             className="uppercase font-black tracking-widest text-[10px]"
           >
-            High Chance of Rain Today
+            Rain Forecasted Ahead
           </Badge>
 
           <h3 className="font-black text-xl text-slate-800 dark:text-white leading-tight">
@@ -1261,17 +1348,31 @@ export const DashboardClient: React.FC = () => {
           </h3>
 
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
-            Afternoon or evening showers are forecasted for Avadi. Please
-            remember to carry an umbrella or a raincoat if you are stepping out
-            today.
+            {weather?.upcomingRain ? (
+              <>
+                Showers are forecasted around{" "}
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {weather.upcomingRain.time}
+                </span>{" "}
+                ({weather.upcomingRain.chanceOfRain}% chance) in Avadi. Please
+                remember to carry an umbrella or a raincoat if you are stepping
+                out.
+              </>
+            ) : (
+              <>
+                Upcoming showers are forecasted for Avadi later today. Please
+                remember to carry an umbrella or a raincoat if you are stepping
+                out.
+              </>
+            )}
           </p>
 
           <button
             type="button"
-            onClick={() => setIsRainAlertOpen(false)}
+            onClick={handleDismissRainAlert}
             className="w-full mt-4 py-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition text-xs cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2"
           >
-            <span>Got it, thanks!</span>
+            <span>Okay, thanks!</span>
           </button>
         </div>
       </Modal>
