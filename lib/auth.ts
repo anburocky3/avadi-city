@@ -1,15 +1,12 @@
 import { SignJWT, jwtVerify } from "jose";
+import type { AuthSession } from "@/types/auth";
+
+// Re-export so existing consumers don't need to change their import paths
+export type { AuthSession };
 
 const SECRET_KEY = new TextEncoder().encode(
   process.env.JWT_SECRET || "fallback-secret-key-for-local-dev-only",
 );
-
-export interface AuthSession {
-  userId: string;
-  email: string;
-  name: string;
-  wardNumber: number;
-}
 
 export async function signAuthToken(payload: AuthSession): Promise<string> {
   return new SignJWT({ ...payload })

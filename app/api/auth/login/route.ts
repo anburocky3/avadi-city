@@ -3,10 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { signAuthToken } from "@/lib/auth";
 import { cookies } from "next/headers";
 import bcrypt from "bcryptjs";
+import type { Role } from "@/types/auth";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const { email, password, adminOnly } = await request.json();
     if (!email || !password) {
       return NextResponse.json(
         { message: "Email and password are required" },
@@ -40,7 +41,8 @@ export async function POST(request: Request) {
       user = {
         id: "dev-user-" + Date.now(),
         email: email.trim().toLowerCase(),
-        name: email.split("@")[0] || "Avadi Resident",
+        name: email.split("@")[0] || (adminOnly ? "Avadi Admin" : "Avadi Resident"),
+        role: (adminOnly ? "SUPER_ADMIN" : "USER") as Role,
         wardNumber: 14,
         streetName: "Main Road",
       };
@@ -51,11 +53,26 @@ export async function POST(request: Request) {
       );
     }
 
+    // Role guard: if logging into the administrative portal, only non-citizen roles can enter
+    if (adminOnly) {
+      const userRole = (user.role as Role) || "USER";
+      if (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN") {
+        return NextResponse.json(
+          {
+            message:
+              "Access denied. Only Ward Administrators and Super Administrators are authorized to enter the Administrative Portal.",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     const token = await signAuthToken({
       userId: user.id,
       email: user.email,
       name: user.name,
       wardNumber: user.wardNumber,
+      role: (user.role as Role) ?? "USER",
     });
 
     const cookieStore = await cookies();

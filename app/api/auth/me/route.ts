@@ -37,6 +37,7 @@ export async function GET() {
           wardNumber: true,
           streetName: true,
           isVerified: true,
+          role: true,
         },
       });
     } catch (dbErr) {
@@ -56,6 +57,7 @@ export async function GET() {
           wardNumber: session.wardNumber || 14,
           streetName: "Main Road",
           isVerified: true,
+          role: session.role || "USER",
         };
       } else {
         cookieStore.delete("avadi_session");

@@ -109,6 +109,7 @@ export async function PUT(request: Request) {
       email: updatedUser.email,
       name: updatedUser.name,
       wardNumber: updatedUser.wardNumber,
+      role: (updatedUser as any).role ?? "USER",
     });
 
     cookieStore.set("avadi_session", newToken, {

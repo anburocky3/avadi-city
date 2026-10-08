@@ -15,9 +15,20 @@ enum BloodGroup {
   O_NEG  @map("O-")
 }
 
+/// Determines the authorization level of a user across the application.
+/// SUPER_ADMIN: Full access across all wards and tenants.
+/// ADMIN:       Scoped to their assigned ward — full CRUD within it.
+/// USER:        Can only manage their own records.
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  USER
+}
+
 model User {
   id                  String              @id @default(cuid())
   name                String
+  role                Role                @default(USER)
   gender              Gender
   dob                 DateTime
   bloodGroup          BloodGroup
