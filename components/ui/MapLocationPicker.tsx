@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import "leaflet/dist/leaflet.css";
 
 const MapLocationPicker = ({
   defaultLat = 13.1169,
@@ -14,6 +15,7 @@ const MapLocationPicker = ({
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
+  const isInternalDragging = useRef(false);
 
   useEffect(() => {
     if (
@@ -54,6 +56,7 @@ const MapLocationPicker = ({
 
       // Validation Function
       const validateAndSetLocation = (latlng: any) => {
+        isInternalDragging.current = true;
         if (avadiBounds.contains(latlng)) {
           marker.setLatLng(latlng);
           onLocationSelect(latlng.lat, latlng.lng);
@@ -73,13 +76,48 @@ const MapLocationPicker = ({
       mapInstance.current = map;
       markerInstance.current = marker;
       onLocationSelect(defaultLat, defaultLng);
+
+      // Ensure proper tile calculations after DOM layout settles
+      setTimeout(() => {
+        map.invalidateSize();
+      }, 250);
     }
+
+    return () => {
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+        markerInstance.current = null;
+      }
+    };
   }, []);
+
+  // Sync marker position and map center when coordinates change externally
+  useEffect(() => {
+    if (isInternalDragging.current) {
+      isInternalDragging.current = false;
+      return;
+    }
+
+    if (mapInstance.current && markerInstance.current) {
+      const currentPos = markerInstance.current.getLatLng();
+      if (
+        Math.abs(currentPos.lat - defaultLat) > 0.0001 ||
+        Math.abs(currentPos.lng - defaultLng) > 0.0001
+      ) {
+        markerInstance.current.setLatLng([defaultLat, defaultLng]);
+        mapInstance.current.setView([defaultLat, defaultLng], 14);
+        setTimeout(() => {
+          mapInstance.current?.invalidateSize();
+        }, 150);
+      }
+    }
+  }, [defaultLat, defaultLng]);
 
   return (
     <div
       ref={mapRef}
-      className="w-full h-64 rounded-2xl z-0 relative border border-slate-200 dark:border-slate-700 shadow-sm"
+      className="w-full h-64 rounded-2xl z-0 relative border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
     />
   );
 };

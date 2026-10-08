@@ -23,7 +23,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
 
         {/* Center content slot: Scrollable with dynamic pages */}
-        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 transition-colors pb-20 md:pb-6">
+        <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 transition-colors pb-24 md:pb-8">
           {children}
         </main>
 

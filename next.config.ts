@@ -45,6 +45,10 @@ const nextConfig: NextConfig = {
         source: "/food",
         destination: "/foods",
       },
+      {
+        source: "/hospitals",
+        destination: "/healthcare",
+      },
     ];
   },
 };
