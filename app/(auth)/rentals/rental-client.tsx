@@ -822,15 +822,12 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                   <div className="md:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80 md:min-h-[250px]">
                     <div>
                       {/* Ward & Street */}
-                      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
+                      <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
                         <span className="flex items-center gap-1 text-primary font-bold">
                           <MapPin size={14} />
                           <span>
                             Ward {rental.ward} · {rental.streetName || "Avadi"}
                           </span>
-                        </span>
-                        <span className="text-[11px] bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md font-bold">
-                          {rental.availability || "Immediate"}
                         </span>
                       </div>
 
