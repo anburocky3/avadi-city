@@ -73,27 +73,43 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
   // Temporary toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load newly posted user properties from localStorage on mount
+  // Load newly posted user properties from localStorage on mount and sync with API
   useEffect(() => {
+    let localSaved: RentalProperty[] = [];
     try {
       const stored = localStorage.getItem("avadi_user_rentals");
       if (stored) {
         const parsed: RentalProperty[] = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          // Track which IDs belong to this device
+          localSaved = parsed;
           setMyListingIds(new Set(parsed.map((p) => p.id)));
-          setRentalList((prev) => {
-            const existingIds = new Set(prev.map((r) => r.id));
-            const newProperties = parsed.filter(
-              (p: RentalProperty) => !existingIds.has(p.id),
-            );
-            return [...newProperties, ...prev];
-          });
         }
       }
     } catch (e) {
       console.error("Failed to load user rentals from localStorage:", e);
     }
+
+    // Always fetch fresh listings from /api/rentals on client
+    async function syncRentals() {
+      try {
+        const res = await fetch("/api/rentals", { cache: "no-store" });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+            setRentalList((prev) => {
+              const apiIds = new Set(json.data.map((r: RentalProperty) => r.id));
+              // Keep any purely local items that might not have reached API yet
+              const unsyncedLocal = localSaved.filter((p) => !apiIds.has(p.id));
+              return [...unsyncedLocal, ...json.data];
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("[RentalsClient] Error fetching /api/rentals:", err);
+      }
+    }
+
+    syncRentals();
   }, []);
 
   // Permanently delete a listing (only from localStorage + state)

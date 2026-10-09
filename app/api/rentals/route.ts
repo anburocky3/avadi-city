@@ -4,64 +4,14 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 
+import { getRentalListings } from "@/lib/rentals";
+
 // ─── GET /api/rentals ───────────────────────────────────────────────────────
 // Returns all APPROVED rental listings, newest first.
 export async function GET() {
   try {
-    const listings = await prisma.rentalListing.findMany({
-      where: { status: "APPROVED" },
-      orderBy: { createdAt: "desc" },
-    });
-
-    // Deserialise JSON fields stored in "features" column
-    const mapped = listings.map((l) => {
-      let meta: Record<string, unknown> = {};
-      try {
-        if (l.features) meta = JSON.parse(l.features);
-      } catch { /* ignore */ }
-
-      return {
-        id: l.id,
-        title: l.title,
-        description: l.details,
-        details: l.details,
-        transactionType: (meta.transactionType as string) || "Rent",
-        category: (meta.category as string) || "Apartment",
-        propertyTypeTag: meta.propertyTypeTag as string | undefined,
-        bhk: meta.bhk as string | undefined,
-        bathrooms: meta.bathrooms as string | undefined,
-        balconies: meta.balconies as string | undefined,
-        floor: meta.floor as string | undefined,
-        builtUpArea: (meta.builtUpArea as number) || 0,
-        carpetArea: (meta.carpetArea as number) || 0,
-        furnishing: meta.furnishing as string | undefined,
-        facing: meta.facing as string | undefined,
-        parking: meta.parking as string | undefined,
-        preferredTenants: meta.preferredTenants as string | undefined,
-        availability: (meta.availability as string) || "Immediate",
-        ward: l.ward,
-        streetName: meta.streetName as string | undefined,
-        location: l.location || `Ward ${l.ward}, Avadi`,
-        pricing: meta.pricing as Record<string, number> | undefined,
-        pgDetails: meta.pgDetails as Record<string, unknown> | undefined,
-        commercialDetails: meta.commercialDetails as Record<string, unknown> | undefined,
-        localityIntel: meta.localityIntel as Record<string, unknown> | undefined,
-        amenities: (meta.amenities as string[]) || [],
-        images: (meta.images as string[]) || (l.imageUrl ? [l.imageUrl] : []),
-        imageUrl: l.imageUrl || undefined,
-        owner: meta.owner as Record<string, string> | undefined,
-        ownerName: l.ownerName || undefined,
-        contact: l.contact,
-        type: l.type,
-        rent: l.rent,
-        advance: l.advance,
-        features: (meta.amenities as string[])?.slice(0, 4) || [],
-        status: "Available",
-        createdAt: l.createdAt.toISOString(),
-      };
-    });
-
-    return NextResponse.json({ success: true, data: mapped });
+    const data = await getRentalListings();
+    return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error("[GET /api/rentals]", err);
     return NextResponse.json(
