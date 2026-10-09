@@ -396,9 +396,8 @@ export const initialRentalsData: RentalProperty[] = [
       monthlyRent: 3800000, // 38 Lakhs total sale price
       securityDeposit: 50000, // booking advance
       maintenance: 0,
-      electricityWater: "EB Post & Borewell Ready",
       brokerage: 0,
-      estimatedMoveInCost: 3850000,
+      estimatedMoveInCost: 3800000,
     },
     localityIntel: {
       distanceToStation: "3.2 km to Avadi Railway Station",

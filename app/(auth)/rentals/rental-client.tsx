@@ -755,7 +755,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                       </span>
                       {rental.pricing?.securityDeposit > 0 && (
                         <span className="text-[10px] text-slate-300 font-semibold border-l border-slate-700 pl-2">
-                          Dep: ₹
+                          {rental.transactionType === "Sale" ? "Adv: ₹" : "Dep: ₹"}
                           {(rental.pricing.securityDeposit / 1000).toFixed(0)}k
                         </span>
                       )}
@@ -1281,7 +1281,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <span className="text-[10px] font-black text-primary uppercase tracking-wider">
-                    {selectedProperty.transactionType} Pricing
+                    {selectedProperty.transactionType === "Sale" ? "Property Sale Price" : `${selectedProperty.transactionType} Pricing`}
                   </span>
                   <div className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
                     {formatPrice(selectedProperty)}
@@ -1289,7 +1289,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">
-                    Security Deposit
+                    {selectedProperty.transactionType === "Sale" ? "Booking Advance" : "Security Deposit"}
                   </span>
                   <span className="text-sm font-black text-slate-900 dark:text-white">
                     ₹
@@ -1300,42 +1300,128 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 </div>
               </div>
 
-              {/* Move-in Breakdown */}
+              {/* Move-in / Purchase Breakdown */}
               <div className="pt-2 border-t border-orange-500/20 grid grid-cols-3 gap-2 text-center text-xs">
                 <div className="bg-white/60 dark:bg-slate-900/60 p-2 rounded-xl">
                   <span className="text-[10px] text-slate-500 block font-semibold">
-                    Maintenance
+                    {selectedProperty.transactionType === "Sale" ? "Total Price" : "Maintenance"}
                   </span>
                   <span className="font-extrabold text-slate-800 dark:text-slate-200">
-                    {selectedProperty.pricing?.maintenance
+                    {selectedProperty.transactionType === "Sale"
+                      ? `₹${(selectedProperty.pricing?.monthlyRent || selectedProperty.rent || 0).toLocaleString("en-IN")}`
+                      : selectedProperty.pricing?.maintenance
                       ? `₹${selectedProperty.pricing.maintenance}`
                       : "Included"}
                   </span>
                 </div>
                 <div className="bg-white/60 dark:bg-slate-900/60 p-2 rounded-xl">
                   <span className="text-[10px] text-slate-500 block font-semibold">
-                    Brokerage
+                    {selectedProperty.transactionType === "Sale" ? "Booking Adv" : "Brokerage"}
                   </span>
-                  <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
-                    ₹0 (Zero)
+                  <span className={`font-extrabold ${selectedProperty.transactionType === "Sale" ? "text-slate-800 dark:text-slate-200" : "text-emerald-600 dark:text-emerald-400"}`}>
+                    {selectedProperty.transactionType === "Sale"
+                      ? `₹${(selectedProperty.pricing?.securityDeposit || 0).toLocaleString("en-IN")}`
+                      : "₹0 (Zero)"}
                   </span>
                 </div>
                 <div className="bg-white/60 dark:bg-slate-900/60 p-2 rounded-xl">
                   <span className="text-[10px] text-slate-500 block font-semibold">
-                    Total Move-In
+                    {selectedProperty.transactionType === "Sale" ? "Total Cost" : "Total Move-In"}
                   </span>
                   <span className="font-black text-primary font-sora tracking-tight tabular-nums">
                     ₹
-                    {selectedProperty.pricing?.estimatedMoveInCost?.toLocaleString(
-                      "en-IN",
-                    ) || 0}
+                    {selectedProperty.transactionType === "Sale"
+                      ? (selectedProperty.pricing?.monthlyRent || selectedProperty.rent || 0).toLocaleString("en-IN")
+                      : (selectedProperty.pricing?.estimatedMoveInCost || 0).toLocaleString("en-IN")}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Utility Pricing (Electricity & Water Policy) */}
-            {(selectedProperty.pricing?.utilities || selectedProperty.pricing?.electricityWater) && (
+            {/* Property Key Specifications */}
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-2.5">
+              <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                Property Overview & Specs
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+                {selectedProperty.bhk && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Configuration</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.bhk}</span>
+                  </div>
+                )}
+                {selectedProperty.builtUpArea ? (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">{selectedProperty.category === "Plot / Land" ? "Plot Area" : "Built-Up Area"}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.builtUpArea} sq.ft</span>
+                  </div>
+                ) : null}
+                {selectedProperty.facing && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Facing</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.facing} Facing</span>
+                  </div>
+                )}
+                {selectedProperty.furnishing && selectedProperty.category !== "Plot / Land" && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Furnishing</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.furnishing}</span>
+                  </div>
+                )}
+                {selectedProperty.bathrooms ? (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Bathrooms</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.bathrooms} Bath</span>
+                  </div>
+                ) : null}
+                {selectedProperty.parking && selectedProperty.parking !== "None" && selectedProperty.category !== "Plot / Land" && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Parking</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.parking}</span>
+                  </div>
+                )}
+                {selectedProperty.floor && selectedProperty.category !== "Plot / Land" && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Floor</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.floor}</span>
+                  </div>
+                )}
+                {selectedProperty.preferredTenants && selectedProperty.transactionType !== "Sale" && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Preferred Tenants</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.preferredTenants}</span>
+                  </div>
+                )}
+                {selectedProperty.pgDetails?.sharingType && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Room Sharing</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.pgDetails.sharingType} ({selectedProperty.pgDetails.gender})</span>
+                  </div>
+                )}
+                {selectedProperty.commercialDetails?.powerLoad && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Power Load</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.commercialDetails.powerLoad}</span>
+                  </div>
+                )}
+                {selectedProperty.plotDetails?.approvalType && (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Approval</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.plotDetails.approvalType}</span>
+                  </div>
+                )}
+                {selectedProperty.plotDetails?.roadWidthFeet ? (
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800/80">
+                    <span className="text-[10px] text-slate-400 block">Road Width</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{selectedProperty.plotDetails.roadWidthFeet} ft Road</span>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            {/* Utility Pricing (Electricity & Water Policy) — HIDE COMPLETELY for Sale listings */}
+            {selectedProperty.transactionType !== "Sale" &&
+              (selectedProperty.pricing?.utilities || selectedProperty.pricing?.electricityWater) && (
               <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                   Electricity & Water Policy

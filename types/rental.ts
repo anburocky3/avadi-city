@@ -98,6 +98,14 @@ export interface CommercialDetails {
   signageSpace?: boolean;
 }
 
+export interface PlotDetails {
+  plotAreaSqFt?: number;
+  roadWidthFeet?: number;
+  approvalType?: "CMDA" | "DTCP" | "Patta" | "RERA" | "Panchayat" | "Unapproved" | string;
+  boundaryWall?: "Compound Wall Built" | "Fenced" | "Open Plot" | string;
+  ownershipType?: "Freehold (Clear Patta)" | "Power of Attorney" | "Joint Venture" | string;
+}
+
 export interface LocalityIntel {
   distanceToStation?: string; // e.g. "700m to Avadi Railway Station"
   distanceToBusStand?: string; // e.g. "400m to Avadi Bus Terminus"
@@ -147,6 +155,7 @@ export interface RentalProperty {
   pricing: PricingDetails;
   pgDetails?: PGDetails;
   commercialDetails?: CommercialDetails;
+  plotDetails?: PlotDetails;
   localityIntel?: LocalityIntel;
 
   amenities: string[];

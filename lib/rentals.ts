@@ -70,6 +70,7 @@ export async function getRentalListings(): Promise<RentalProperty[]> {
         pricing: pricing as any,
         pgDetails: meta.pgDetails as any,
         commercialDetails: meta.commercialDetails as any,
+        plotDetails: meta.plotDetails as any,
         localityIntel: meta.localityIntel as any,
         amenities: (meta.amenities as string[]) || [],
         images: images.length > 0 ? images : [coverImage],
