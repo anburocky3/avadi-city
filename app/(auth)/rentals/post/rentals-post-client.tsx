@@ -165,7 +165,7 @@ const COMMERCIAL_AMENITIES = [
 
 export function RentalsPostClient() {
   const router = useRouter();
-  const { activeWard, userProfile } = useWard();
+  const { activeWard, userProfile, authUser } = useWard();
 
   // Multi-step progress (1 to 4)
   // Step 1: Category & Transaction Type
@@ -405,11 +405,34 @@ export function RentalsPostClient() {
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [ownerName, setOwnerName] = useState<string>(userProfile?.name || "");
+  const [ownerName, setOwnerName] = useState<string>(
+    authUser?.name || (userProfile?.name && userProfile.name !== "Guest" ? userProfile.name : "") || ""
+  );
   const [ownerType, setOwnerType] = useState<"Owner" | "Verified Broker" | "Builder" | "Property Manager">("Owner");
-  const [contactPhone, setContactPhone] = useState<string>("");
-  const [whatsappPhone, setWhatsappPhone] = useState<string>("");
+  const [contactPhone, setContactPhone] = useState<string>(
+    authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : ""
+  );
+  const [whatsappPhone, setWhatsappPhone] = useState<string>(
+    authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : ""
+  );
   const [declarationAgreed, setDeclarationAgreed] = useState<boolean>(false);
+
+  // Default and auto-fill owner contact information from logged-in account
+  useEffect(() => {
+    const candidateName =
+      authUser?.name || (userProfile?.name && userProfile.name !== "Guest" ? userProfile.name : "");
+    if (candidateName && (!ownerName || ownerName === "Guest")) {
+      setOwnerName(candidateName);
+    }
+    if (authUser?.phone && !contactPhone) {
+      const digits = authUser.phone.replace(/^\+91/, "").replace(/\D/g, "");
+      const clean = digits.length >= 10 ? digits.slice(-10) : authUser.phone.trim();
+      setContactPhone(clean);
+      if (!whatsappPhone) {
+        setWhatsappPhone(clean);
+      }
+    }
+  }, [authUser, userProfile]);
 
   // Group helpers
   const isPG = mainCategory === "NON-COMMERCIAL";
@@ -2154,10 +2177,18 @@ export function RentalsPostClient() {
 
             {/* Owner / Contact Details */}
             <div className="space-y-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-              <h3 className="font-extrabold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
-                <ShieldCheck size={16} className="text-emerald-500" />
-                <span>Owner Contact Information</span>
-              </h3>
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h3 className="font-extrabold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
+                  <ShieldCheck size={16} className="text-emerald-500" />
+                  <span>Owner Contact Information</span>
+                </h3>
+                {(authUser?.name || authUser?.phone || (userProfile?.name && userProfile.name !== "Guest")) && (
+                  <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-850 px-2 py-0.5 rounded-full flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Auto-filled from account
+                  </span>
+                )}
+              </div>
 
               <div>
                 <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
@@ -2209,6 +2240,10 @@ export function RentalsPostClient() {
                   </div>
                 </div>
               </div>
+
+              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                Contact details are defaulted from your account. You can freely edit them anytime before submitting.
+              </p>
 
               {/* Declaration Checkbox */}
               <label className="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 transition cursor-pointer select-none">
