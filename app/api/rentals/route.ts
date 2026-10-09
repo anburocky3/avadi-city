@@ -148,3 +148,48 @@ export async function POST(request: Request) {
     );
   }
 }
+
+// ─── DELETE /api/rentals ───────────────────────────────────────────────────
+// Permanently removes a rental listing from the database by ID.
+export async function DELETE(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get("id");
+
+    if (!id) {
+      try {
+        const body = await request.json();
+        id = body?.id;
+      } catch {
+        // ignore optional json parse error
+      }
+    }
+
+    if (!id || typeof id !== "string") {
+      return NextResponse.json(
+        { success: false, message: "Listing ID is required for deletion." },
+        { status: 400 }
+      );
+    }
+
+    const cleanId = id.trim();
+
+    // Delete record from Prisma if it exists
+    await prisma.rentalListing.deleteMany({
+      where: { id: cleanId },
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: "Listing permanently deleted.",
+      id: cleanId,
+    });
+  } catch (err) {
+    console.error("[DELETE /api/rentals]", err);
+    return NextResponse.json(
+      { success: false, message: "Failed to delete rental listing." },
+      { status: 500 }
+    );
+  }
+}
+

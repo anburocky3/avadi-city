@@ -83,17 +83,36 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
   // Load newly posted user properties from localStorage on mount and sync with API
   useEffect(() => {
     let localSaved: RentalProperty[] = [];
+    let deletedIds = new Set<string>();
+
+    try {
+      const deletedStored = localStorage.getItem("avadi_deleted_rentals");
+      if (deletedStored) {
+        const parsed = JSON.parse(deletedStored);
+        if (Array.isArray(parsed)) {
+          deletedIds = new Set(parsed);
+        }
+      }
+    } catch {
+      /* ignore */
+    }
+
     try {
       const stored = localStorage.getItem("avadi_user_rentals");
       if (stored) {
         const parsed: RentalProperty[] = JSON.parse(stored);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          localSaved = parsed;
-          setMyListingIds(new Set(parsed.map((p) => p.id)));
+          localSaved = parsed.filter((p) => !deletedIds.has(p.id));
+          setMyListingIds(new Set(localSaved.map((p) => p.id)));
         }
       }
     } catch (e) {
       console.error("Failed to load user rentals from localStorage:", e);
+    }
+
+    // Filter out any locally deleted listings from initial state
+    if (deletedIds.size > 0) {
+      setRentalList((prev) => prev.filter((r) => !deletedIds.has(r.id)));
     }
 
     // Always fetch fresh listings from /api/rentals on client
@@ -104,12 +123,19 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
           const json = await res.json();
           if (json.success && Array.isArray(json.data) && json.data.length > 0) {
             setRentalList((prev) => {
-              const apiIds = new Set(json.data.map((r: RentalProperty) => r.id));
+              const validApiList = json.data.filter(
+                (r: RentalProperty) => !deletedIds.has(r.id),
+              );
+              const apiIds = new Set(
+                validApiList.map((r: RentalProperty) => r.id),
+              );
               // Keep any purely local items that might not have reached API yet
-              const unsyncedLocal = localSaved.filter((p) => !apiIds.has(p.id));
-              const combined = [...unsyncedLocal, ...json.data];
+              const unsyncedLocal = localSaved.filter(
+                (p) => !apiIds.has(p.id) && !deletedIds.has(p.id),
+              );
+              const combined = [...unsyncedLocal, ...validApiList];
               const targetId = getTargetPropertyId();
-              if (targetId) {
+              if (targetId && !deletedIds.has(targetId)) {
                 const match = combined.find((p) => p.id === targetId);
                 if (match) {
                   setSelectedProperty(match);
@@ -145,16 +171,21 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     }
   };
 
-  // Permanently delete a listing (only from localStorage + state)
-  const handleDeleteListing = (id: string) => {
+  // Permanently delete a listing (from DB, localStorage, and React state)
+  const handleDeleteListing = async (id: string) => {
+    // 1. Optimistically remove from state immediately
     setRentalList((prev) => prev.filter((r) => r.id !== id));
     setMyListingIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
       return next;
     });
+    if (selectedProperty?.id === id) {
+      closePropertyModal();
+    }
     setConfirmDeleteId(null);
 
+    // 2. Remove from localStorage ("avadi_user_rentals")
     try {
       const stored = localStorage.getItem("avadi_user_rentals");
       if (stored) {
@@ -166,6 +197,31 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
       }
     } catch {
       /* ignore */
+    }
+
+    // 3. Blacklist deleted ID in localStorage so client never re-adds it
+    try {
+      const deletedStored = localStorage.getItem("avadi_deleted_rentals");
+      const deletedList: string[] = deletedStored
+        ? JSON.parse(deletedStored)
+        : [];
+      if (!deletedList.includes(id)) {
+        localStorage.setItem(
+          "avadi_deleted_rentals",
+          JSON.stringify([...deletedList, id]),
+        );
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // 4. Send DELETE request to /api/rentals to permanently remove from MariaDB
+    try {
+      await fetch(`/api/rentals?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+    } catch (err) {
+      console.error("[RentalsClient] Failed to delete listing from server:", err);
     }
 
     triggerToast("🗑️ Listing deleted permanently.");
@@ -850,33 +906,32 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
 
                     {/* Actions and Owner Bar */}
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
-                      {/* Owner Controls — visible only in My Listings tab */}
-                      {activeCategory === "My Listings" &&
-                        myListingIds.has(rental.id) && (
-                          <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 flex flex-wrap items-center justify-between gap-2">
-                            <div className="flex items-center gap-1.5">
-                              <UserCircle2
-                                size={14}
-                                className="text-primary shrink-0"
-                              />
-                              <span className="text-[11px] font-black text-primary uppercase tracking-wider">
-                                Owner Controls
-                              </span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setConfirmDeleteId(rental.id);
-                              }}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition cursor-pointer"
-                              title="Delete listing"
-                            >
-                              <Trash2 size={13} />
-                              <span>Delete Listing</span>
-                            </button>
+                      {/* Owner Controls — visible whenever user owns this listing */}
+                      {myListingIds.has(rental.id) && (
+                        <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
+                            <UserCircle2
+                              size={14}
+                              className="text-primary shrink-0"
+                            />
+                            <span className="text-[11px] font-black text-primary uppercase tracking-wider">
+                              Owner Controls
+                            </span>
                           </div>
-                        )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteId(rental.id);
+                            }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition cursor-pointer"
+                            title="Delete listing"
+                          >
+                            <Trash2 size={13} />
+                            <span>Delete Listing</span>
+                          </button>
+                        </div>
+                      )}
 
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <div className="flex flex-col">
@@ -1642,6 +1697,34 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Owner Controls inside Details Modal */}
+            {myListingIds.has(selectedProperty.id) && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <UserCircle2
+                    size={16}
+                    className="text-rose-600 dark:text-rose-400 shrink-0"
+                  />
+                  <div>
+                    <p className="text-xs font-black text-rose-900 dark:text-rose-200">
+                      Your Property Listing
+                    </p>
+                    <p className="text-[11px] text-rose-600/80 dark:text-rose-400/80">
+                      You are the registered owner of this listing
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setConfirmDeleteId(selectedProperty.id)}
+                  className="px-3.5 py-2 rounded-xl text-xs font-black bg-rose-600 hover:bg-rose-700 text-white transition flex items-center gap-1.5 shadow-sm cursor-pointer shrink-0"
+                >
+                  <Trash2 size={13} />
+                  <span>Delete Listing</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </Modal>

@@ -79,7 +79,7 @@ export const Modal: React.FC<ModalProps> = ({
   title,
   children,
   maxWidth = "sm:max-w-lg",
-  zIndex = "z-60",
+  zIndex = "z-[100]",
 }) => {
   return (
     <AnimatePresence>
