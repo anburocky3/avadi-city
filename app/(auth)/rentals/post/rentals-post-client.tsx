@@ -1378,13 +1378,13 @@ export function RentalsPostClient() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                       BHK Type
                     </label>
                     <select
                       value={bhk}
                       onChange={(e) => setBhk(e.target.value as any)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="1 RK">1 RK / Studio</option>
                       <option value="1 BHK">1 BHK</option>
@@ -1395,13 +1395,13 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                       Furnishing
                     </label>
                     <select
                       value={furnishing}
                       onChange={(e) => setFurnishing(e.target.value as any)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Semi Furnished">Semi Furnished</option>
                       <option value="Fully Furnished">Fully Furnished</option>
@@ -1410,20 +1410,20 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                      Built-Up Area (sq.ft)
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
+                      Built-Up Area (sq.ft) <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <input
                       type="number"
                       value={builtUpArea}
                       onChange={(e) => setBuiltUpArea(e.target.value)}
                       placeholder="950"
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                       Floor Level
                     </label>
                     <input
@@ -1431,20 +1431,20 @@ export function RentalsPostClient() {
                       value={floor}
                       onChange={(e) => setFloor(e.target.value)}
                       placeholder="1st of 2 Floors"
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                       Bathrooms
                     </label>
                     <select
                       value={bathrooms}
                       onChange={(e) => setBathrooms(Number(e.target.value))}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value={1}>1 Bathroom</option>
                       <option value={2}>2 Bathrooms</option>
@@ -1454,13 +1454,13 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                       Parking
                     </label>
                     <select
                       value={parking}
                       onChange={(e) => setParking(e.target.value as any)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Car & Bike">Car & Bike</option>
                       <option value="Covered Car">Covered Car</option>
@@ -1471,13 +1471,13 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                       Facing Direction
                     </label>
                     <select
                       value={facing}
                       onChange={(e) => setFacing(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="East">East Facing</option>
                       <option value="North">North Facing</option>
@@ -1489,13 +1489,13 @@ export function RentalsPostClient() {
 
                   {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" ? (
                     <div>
-                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                      <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                         Preferred Tenants
                       </label>
                       <select
                         value={preferredTenants}
                         onChange={(e) => setPreferredTenants(e.target.value as any)}
-                        className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                        className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                       >
                         <option value="Family or Bachelors">Family or Bachelors</option>
                         <option value="Family Only">Family Only</option>
@@ -1507,13 +1507,13 @@ export function RentalsPostClient() {
                     </div>
                   ) : (
                     <div>
-                      <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                      <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                         Ownership / Title
                       </label>
                       <select
                         value={plotOwnership}
                         onChange={(e) => setPlotOwnership(e.target.value as any)}
-                        className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                        className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                       >
                         <option value="Freehold (Clear Patta)">Freehold (Clear Patta)</option>
                         <option value="CMDA Approved Layout">CMDA Approved Layout</option>
@@ -1529,33 +1529,39 @@ export function RentalsPostClient() {
             {/* Plot / Land Specific Specs */}
             {isPlot && (
               <div className="space-y-4 p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/80 dark:border-emerald-900/60">
-                <h3 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm flex items-center gap-1.5">
-                  <Trees size={16} />
-                  <span>Plot & Land Specifications</span>
-                </h3>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <Trees size={16} />
+                  </div>
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                      Plot Area (sq.ft) <span className="text-rose-500">*</span>
+                    <h3 className="font-extrabold text-emerald-900 dark:text-emerald-200 text-xs sm:text-sm">
+                      Plot & Land Specifications
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+                  <div>
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
+                      Plot Area (sq.ft) <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <input
                       type="number"
                       value={builtUpArea}
                       onChange={(e) => setBuiltUpArea(e.target.value)}
                       placeholder="e.g. 1200"
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Facing Direction
                     </label>
                     <select
                       value={facing}
                       onChange={(e) => setFacing(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="East">East Facing</option>
                       <option value="North">North Facing</option>
@@ -1566,26 +1572,26 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                      Road Width in Front (Feet)
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
+                      Road Width (Feet)
                     </label>
                     <input
                       type="number"
                       value={plotRoadWidth}
                       onChange={(e) => setPlotRoadWidth(e.target.value)}
                       placeholder="e.g. 30"
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Approval Type
                     </label>
                     <select
                       value={plotApproval}
                       onChange={(e) => setPlotApproval(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="CMDA Approved">CMDA Approved</option>
                       <option value="DTCP Approved">DTCP Approved</option>
@@ -1594,17 +1600,15 @@ export function RentalsPostClient() {
                       <option value="Clear Title Freehold">Clear Title Freehold</option>
                     </select>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 pt-1">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Boundary Status
                     </label>
                     <select
                       value={plotBoundary}
                       onChange={(e) => setPlotBoundary(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Open Plot">Open Plot</option>
                       <option value="Compound Wall Built">Compound Wall Built</option>
@@ -1613,13 +1617,13 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Ownership Title
                     </label>
                     <select
                       value={plotOwnership}
                       onChange={(e) => setPlotOwnership(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Freehold (Clear Patta)">Freehold (Clear Patta)</option>
                       <option value="Power of Attorney">Power of Attorney</option>
@@ -1633,20 +1637,24 @@ export function RentalsPostClient() {
             {/* PG & Hostel Specific Specs */}
             {isPG && (
               <div className="space-y-4 p-4 rounded-2xl bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/60">
-                <h3 className="font-extrabold text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex items-center gap-1.5">
-                  <Bed size={16} />
-                  <span>PG & Hostel Room Configuration</span>
-                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                    <Bed size={16} />
+                  </div>
+                  <h3 className="font-extrabold text-amber-900 dark:text-amber-200 text-xs sm:text-sm">
+                    PG & Hostel Room Configuration
+                  </h3>
+                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Sharing Type
                     </label>
                     <select
                       value={pgSharing}
                       onChange={(e) => setPgSharing(e.target.value as any)}
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Single Room">Single Room (Private)</option>
                       <option value="2 Sharing">2 Sharing</option>
@@ -1656,13 +1664,13 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                      Available Vacancies <span className="text-[10px] text-slate-400 font-normal">(Up to 20)</span>
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
+                      Available Vacancies
                     </label>
                     <select
                       value={availableBeds}
                       onChange={(e) => setAvailableBeds(Number(e.target.value))}
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
                         <option key={n} value={n}>
@@ -1673,13 +1681,13 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Gender Policy
                     </label>
                     <select
                       value={pgGender}
                       onChange={(e) => setPgGender(e.target.value as any)}
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Men">Men Only</option>
                       <option value="Women">Women Only</option>
@@ -1688,7 +1696,7 @@ export function RentalsPostClient() {
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Curfew Timing
                     </label>
                     <input
@@ -1696,7 +1704,7 @@ export function RentalsPostClient() {
                       value={pgCurfew}
                       onChange={(e) => setPgCurfew(e.target.value)}
                       placeholder="e.g. 10:30 PM or No Curfew"
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
                 </div>
@@ -1704,7 +1712,7 @@ export function RentalsPostClient() {
                 {/* Food Inclusions */}
                 <div className="space-y-2 pt-2 border-t border-amber-200/60 dark:border-amber-900/40">
                   <div className="flex items-center justify-between">
-                    <label className="font-bold text-slate-800 dark:text-slate-200">
+                    <label className="font-bold text-slate-800 dark:text-slate-200 text-xs sm:text-sm">
                       Food & Meal Provision
                     </label>
                     <label className="flex items-center gap-1.5 cursor-pointer">
@@ -1744,53 +1752,57 @@ export function RentalsPostClient() {
             {/* Commercial Specific Specs */}
             {isCommercial && (
               <div className="space-y-4 p-4 rounded-2xl bg-sky-50/50 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-900/60">
-                <h3 className="font-extrabold text-sky-900 dark:text-sky-200 text-xs sm:text-sm flex items-center gap-1.5">
-                  <Briefcase size={16} />
-                  <span>Commercial & Retail Specifications</span>
-                </h3>
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-sky-100 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+                    <Briefcase size={16} />
+                  </div>
+                  <h3 className="font-extrabold text-sky-900 dark:text-sky-200 text-xs sm:text-sm">
+                    Commercial & Retail Specifications
+                  </h3>
+                </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Frontage (Feet)
                     </label>
                     <input
                       type="number"
                       value={commFrontage}
                       onChange={(e) => setCommFrontage(e.target.value)}
-                      placeholder="15 ft"
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      placeholder="e.g. 15 ft"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Road Width (Feet)
                     </label>
                     <input
                       type="number"
                       value={commRoadWidth}
                       onChange={(e) => setCommRoadWidth(e.target.value)}
-                      placeholder="40 ft"
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      placeholder="e.g. 40 ft"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Power Load
                     </label>
                     <input
                       type="text"
                       value={commPowerLoad}
                       onChange={(e) => setCommPowerLoad(e.target.value)}
-                      placeholder="10 kW 3-Phase"
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      placeholder="e.g. 10 kW 3-Phase"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
+                    <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
                       Suitable Businesses
                     </label>
                     <input
@@ -1798,7 +1810,7 @@ export function RentalsPostClient() {
                       value={commSuitableFor}
                       onChange={(e) => setCommSuitableFor(e.target.value)}
                       placeholder="Pharmacy, Clinic, Shop..."
-                      className="w-full p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs"
+                      className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
                 </div>
