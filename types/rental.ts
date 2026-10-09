@@ -45,12 +45,28 @@ export type ListingStatus =
   | "Sold"
   | "Temporarily Unavailable";
 
+export interface UtilityPricing {
+  electricity?: {
+    applicable: boolean;
+    billingMethod: "Per Unit" | "Fixed Monthly Charge" | "Included in Rent" | "No Separate Charges";
+    ratePerUnit?: number;
+    monthlyCharge?: number;
+  };
+  water?: {
+    available: boolean;
+    billingType?: "Free" | "Included in Rent" | "Paid";
+    billingMethod?: "Per Month" | "Per Person Per Month" | "Per Unit";
+    amount?: number;
+  };
+}
+
 export interface PricingDetails {
   monthlyRent: number; // or sale price if transaction is Sale
   securityDeposit: number;
   maintenance?: number;
   maintenanceIncluded?: boolean;
   electricityWater?: string;
+  utilities?: UtilityPricing;
   brokerage?: number;
   estimatedMoveInCost: number;
 }

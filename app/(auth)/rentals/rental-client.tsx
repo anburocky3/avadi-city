@@ -1294,6 +1294,115 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
               </div>
             </div>
 
+            {/* Utility Pricing (Electricity & Water Policy) */}
+            {(selectedProperty.pricing?.utilities || selectedProperty.pricing?.electricityWater) && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+                    <Zap size={14} className="text-amber-500" />
+                    <span>Electricity & Water Policy</span>
+                  </h4>
+                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                    Transparent Utilities
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* Electricity Details */}
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <Zap size={13} className="text-amber-500" />
+                        <span>Electricity</span>
+                      </span>
+                      {selectedProperty.pricing?.utilities?.electricity && (
+                        <span className="text-[10px] font-bold text-slate-400">
+                          {selectedProperty.pricing.utilities.electricity.applicable ? "Applicable" : "No Extra Fee"}
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedProperty.pricing?.utilities?.electricity ? (
+                      <div className="text-[11px] space-y-0.5 text-slate-600 dark:text-slate-300">
+                        <p className="flex items-center justify-between">
+                          <span className="text-slate-400">Billing:</span>
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {selectedProperty.pricing.utilities.electricity.billingMethod === "Per Unit"
+                              ? `₹${selectedProperty.pricing.utilities.electricity.ratePerUnit || 0} per unit`
+                              : selectedProperty.pricing.utilities.electricity.billingMethod === "Fixed Monthly Charge"
+                              ? `Fixed ₹${selectedProperty.pricing.utilities.electricity.monthlyCharge || 0}/month`
+                              : selectedProperty.pricing.utilities.electricity.billingMethod === "Included in Rent"
+                              ? "Included in Rent"
+                              : "No Separate Charges"}
+                          </span>
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                        {selectedProperty.pricing?.electricityWater || "Standard EB sub-meter connection"}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Water Supply Details */}
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1.5">
+                        <span className="text-cyan-500 text-xs">💧</span>
+                        <span>Water Supply</span>
+                      </span>
+                      {selectedProperty.pricing?.utilities?.water && (
+                        <span
+                          className={`text-[10px] font-bold ${
+                            selectedProperty.pricing.utilities.water.available
+                              ? "text-cyan-600 dark:text-cyan-400"
+                              : "text-slate-400"
+                          }`}
+                        >
+                          {selectedProperty.pricing.utilities.water.available ? "Available" : "Not Available"}
+                        </span>
+                      )}
+                    </div>
+
+                    {selectedProperty.pricing?.utilities?.water ? (
+                      <div className="text-[11px] space-y-0.5 text-slate-600 dark:text-slate-300">
+                        <p className="flex items-center justify-between">
+                          <span className="text-slate-400">Availability:</span>
+                          <span className="font-bold text-slate-900 dark:text-white">
+                            {selectedProperty.pricing.utilities.water.available ? "Available" : "Not Available"}
+                          </span>
+                        </p>
+                        {selectedProperty.pricing.utilities.water.available && (
+                          <p className="flex items-center justify-between">
+                            <span className="text-slate-400">Charges:</span>
+                            <span className="font-bold text-slate-900 dark:text-white">
+                              {selectedProperty.pricing.utilities.water.billingType === "Free"
+                                ? "Free"
+                                : selectedProperty.pricing.utilities.water.billingType === "Included in Rent"
+                                ? "Included in Rent"
+                                : `₹${selectedProperty.pricing.utilities.water.amount || 0}${
+                                    selectedProperty.pricing.utilities.water.billingMethod === "Per Person Per Month"
+                                      ? "/person/month"
+                                      : selectedProperty.pricing.utilities.water.billingMethod === "Per Unit"
+                                      ? "/unit"
+                                      : "/month"
+                                  }`}
+                            </span>
+                          </p>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">
+                        {selectedProperty.pricing?.electricityWater
+                          ? "Water included as per policy"
+                          : "Potable ground water / municipal line"}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Address & Locality Highlights */}
             <div className="space-y-2">
               <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">
