@@ -97,3 +97,12 @@ export async function getRentalListings(): Promise<RentalProperty[]> {
 
   return [...dbListings, ...fallbackListings];
 }
+
+export * from "@/lib/rental-slugs";
+
+export async function getRentalListingById(id: string): Promise<RentalProperty | null> {
+  const all = await getRentalListings();
+  return all.find((p) => p.id === id) || null;
+}
+
+

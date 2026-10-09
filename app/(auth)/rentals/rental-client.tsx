@@ -32,15 +32,22 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWard } from "@/context/wardContext";
 import { Card, Modal, EmptyState } from "@/components/shared-components";
 import { RentalProperty, TransactionType } from "@/types/rental";
+import {
+  getPropertyCategorySlug,
+  getPropertySharePath,
+  parsePropertySlug,
+} from "@/lib/rental-slugs";
 
 export type { RentalProperty } from "@/types/rental";
 
 export interface RentalsClientProps {
   initialRentals: RentalProperty[];
+  initialPropertyId?: string;
 }
 
 export const RentalsClient: React.FC<RentalsClientProps> = ({
   initialRentals,
+  initialPropertyId,
 }) => {
   const t = useTranslations("rentals");
   const { activeWard } = useWard();
@@ -100,7 +107,15 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
               const apiIds = new Set(json.data.map((r: RentalProperty) => r.id));
               // Keep any purely local items that might not have reached API yet
               const unsyncedLocal = localSaved.filter((p) => !apiIds.has(p.id));
-              return [...unsyncedLocal, ...json.data];
+              const combined = [...unsyncedLocal, ...json.data];
+              const targetId = getTargetPropertyId();
+              if (targetId) {
+                const match = combined.find((p) => p.id === targetId);
+                if (match) {
+                  setSelectedProperty(match);
+                }
+              }
+              return combined;
             });
           }
         }
@@ -111,6 +126,24 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
 
     syncRentals();
   }, []);
+
+  // Helper to extract target property ID from initial prop, pathname (/rental/[slug] or /rentals/[slug]), or search params
+  const getTargetPropertyId = (): string | null => {
+    if (initialPropertyId) return initialPropertyId;
+    try {
+      if (typeof window === "undefined") return null;
+      const path = window.location.pathname;
+      const match = path.match(/^\/rentals?\/([^/?#]+)/);
+      if (match && match[1] && match[1] !== "post") {
+        const { propertyId } = parsePropertySlug(match[1]);
+        if (propertyId) return propertyId;
+      }
+      const params = new URLSearchParams(window.location.search);
+      return params.get("id") || params.get("property") || null;
+    } catch {
+      return null;
+    }
+  };
 
   // Permanently delete a listing (only from localStorage + state)
   const handleDeleteListing = (id: string) => {
@@ -138,12 +171,13 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     triggerToast("🗑️ Listing deleted permanently.");
   };
 
-  // Open & close modal helpers with clean URL sync (?id=...)
+  // Open & close modal helpers with clean category URL sync (/rental/[category]-[id])
   const openPropertyModal = (property: RentalProperty) => {
     setSelectedProperty(property);
     setActiveImageIndex(0);
     try {
-      window.history.replaceState(null, "", `/rentals?id=${property.id}`);
+      const sharePath = getPropertySharePath(property);
+      window.history.replaceState(null, "", sharePath);
     } catch {
       // ignore
     }
@@ -158,22 +192,17 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     }
   };
 
-  // Auto-open property modal if ?id= is in the URL on page load / link click
+  // Auto-open property modal if ID is in the route or URL on page load / link click
   useEffect(() => {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const propertyId = params.get("id");
-      if (propertyId) {
-        const match = rentalList.find((r) => r.id === propertyId);
-        if (match) {
-          setSelectedProperty(match);
-          setActiveImageIndex(0);
-        }
+    const targetId = getTargetPropertyId();
+    if (targetId) {
+      const match = rentalList.find((r) => r.id === targetId);
+      if (match) {
+        setSelectedProperty(match);
+        setActiveImageIndex(0);
       }
-    } catch {
-      // ignore
     }
-  }, [rentalList]);
+  }, [rentalList, initialPropertyId]);
 
   // Show transient toast
   const triggerToast = (msg: string) => {
@@ -221,11 +250,11 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     }
   };
 
-  // Share Property handler
-  const handleShare = (property: RentalProperty, e: React.MouseEvent) => {
-    e.stopPropagation();
+  // Share Property handler with canonical /rental/[category]-[id] format
+  const handleShare = (property: RentalProperty, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     const title = property.title;
-    const shareUrl = `${window.location.origin}/rentals?id=${property.id}`;
+    const shareUrl = `${window.location.origin}${getPropertySharePath(property)}`;
     const text = `Check out this property in Avadi: ${title} - ${formatPrice(property)}`;
     if (navigator.share) {
       navigator.share({ title, text, url: shareUrl }).catch(() => {});
@@ -235,12 +264,12 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     }
   };
 
-  // WhatsApp Owner
+  // WhatsApp Owner with canonical /rental/[category]-[id] link
   const handleWhatsApp = (property: RentalProperty, e: React.MouseEvent) => {
     e.stopPropagation();
     const phone = property.owner?.phone || property.contact || "9876543210";
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const shareUrl = `${window.location.origin}/rentals?id=${property.id}`;
+    const shareUrl = `${window.location.origin}${getPropertySharePath(property)}`;
     const msg = encodeURIComponent(
       `Hello ${property.owner?.name || "Sir/Madam"}, I found your property "${property.title}" in Ward ${property.ward}, Avadi on the Avadi City Portal (${shareUrl}). Is it currently available for a visit?`,
     );
@@ -1183,6 +1212,17 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
             {/* Gallery Section */}
             <div className="space-y-2">
               <div className="relative h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-950">
+                {/* Floating Share Button in Modal Gallery */}
+                <button
+                  type="button"
+                  onClick={(e) => handleShare(selectedProperty, e)}
+                  className="absolute top-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/80 hover:bg-slate-900 text-white text-xs font-bold backdrop-blur-md border border-white/20 shadow-lg cursor-pointer transition"
+                  title="Share property"
+                >
+                  <Share2 size={13} />
+                  <span>Share</span>
+                </button>
+
                 {selectedProperty.images &&
                 selectedProperty.images.length > 0 ? (
                   // eslint-disable-next-line @next/next/no-img-element
