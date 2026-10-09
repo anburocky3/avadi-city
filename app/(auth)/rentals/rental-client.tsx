@@ -965,7 +965,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
         onClose={() => setIsFilterModalOpen(false)}
         title="Filter Avadi Properties"
       >
-        <div className="space-y-4 pt-1 max-h-[75vh] overflow-y-auto pr-1">
+        <div className="space-y-4 pt-1">
           {activeFiltersCount > 0 && (
             <div className="flex items-center justify-between pb-1 border-b border-slate-100 dark:border-slate-800">
               <span className="text-xs font-bold text-slate-500">
@@ -1177,7 +1177,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
         title={selectedProperty?.title || "Property Details"}
       >
         {selectedProperty && (
-          <div className="space-y-5 pt-1 max-h-[80vh] overflow-y-auto pr-1">
+          <div className="space-y-5 pt-1">
             {/* Gallery Section */}
             <div className="space-y-2">
               <div className="relative h-60 sm:h-72 rounded-2xl overflow-hidden bg-slate-950">
