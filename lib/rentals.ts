@@ -28,15 +28,16 @@ export async function getRentalListings(): Promise<RentalProperty[]> {
         estimatedMoveInCost: rentAmount + advanceAmount,
       };
 
-      const owner = (meta.owner as Record<string, unknown>) || {
-        name: l.ownerName || "Property Owner",
-        type: "Owner",
-        phone: l.contact,
-        whatsapp: l.contact,
-        isPhoneVerified: true,
-        isIdVerified: false,
-        isPropertyVerified: true,
-        memberSince: "Oct 2026",
+      const rawOwner = (meta.owner as Record<string, unknown>) || {};
+      const owner = {
+        name: (rawOwner.name as string) || l.ownerName || "Property Owner",
+        type: (rawOwner.type as string) || "Owner",
+        phone: (rawOwner.phone as string) || l.contact,
+        whatsapp: (rawOwner.whatsapp as string)?.trim() || undefined,
+        isPhoneVerified: rawOwner.isPhoneVerified ?? true,
+        isIdVerified: rawOwner.isIdVerified ?? false,
+        isPropertyVerified: rawOwner.isPropertyVerified ?? true,
+        memberSince: (rawOwner.memberSince as string) || "Oct 2026",
       };
 
       const images = (meta.images as string[]) || (l.imageUrl ? [l.imageUrl] : []);

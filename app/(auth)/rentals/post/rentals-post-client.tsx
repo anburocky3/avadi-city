@@ -890,7 +890,7 @@ export function RentalsPostClient() {
         name: ownerName.trim(),
         type: ownerType,
         phone: contactPhone.trim(),
-        whatsapp: (whatsappPhone || contactPhone).trim(),
+        whatsapp: whatsappPhone.trim() ? whatsappPhone.trim() : undefined,
         isPhoneVerified: true,
         isIdVerified: false,
         isPropertyVerified: true,

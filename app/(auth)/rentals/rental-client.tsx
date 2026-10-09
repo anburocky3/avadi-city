@@ -875,13 +875,15 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                           {rental.status !== "Rented" &&
                           rental.status !== "Sold" ? (
                             <>
-                              <button
-                                onClick={(e) => handleWhatsApp(rental, e)}
-                                className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition cursor-pointer"
-                                title="WhatsApp Owner"
-                              >
-                                <MessageCircle size={16} />
-                              </button>
+                              {Boolean(rental.owner?.whatsapp?.trim()) && (
+                                <button
+                                  onClick={(e) => handleWhatsApp(rental, e)}
+                                  className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 transition cursor-pointer"
+                                  title="WhatsApp Owner"
+                                >
+                                  <MessageCircle size={16} />
+                                </button>
+                              )}
                               <button
                                 onClick={(e) => handleCall(rental, e)}
                                 className="px-3.5 py-2 bg-primary hover:bg-orange-600 active:scale-95 text-white rounded-xl font-black text-xs transition flex items-center gap-1.5 shadow-md shadow-primary/20 cursor-pointer"
@@ -1305,49 +1307,56 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 </span>
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
-                {selectedProperty.localityIntel?.distanceToStation && (
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-950/50 text-primary shrink-0">
-                      <Train size={15} />
+              {(selectedProperty.localityIntel?.distanceToStation ||
+                selectedProperty.localityIntel?.distanceToBusStand) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+                  {selectedProperty.localityIntel?.distanceToStation && (
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-orange-100 dark:bg-orange-950/50 text-primary shrink-0">
+                        <Train size={15} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">
+                          {selectedProperty.localityIntel.distanceToStation}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          Direct Suburban train connectivity
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">
-                        {selectedProperty.localityIntel.distanceToStation}
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        Direct Suburban train connectivity
-                      </p>
+                  )}
+                  {selectedProperty.localityIntel?.distanceToBusStand && (
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
+                      <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
+                        <Bus size={15} />
+                      </div>
+                      <div>
+                        <p className="font-bold text-slate-800 dark:text-slate-200">
+                          {selectedProperty.localityIntel.distanceToBusStand}
+                        </p>
+                        <p className="text-[10px] text-slate-400">
+                          MTC bus terminus access
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-                {selectedProperty.localityIntel?.distanceToBusStand && (
-                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center gap-2.5">
-                    <div className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 shrink-0">
-                      <Bus size={15} />
-                    </div>
-                    <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">
-                        {selectedProperty.localityIntel.distanceToBusStand}
-                      </p>
-                      <p className="text-[10px] text-slate-400">
-                        MTC bus terminus access
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Description */}
-            <div className="space-y-1.5">
-              <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">
-                Property Overview
-              </h4>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line font-medium">
-                {selectedProperty.description || selectedProperty.details}
-              </p>
-            </div>
+            {/* Description / Property Overview — only if provided */}
+            {Boolean(
+              (selectedProperty.description || selectedProperty.details)?.trim()
+            ) && (
+              <div className="space-y-1.5">
+                <h4 className="text-xs font-black uppercase text-slate-400 tracking-wider">
+                  Property Overview
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-line font-medium">
+                  {selectedProperty.description || selectedProperty.details}
+                </p>
+              </div>
+            )}
 
             {/* Amenities & Facilities */}
             {selectedProperty.amenities &&
@@ -1393,13 +1402,15 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => handleWhatsApp(selectedProperty, e)}
-                    className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-md"
-                    title="Chat on WhatsApp"
-                  >
-                    <MessageCircle size={18} />
-                  </button>
+                  {Boolean(selectedProperty.owner?.whatsapp?.trim()) && (
+                    <button
+                      onClick={(e) => handleWhatsApp(selectedProperty, e)}
+                      className="p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer shadow-md"
+                      title="Chat on WhatsApp"
+                    >
+                      <MessageCircle size={18} />
+                    </button>
+                  )}
                   <button
                     onClick={(e) => handleCall(selectedProperty, e)}
                     className="px-4 py-2.5 rounded-xl bg-primary hover:bg-orange-600 text-white font-black text-xs transition cursor-pointer flex items-center gap-1.5 shadow-md shadow-primary/20"
