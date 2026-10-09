@@ -36,13 +36,28 @@ import {
   HelpCircle,
   Trees,
   Search,
+  Navigation,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import imageCompression from "browser-image-compression";
 import { useWard } from "@/context/wardContext";
 import { ALL_AVADI_STREETS } from "@/lib/wards";
 import { WardSelector, StreetItem } from "@/components/ward-selector";
 import { Modal } from "@/components/shared-components";
+
+// Dynamically import MapLocationPicker to prevent SSR issues with Leaflet
+const MapLocationPicker = dynamic(
+  () => import("@/components/ui/MapLocationPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 rounded-2xl bg-slate-100 dark:bg-slate-800 animate-pulse flex items-center justify-center text-slate-400 text-xs font-semibold">
+        Loading Avadi Map...
+      </div>
+    ),
+  }
+);
 import {
   TransactionType,
   PropertyCategory,
@@ -264,6 +279,11 @@ export function RentalsPostClient() {
   const [distanceToStation, setDistanceToStation] = useState<string>("");
   const [distanceToBusStand, setDistanceToBusStand] = useState<string>("");
   const [nearbyLandmarks, setNearbyLandmarks] = useState<string>("");
+  const [latitude, setLatitude] = useState<number>(13.1169);
+  const [longitude, setLongitude] = useState<number>(80.0972);
+  const [latInput, setLatInput] = useState<string>("13.1169");
+  const [lngInput, setLngInput] = useState<string>("80.0972");
+  const [mapError, setMapError] = useState<string | null>(null);
 
   // Step 4: Pricing State
   const [monthlyRent, setMonthlyRent] = useState<string>("");
@@ -701,6 +721,8 @@ export function RentalsPostClient() {
       ward: Number(ward) || 14,
       streetName: streetName.trim(),
       location: `${streetName.trim()}, Ward ${ward}, Avadi`,
+      lat: latitude,
+      lng: longitude,
       pricing: {
         monthlyRent: parseFloat(monthlyRent) || 0,
         securityDeposit: parseFloat(securityDeposit) || 0,
@@ -1622,6 +1644,90 @@ export function RentalsPostClient() {
                   We use your property ward to show this listing to verified tenants searching in this area.
                 </span>
               </p>
+            </div>
+
+            {/* Property Map Location & GPS Coordinates Picker */}
+            <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm flex items-center gap-2">
+                  <span className="p-1 rounded-md bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                    <MapPin size={14} />
+                  </span>
+                  <span>Pin Property on Map</span>
+                </label>
+                <span className="text-[11px] font-semibold text-slate-400">
+                  (Drag marker to adjust pin)
+                </span>
+              </div>
+
+              {/* Map Component */}
+              <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs relative z-0 h-64 sm:h-72">
+                <MapLocationPicker
+                  defaultLat={latitude}
+                  defaultLng={longitude}
+                  onLocationSelect={(lat, lng) => {
+                    setLatitude(lat);
+                    setLongitude(lng);
+                    setLatInput(lat.toFixed(6));
+                    setLngInput(lng.toFixed(6));
+                    setMapError(null);
+                  }}
+                  onError={(msg) => setMapError(msg)}
+                />
+              </div>
+
+              {mapError && (
+                <p className="text-xs font-semibold text-rose-500 flex items-center gap-1.5">
+                  <AlertCircle size={14} /> {mapError}
+                </p>
+              )}
+
+              {/* Coordinates Inputs */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Navigation size={13} className="text-primary" />
+                    <span>Coordinates (Latitude & Longitude)</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400">
+                    Auto-updates with pin
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Latitude
+                    </label>
+                    <input
+                      type="text"
+                      value={latInput}
+                      onChange={(e) => {
+                        setLatInput(e.target.value);
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) setLatitude(val);
+                      }}
+                      placeholder="13.1169"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+                      Longitude
+                    </label>
+                    <input
+                      type="text"
+                      value={lngInput}
+                      onChange={(e) => {
+                        setLngInput(e.target.value);
+                        const val = parseFloat(e.target.value);
+                        if (!isNaN(val)) setLongitude(val);
+                      }}
+                      placeholder="80.0972"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
 

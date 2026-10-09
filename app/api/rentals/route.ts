@@ -72,6 +72,8 @@ export async function POST(request: Request) {
       type,
       rent,
       advance,
+      lat,
+      lng,
     } = body;
 
     if (!title || !ward || !contact) {
@@ -105,6 +107,8 @@ export async function POST(request: Request) {
       amenities,
       images,
       owner,
+      lat: typeof lat === "number" ? lat : (lat ? parseFloat(lat) : undefined),
+      lng: typeof lng === "number" ? lng : (lng ? parseFloat(lng) : undefined),
     });
 
     // 4. Save to DB — status APPROVED so it's visible immediately

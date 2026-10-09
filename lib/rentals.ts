@@ -64,6 +64,8 @@ export async function getRentalListings(): Promise<RentalProperty[]> {
         ward: l.ward,
         streetName: (meta.streetName as string) || undefined,
         location: l.location || `Ward ${l.ward}, Avadi`,
+        lat: typeof meta.lat === "number" ? meta.lat : undefined,
+        lng: typeof meta.lng === "number" ? meta.lng : undefined,
         pricing: pricing as any,
         pgDetails: meta.pgDetails as any,
         commercialDetails: meta.commercialDetails as any,
