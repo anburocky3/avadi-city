@@ -412,9 +412,7 @@ export function RentalsPostClient() {
   const [contactPhone, setContactPhone] = useState<string>(
     authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : ""
   );
-  const [whatsappPhone, setWhatsappPhone] = useState<string>(
-    authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : ""
-  );
+  const [whatsappPhone, setWhatsappPhone] = useState<string>("");
   const [declarationAgreed, setDeclarationAgreed] = useState<boolean>(false);
 
   // Default and auto-fill owner contact information from logged-in account
@@ -428,9 +426,6 @@ export function RentalsPostClient() {
       const digits = authUser.phone.replace(/^\+91/, "").replace(/\D/g, "");
       const clean = digits.length >= 10 ? digits.slice(-10) : authUser.phone.trim();
       setContactPhone(clean);
-      if (!whatsappPhone) {
-        setWhatsappPhone(clean);
-      }
     }
   }, [authUser, userProfile]);
 
@@ -2223,9 +2218,34 @@ export function RentalsPostClient() {
                 </div>
 
                 <div>
-                  <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                    WhatsApp Number (for instant enquiries)
-                  </label>
+                  <div className="flex items-center justify-between mb-1 gap-2">
+                    <label className="block text-slate-700 dark:text-slate-300 font-bold">
+                      WhatsApp Number <span className="text-slate-400 font-normal text-[10px]">(optional)</span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const targetNumber =
+                          contactPhone ||
+                          (authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : "");
+                        if (targetNumber) {
+                          setWhatsappPhone(targetNumber);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200/80 dark:border-emerald-800/80 px-2 py-0.5 rounded-md transition active:scale-95 cursor-pointer shadow-xs"
+                      title="Tap to auto-fill with primary number"
+                    >
+                      <Sparkles size={11} className="text-emerald-500" />
+                      <span>
+                        {whatsappPhone &&
+                        (whatsappPhone === contactPhone ||
+                          (authUser?.phone &&
+                            whatsappPhone === authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10)))
+                          ? "Same as primary ✓"
+                          : "Auto-fill"}
+                      </span>
+                    </button>
+                  </div>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
                       +91
@@ -2234,7 +2254,7 @@ export function RentalsPostClient() {
                       type="tel"
                       value={whatsappPhone}
                       onChange={(e) => setWhatsappPhone(e.target.value)}
-                      placeholder="Same as mobile number"
+                      placeholder="e.g. 9876543210 (or tap Auto-fill)"
                       className="w-full pl-11 pr-3 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-bold text-xs"
                     />
                   </div>
