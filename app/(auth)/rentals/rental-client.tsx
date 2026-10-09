@@ -287,24 +287,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     return `₹${rent.toLocaleString("en-IN")} / mo`;
   };
 
-  // Helper to get transaction color classes (crisp, high-contrast badges over photos)
-  const getTransactionBadgeClasses = (type: TransactionType | string) => {
-    switch (type) {
-      case "Rent":
-        return "bg-emerald-600 text-white border border-emerald-400/30 shadow-md";
-      case "Lease":
-        return "bg-blue-600 text-white border border-blue-400/30 shadow-md";
-      case "PG / Hostel":
-        return "bg-purple-600 text-white border border-purple-400/30 shadow-md";
-      case "Commercial":
-        return "bg-sky-600 text-white border border-sky-400/30 shadow-md";
-      case "Sale":
-      case "Plot for Sale":
-        return "bg-rose-600 text-white border border-rose-400/30 shadow-md";
-      default:
-        return "bg-primary text-white border border-orange-400/30 shadow-md";
-    }
-  };
+
 
   // Share Property handler with canonical /rental/[category]-[id] format
   const handleShare = (property: RentalProperty, e?: React.MouseEvent) => {
@@ -654,22 +637,6 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:min-h-[250px]">
                   {/* Property Image Banner */}
                   <div className="md:col-span-5 relative w-full h-56 sm:h-64 md:h-full min-h-[220px] md:min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950">
-                    {/* Left accent bar — transaction type color */}
-                    <div
-                      className={`absolute left-0 top-0 bottom-0 w-1 z-10 ${
-                        rental.transactionType === "Rent"
-                          ? "bg-emerald-500"
-                          : rental.transactionType === "Lease"
-                            ? "bg-blue-500"
-                            : rental.transactionType === "PG / Hostel"
-                              ? "bg-purple-500"
-                              : rental.transactionType === "Commercial"
-                                ? "bg-amber-500"
-                                : rental.transactionType === "Sale"
-                                  ? "bg-rose-500"
-                                  : "bg-primary"
-                      }`}
-                    />
                     {coverPhoto ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
@@ -704,30 +671,19 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                         </span>
                       )}
                       {(() => {
+                        if (
+                          rental.status === "Rented" ||
+                          rental.status === "Sold"
+                        )
+                          return null;
+
                         const isRent = rental.transactionType === "Rent";
                         const isCommercial =
                           rental.transactionType === "Commercial";
                         const isSale = rental.transactionType === "Sale";
                         const isPG = rental.transactionType === "PG / Hostel";
 
-                        // 1. Transaction Badge: Omit for standard "Rent"
-                        // Only show for Commercial, PG / Hostel, Sale / Plot for Sale, Lease
-                        let txLabel: string | null = null;
-                        if (!isRent) {
-                          if (isSale) {
-                            txLabel =
-                              rental.category === "Plot / Land" ||
-                              rental.propertyTypeTag
-                                ?.toLowerCase()
-                                .includes("plot")
-                                ? "Plot for Sale"
-                                : "Sale";
-                          } else {
-                            txLabel = rental.transactionType;
-                          }
-                        }
-
-                        // 2. Secondary Tag: clean up duplicates (e.g. Commercial Shop -> Shop, etc.)
+                        // 1. Clean secondary tag if present
                         let secondaryTag: string | null =
                           rental.propertyTypeTag || null;
                         if (secondaryTag) {
@@ -765,30 +721,45 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                           }
                         }
 
-                        // Only show tx/secondary tags if listing isn't rented/sold
-                        if (
-                          rental.status === "Rented" ||
-                          rental.status === "Sold"
-                        )
-                          return null;
+                        // 2. Build a single, elegant, professional badge label with an understated accent dot
+                        let displayLabel: string | null = null;
+                        let dotColor = "bg-primary";
+
+                        if (isSale) {
+                          dotColor = "bg-rose-400";
+                          if (secondaryTag && secondaryTag.toLowerCase() !== "sale") {
+                            displayLabel = secondaryTag.toLowerCase().includes("sale")
+                              ? secondaryTag
+                              : `${secondaryTag} · For Sale`;
+                          } else {
+                            displayLabel = "For Sale";
+                          }
+                        } else if (isPG) {
+                          dotColor = "bg-purple-400";
+                          displayLabel = secondaryTag || "PG / Hostel";
+                        } else if (isCommercial) {
+                          dotColor = "bg-sky-400";
+                          if (secondaryTag && !secondaryTag.toLowerCase().includes("commercial")) {
+                            displayLabel = `Commercial · ${secondaryTag}`;
+                          } else {
+                            displayLabel = secondaryTag || "Commercial";
+                          }
+                        } else if (rental.transactionType === "Lease") {
+                          dotColor = "bg-blue-400";
+                          displayLabel = secondaryTag ? `${secondaryTag} · Lease` : "Lease";
+                        } else {
+                          // Standard Rent
+                          dotColor = "bg-emerald-400";
+                          displayLabel = secondaryTag || (rental.category !== "Apartment" ? rental.category : null);
+                        }
+
+                        if (!displayLabel) return null;
 
                         return (
-                          <>
-                            {txLabel && (
-                              <span
-                                className={`text-[11px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider ${getTransactionBadgeClasses(
-                                  txLabel,
-                                )}`}
-                              >
-                                {txLabel}
-                              </span>
-                            )}
-                            {secondaryTag && (
-                              <span className="bg-slate-950/80 backdrop-blur-md text-white font-bold text-[11px] px-2.5 py-1 rounded-full border border-white/20 shadow-md">
-                                {secondaryTag}
-                              </span>
-                            )}
-                          </>
+                          <span className="inline-flex items-center gap-1.5 bg-slate-950/80 backdrop-blur-md text-white text-[11px] font-semibold px-2.5 py-1 rounded-full border border-white/15 shadow-sm">
+                            <span className={`w-1.5 h-1.5 rounded-full ${dotColor} shrink-0`} />
+                            <span>{displayLabel}</span>
+                          </span>
                         );
                       })()}
                     </div>
