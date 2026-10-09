@@ -287,22 +287,22 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
     return `₹${rent.toLocaleString("en-IN")} / mo`;
   };
 
-  // Helper to get transaction color classes
+  // Helper to get transaction color classes (crisp, high-contrast badges over photos)
   const getTransactionBadgeClasses = (type: TransactionType | string) => {
     switch (type) {
       case "Rent":
-        return "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20";
+        return "bg-emerald-600 text-white border border-emerald-400/30 shadow-md";
       case "Lease":
-        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20";
+        return "bg-blue-600 text-white border border-blue-400/30 shadow-md";
       case "PG / Hostel":
-        return "bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20";
+        return "bg-purple-600 text-white border border-purple-400/30 shadow-md";
       case "Commercial":
-        return "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20";
+        return "bg-sky-600 text-white border border-sky-400/30 shadow-md";
       case "Sale":
       case "Plot for Sale":
-        return "bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20";
+        return "bg-rose-600 text-white border border-rose-400/30 shadow-md";
       default:
-        return "bg-primary/10 text-primary border border-primary/20";
+        return "bg-primary text-white border border-orange-400/30 shadow-md";
     }
   };
 
@@ -776,7 +776,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                           <>
                             {txLabel && (
                               <span
-                                className={`text-[11px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider backdrop-blur-md shadow-md ${getTransactionBadgeClasses(
+                                className={`text-[11px] font-black px-2.5 py-1 rounded-full uppercase tracking-wider ${getTransactionBadgeClasses(
                                   txLabel,
                                 )}`}
                               >
