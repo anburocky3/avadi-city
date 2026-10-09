@@ -2075,26 +2075,178 @@ export function RentalsPostClient() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                Monthly Maintenance (₹)
-              </label>
-              <input
-                type="number"
-                value={maintenance}
-                onChange={(e) => {
-                  setMaintenance(e.target.value);
-                  setPricingConfirmed(false);
-                }}
-                placeholder="e.g. 500 (or 0 if none)"
-                className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs focus:ring-2 focus:ring-primary focus:outline-none"
-              />
-            </div>
+            {/* Maintenance & Utilities Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+              {/* Left Column: Monthly Maintenance & Water Supply */}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1">
+                    Monthly Maintenance (₹)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      value={maintenance}
+                      onChange={(e) => {
+                        setMaintenance(e.target.value);
+                        setPricingConfirmed(false);
+                      }}
+                      placeholder="e.g. 500 (or 0 if none)"
+                      className="w-full pl-8 pr-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
 
-            {/* Electricity & Water Policy Section */}
-            <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
-              {/* Electricity Charges */}
-              <div className="space-y-3">
+                {/* Water Supply */}
+                <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      Water Supply
+                    </h4>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                        Water Supply Available
+                      </span>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={waterAvailable}
+                        onClick={() => setWaterAvailable(!waterAvailable)}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary ${
+                          waterAvailable ? "bg-primary" : "bg-slate-300 dark:bg-slate-700"
+                        }`}
+                      >
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
+                            waterAvailable ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  {!waterAvailable ? (
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Water supply is not available.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                          Billing
+                        </label>
+                        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+                          {[
+                            { id: "Free", label: "Free" },
+                            { id: "Included in Rent", label: "Included in Rent" },
+                            { id: "Paid", label: "Paid" },
+                          ].map((item) => (
+                            <label
+                              key={item.id}
+                              className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
+                            >
+                              <input
+                                type="radio"
+                                name="waterBillingType"
+                                value={item.id}
+                                checked={waterBillingType === item.id}
+                                onChange={() => setWaterBillingType(item.id as any)}
+                                className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
+                              />
+                              <span>{item.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      {waterBillingType === "Free" && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Water supply is free.
+                        </p>
+                      )}
+
+                      {waterBillingType === "Included in Rent" && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Water charges are included in rent.
+                        </p>
+                      )}
+
+                      {waterBillingType === "Paid" && (
+                        <div className="space-y-3 pt-1">
+                          <div>
+                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
+                              Billing Method
+                            </label>
+                            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                              {[
+                                { id: "Per Month", label: "Per Month" },
+                                { id: "Per Person Per Month", label: "Per Person/Mo" },
+                                { id: "Per Unit", label: "Per Unit/KL" },
+                              ].map((wm) => (
+                                <label
+                                  key={wm.id}
+                                  className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
+                                >
+                                  <input
+                                    type="radio"
+                                    name="waterBillingMethod"
+                                    value={wm.id}
+                                    checked={waterBillingMethod === wm.id}
+                                    onChange={() => setWaterBillingMethod(wm.id as any)}
+                                    className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
+                                  />
+                                  <span>{wm.label}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                              {waterBillingMethod === "Per Person Per Month"
+                                ? "Water Charge (₹/person/month)"
+                                : waterBillingMethod === "Per Unit"
+                                ? "Water Rate (₹/KL)"
+                                : "Monthly Water Charge (₹)"}{" "}
+                              <span className="text-rose-500">*</span>
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
+                                ₹
+                              </span>
+                              <input
+                                type="number"
+                                min="0"
+                                value={waterAmount}
+                                onChange={(e) => setWaterAmount(e.target.value)}
+                                placeholder={
+                                  waterBillingMethod === "Per Person Per Month"
+                                    ? "Enter water charge per person"
+                                    : waterBillingMethod === "Per Unit"
+                                    ? "Enter water rate per KL"
+                                    : "Enter monthly water charge"
+                                }
+                                className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-xs text-slate-600 dark:text-slate-400 pt-1">
+                        <span className="text-slate-400 dark:text-slate-500">Water: </span>
+                        <span className="font-semibold text-slate-900 dark:text-white">{waterSummary}</span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Right Column: Electricity Charges */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between flex-wrap gap-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     Electricity Charges
@@ -2156,7 +2308,7 @@ export function RentalsPostClient() {
                         <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                           Electricity Rate (₹/unit) <span className="text-rose-500">*</span>
                         </label>
-                        <div className="relative max-w-sm">
+                        <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
                             ₹
                           </span>
@@ -2178,7 +2330,7 @@ export function RentalsPostClient() {
                         <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                           Monthly Electricity Charge (₹) <span className="text-rose-500">*</span>
                         </label>
-                        <div className="relative max-w-sm">
+                        <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
                             ₹
                           </span>
@@ -2203,153 +2355,6 @@ export function RentalsPostClient() {
                     <p className="text-xs text-slate-600 dark:text-slate-400 pt-1">
                       <span className="text-slate-400 dark:text-slate-500">Electricity: </span>
                       <span className="font-semibold text-slate-900 dark:text-white">{electricitySummary}</span>
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {/* Section Divider */}
-              <div className="border-t border-slate-200 dark:border-slate-800" />
-
-              {/* Water Supply */}
-              <div className="space-y-3">
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    Water Supply
-                  </h4>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                      Water Supply Available
-                    </span>
-                    <button
-                      type="button"
-                      role="switch"
-                      aria-checked={waterAvailable}
-                      onClick={() => setWaterAvailable(!waterAvailable)}
-                      className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary ${
-                        waterAvailable ? "bg-primary" : "bg-slate-300 dark:bg-slate-700"
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                          waterAvailable ? "translate-x-4" : "translate-x-0"
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                {!waterAvailable ? (
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Water supply is not available.
-                  </p>
-                ) : (
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                        Billing
-                      </label>
-                      <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                        {[
-                          { id: "Free", label: "Free" },
-                          { id: "Included in Rent", label: "Included in Rent" },
-                          { id: "Paid", label: "Paid" },
-                        ].map((item) => (
-                          <label
-                            key={item.id}
-                            className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
-                          >
-                            <input
-                              type="radio"
-                              name="waterBillingType"
-                              value={item.id}
-                              checked={waterBillingType === item.id}
-                              onChange={() => setWaterBillingType(item.id as any)}
-                              className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
-                            />
-                            <span>{item.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {waterBillingType === "Free" && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Water supply is free.
-                      </p>
-                    )}
-
-                    {waterBillingType === "Included in Rent" && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400">
-                        Water charges are included in rent.
-                      </p>
-                    )}
-
-                    {waterBillingType === "Paid" && (
-                      <div className="space-y-3 pt-1">
-                        <div>
-                          <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                            Billing Method
-                          </label>
-                          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                            {[
-                              { id: "Per Month", label: "Per Month" },
-                              { id: "Per Person Per Month", label: "Per Person/Month" },
-                              { id: "Per Unit", label: "Per Unit/KL" },
-                            ].map((wm) => (
-                              <label
-                                key={wm.id}
-                                className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
-                              >
-                                <input
-                                  type="radio"
-                                  name="waterBillingMethod"
-                                  value={wm.id}
-                                  checked={waterBillingMethod === wm.id}
-                                  onChange={() => setWaterBillingMethod(wm.id as any)}
-                                  className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
-                                />
-                                <span>{wm.label}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                            {waterBillingMethod === "Per Person Per Month"
-                              ? "Water Charge (₹/person/month)"
-                              : waterBillingMethod === "Per Unit"
-                              ? "Water Rate (₹/KL)"
-                              : "Monthly Water Charge (₹)"}{" "}
-                            <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative max-w-sm">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
-                              ₹
-                            </span>
-                            <input
-                              type="number"
-                              min="0"
-                              value={waterAmount}
-                              onChange={(e) => setWaterAmount(e.target.value)}
-                              placeholder={
-                                waterBillingMethod === "Per Person Per Month"
-                                  ? "Enter water charge per person"
-                                  : waterBillingMethod === "Per Unit"
-                                  ? "Enter water rate per KL"
-                                  : "Enter monthly water charge"
-                              }
-                              className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-xs text-slate-600 dark:text-slate-400 pt-1">
-                      <span className="text-slate-400 dark:text-slate-500">Water: </span>
-                      <span className="font-semibold text-slate-900 dark:text-white">{waterSummary}</span>
                     </p>
                   </div>
                 )}
