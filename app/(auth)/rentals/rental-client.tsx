@@ -566,9 +566,9 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                     : "border border-slate-200/80 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl hover:shadow-slate-200/60 dark:hover:shadow-slate-900/80 hover:border-primary/50 dark:hover:border-primary/40"
                 }`}
               >
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-0">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-0 md:min-h-[250px]">
                   {/* Property Image Banner */}
-                  <div className="md:col-span-5 relative h-56 md:h-auto overflow-hidden bg-slate-100 dark:bg-slate-950">
+                  <div className="md:col-span-5 relative w-full h-56 sm:h-64 md:h-full min-h-[220px] md:min-h-0 overflow-hidden bg-slate-100 dark:bg-slate-950">
                     {/* Left accent bar — transaction type color */}
                     <div
                       className={`absolute left-0 top-0 bottom-0 w-1 z-10 ${
@@ -590,10 +590,10 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                       <img
                         src={coverPhoto}
                         alt={rental.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 min-h-[220px]"
+                        className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 min-h-[220px] bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
+                      <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
                         <Home size={36} className="opacity-30" />
                         <span className="text-xs font-semibold opacity-60">
                           No Image Available
@@ -734,7 +734,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                   </div>
 
                   {/* Property Content */}
-                  <div className="md:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80">
+                  <div className="md:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80 md:min-h-[250px]">
                     <div>
                       {/* Ward & Street */}
                       <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
