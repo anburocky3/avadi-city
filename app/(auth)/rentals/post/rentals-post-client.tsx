@@ -780,18 +780,22 @@ export function RentalsPostClient() {
       if (res.ok && json.success) {
         finalId = json.id || finalId;
       } else {
-        // API returned an error — surface it but still save locally
-        console.warn("[POST /api/rentals] API error:", json.message);
+        console.error("[POST /api/rentals] Failed:", json.message);
         setFormError(
-          json.message ||
-            "Could not save to server. Your listing is saved locally for now."
+          json.message || "Failed to save listing to database. Please try again."
         );
+        setIsSubmitting(false);
+        scrollToTop();
+        return;
       }
     } catch (err) {
-      console.warn("[POST /api/rentals] Network error:", err);
+      console.error("[POST /api/rentals] Network error:", err);
       setFormError(
-        "Network error — your listing is saved locally. Please re-try posting later."
+        "Network connection error. Could not connect to the database."
       );
+      setIsSubmitting(false);
+      scrollToTop();
+      return;
     }
 
     // ── Always save locally so the "My Listings" tab works immediately ──
