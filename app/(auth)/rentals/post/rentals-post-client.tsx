@@ -1820,62 +1820,41 @@ export function RentalsPostClient() {
                 </p>
               )}
 
-              {/* Simple Card displaying Lat & Long */}
-              <div className="bg-slate-50 dark:bg-slate-900/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                    </span>
-                    <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs sm:text-sm">
-                      Location Coordinates
-                    </span>
-                  </div>
-                  {isGeocoding ? (
-                    <span className="text-[10px] font-bold text-primary flex items-center gap-1">
-                      <Loader2 size={12} className="animate-spin" /> Auto-pinning...
-                    </span>
-                  ) : (
-                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
-                      Coordinates Locked
-                    </span>
-                  )}
-                </div>
-
-                {/* 2-column Simple Cards for Latitude and Longitude */}
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                      Latitude (Lat)
-                    </span>
-                    <span className="text-sm font-black text-slate-900 dark:text-white font-mono block">
-                      {latitude.toFixed(6)}
-                    </span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                      Longitude (Long)
-                    </span>
-                    <span className="text-sm font-black text-slate-900 dark:text-white font-mono block">
-                      {longitude.toFixed(6)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card Footer with Selected Street & Re-pin Action */}
-                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 border-t border-slate-200/60 dark:border-slate-800/60">
-                  <span className="truncate pr-2">
+              {/* Compact GPS Coordinates Bar */}
+              <div className="bg-slate-50 dark:bg-slate-900/60 p-2.5 sm:p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2.5 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[200px] sm:max-w-xs">
                     📍 {streetName?.trim() ? streetName.trim() : `Ward ${ward}, Avadi`}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => lookupAndPinStreet(streetName, ward)}
-                    className="text-primary hover:text-orange-600 font-bold shrink-0 text-xs hover:underline cursor-pointer flex items-center gap-1"
-                  >
-                    <span>Re-pin</span>
-                  </button>
+                </div>
+
+                <div className="flex items-center gap-2 ml-auto shrink-0">
+                  <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-2xs">
+                    <span className="text-[10px] font-bold text-slate-400 font-sans">Lat</span>
+                    <span className="font-bold">{latitude.toFixed(5)}</span>
+                    <span className="text-slate-300 dark:text-slate-700">·</span>
+                    <span className="text-[10px] font-bold text-slate-400 font-sans">Lng</span>
+                    <span className="font-bold">{longitude.toFixed(5)}</span>
+                  </div>
+
+                  {isGeocoding ? (
+                    <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+                      <Loader2 size={11} className="animate-spin" /> Pinning...
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => lookupAndPinStreet(streetName, ward)}
+                      className="text-[11px] font-bold text-primary hover:text-orange-600 transition cursor-pointer hover:underline"
+                      title="Re-pin to street location"
+                    >
+                      Re-pin
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
