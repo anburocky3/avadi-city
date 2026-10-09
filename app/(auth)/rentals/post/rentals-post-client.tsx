@@ -284,6 +284,106 @@ export function RentalsPostClient() {
   const [latInput, setLatInput] = useState<string>("13.1169");
   const [lngInput, setLngInput] = useState<string>("80.0972");
   const [mapError, setMapError] = useState<string | null>(null);
+  const [isGeocoding, setIsGeocoding] = useState<boolean>(false);
+
+  // Approximate fallback centroids for Avadi wards
+  const WARD_CENTROIDS: Record<number, { lat: number; lng: number }> = {
+    1: { lat: 13.148, lng: 80.0623 },
+    2: { lat: 13.142, lng: 80.068 },
+    3: { lat: 13.151, lng: 80.071 },
+    4: { lat: 13.136, lng: 80.075 },
+    5: { lat: 13.132, lng: 80.082 },
+    6: { lat: 13.129, lng: 80.086 },
+    7: { lat: 13.1302, lng: 80.1324 },
+    8: { lat: 13.134, lng: 80.091 },
+    9: { lat: 13.127, lng: 80.098 },
+    10: { lat: 13.124, lng: 80.101 },
+    11: { lat: 13.131, lng: 80.106 },
+    12: { lat: 13.138, lng: 80.102 },
+    13: { lat: 13.125, lng: 80.092 },
+    14: { lat: 13.1169, lng: 80.0972 },
+    15: { lat: 13.112, lng: 80.091 },
+    16: { lat: 13.1187, lng: 80.065 },
+    17: { lat: 13.108, lng: 80.088 },
+    18: { lat: 13.11, lng: 80.084 },
+    19: { lat: 13.106, lng: 80.079 },
+    21: { lat: 13.111, lng: 80.076 },
+    22: { lat: 13.114, lng: 80.082 },
+    23: { lat: 13.117, lng: 80.086 },
+    24: { lat: 13.115, lng: 80.102 },
+    25: { lat: 13.119, lng: 80.108 },
+    26: { lat: 13.116, lng: 80.114 },
+    27: { lat: 13.119, lng: 80.118 },
+    28: { lat: 13.115, lng: 80.122 },
+    29: { lat: 13.112, lng: 80.119 },
+    30: { lat: 13.11, lng: 80.116 },
+    31: { lat: 13.108, lng: 80.113 },
+    32: { lat: 13.106, lng: 80.117 },
+    33: { lat: 13.109, lng: 80.124 },
+    34: { lat: 13.103, lng: 80.112 },
+    35: { lat: 13.101, lng: 80.108 },
+    36: { lat: 13.098, lng: 80.104 },
+    37: { lat: 13.105, lng: 80.081 },
+    38: { lat: 13.102, lng: 80.085 },
+    39: { lat: 13.099, lng: 80.089 },
+    41: { lat: 13.113, lng: 80.101 },
+    42: { lat: 13.095, lng: 80.093 },
+    43: { lat: 13.114, lng: 80.111 },
+    44: { lat: 13.111, lng: 80.105 },
+    45: { lat: 13.097, lng: 80.097 },
+    46: { lat: 13.094, lng: 80.101 },
+    47: { lat: 13.0902, lng: 80.109 },
+    48: { lat: 13.085, lng: 80.103 },
+  };
+
+  const lookupAndPinStreet = async (name: string, wardNumber?: number) => {
+    if (!name || name.trim().length < 2) return;
+    setIsGeocoding(true);
+    setMapError(null);
+
+    try {
+      const parts = name.split(",").map((p) => p.trim());
+      const queryTarget = parts.length > 1 ? parts[parts.length - 1] : parts[0];
+      const searchUrl = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(
+        queryTarget + ", Avadi, Tamil Nadu",
+      )}&format=json&limit=1`;
+
+      const res = await fetch(searchUrl, {
+        headers: { "Accept-Language": "en" },
+      });
+
+      if (res.ok) {
+        const results = await res.json();
+        if (Array.isArray(results) && results.length > 0) {
+          const lat = parseFloat(results[0].lat);
+          const lng = parseFloat(results[0].lon);
+          // Avadi bounding box validation (13.01 - 13.22, 79.99 - 80.20)
+          if (lat >= 13.01 && lat <= 13.22 && lng >= 79.99 && lng <= 80.2) {
+            setLatitude(lat);
+            setLongitude(lng);
+            setLatInput(lat.toFixed(6));
+            setLngInput(lng.toFixed(6));
+            setIsGeocoding(false);
+            return;
+          }
+        }
+      }
+    } catch {
+      // Fall back
+    }
+
+    // Ward Centroid fallback
+    const targetWard = wardNumber || ward;
+    const fallback = WARD_CENTROIDS[targetWard] || {
+      lat: 13.1169,
+      lng: 80.0972,
+    };
+    setLatitude(fallback.lat);
+    setLongitude(fallback.lng);
+    setLatInput(fallback.lat.toFixed(6));
+    setLngInput(fallback.lng.toFixed(6));
+    setIsGeocoding(false);
+  };
 
   // Step 4: Pricing State
   const [monthlyRent, setMonthlyRent] = useState<string>("");
@@ -1563,6 +1663,25 @@ export function RentalsPostClient() {
                   ).slice(0, 10);
                   setStreetResults(filtered);
                 }}
+                onBlur={() => {
+                  if (streetName.trim().length >= 3) {
+                    lookupAndPinStreet(streetName, ward);
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (streetResults.length > 0) {
+                      const first = streetResults[0];
+                      setStreetName(first.streetName);
+                      setWard(first.wardNo);
+                      setStreetResults([]);
+                      lookupAndPinStreet(first.streetName, first.wardNo);
+                    } else {
+                      lookupAndPinStreet(streetName, ward);
+                    }
+                  }
+                }}
                 placeholder="e.g. Kamaraj Nagar, Near Pattabiram Railway Station, Gandhi Road..."
                 className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
               />
@@ -1584,6 +1703,7 @@ export function RentalsPostClient() {
                           setWard(street.wardNo);
                           setStreetResults([]);
                           setFormError(null);
+                          lookupAndPinStreet(street.streetName, street.wardNo);
                         }}
                         className="px-4 py-3 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-500/10 hover:text-primary cursor-pointer flex items-center justify-between"
                       >
@@ -1682,50 +1802,62 @@ export function RentalsPostClient() {
                 </p>
               )}
 
-              {/* Coordinates Inputs */}
-              <div className="bg-slate-50 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2">
+              {/* Simple Card displaying Lat & Long */}
+              <div className="bg-slate-50 dark:bg-slate-900/80 p-3.5 sm:p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                    <Navigation size={13} className="text-primary" />
-                    <span>Coordinates (Latitude & Longitude)</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    Auto-updates with pin
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                    </span>
+                    <span className="font-extrabold text-slate-800 dark:text-slate-100 text-xs sm:text-sm">
+                      Location Coordinates
+                    </span>
+                  </div>
+                  {isGeocoding ? (
+                    <span className="text-[10px] font-bold text-primary flex items-center gap-1">
+                      <Loader2 size={12} className="animate-spin" /> Auto-pinning...
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800/60">
+                      Coordinates Locked
+                    </span>
+                  )}
                 </div>
+
+                {/* 2-column Simple Cards for Latitude and Longitude */}
                 <div className="grid grid-cols-2 gap-2.5">
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Latitude
-                    </label>
-                    <input
-                      type="text"
-                      value={latInput}
-                      onChange={(e) => {
-                        setLatInput(e.target.value);
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) setLatitude(val);
-                      }}
-                      placeholder="13.1169"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                      Latitude (Lat)
+                    </span>
+                    <span className="text-sm font-black text-slate-900 dark:text-white font-mono block">
+                      {latitude.toFixed(6)}
+                    </span>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1">
-                      Longitude
-                    </label>
-                    <input
-                      type="text"
-                      value={lngInput}
-                      onChange={(e) => {
-                        setLngInput(e.target.value);
-                        const val = parseFloat(e.target.value);
-                        if (!isNaN(val)) setLongitude(val);
-                      }}
-                      placeholder="80.0972"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-bold text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-primary/40"
-                    />
+
+                  <div className="p-3 rounded-xl bg-white dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800/80">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                      Longitude (Long)
+                    </span>
+                    <span className="text-sm font-black text-slate-900 dark:text-white font-mono block">
+                      {longitude.toFixed(6)}
+                    </span>
                   </div>
+                </div>
+
+                {/* Card Footer with Selected Street & Re-pin Action */}
+                <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 pt-0.5 border-t border-slate-200/60 dark:border-slate-800/60">
+                  <span className="truncate pr-2">
+                    📍 {streetName?.trim() ? streetName.trim() : `Ward ${ward}, Avadi`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => lookupAndPinStreet(streetName, ward)}
+                    className="text-primary hover:text-orange-600 font-bold shrink-0 text-xs hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <span>Re-pin</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2152,6 +2284,9 @@ export function RentalsPostClient() {
             setWard(wardNo);
             if (selectedStreet) {
               setStreetName(selectedStreet);
+              lookupAndPinStreet(selectedStreet, wardNo);
+            } else {
+              lookupAndPinStreet(`Ward ${wardNo}, Avadi`, wardNo);
             }
             setFormError(null);
             setIsStreetWardModalOpen(false);
