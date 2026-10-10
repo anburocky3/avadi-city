@@ -423,11 +423,11 @@ export function RentalsPostClient() {
   const [electricityMonthlyCharge, setElectricityMonthlyCharge] = useState<string>("");
 
   const [waterAvailable, setWaterAvailable] = useState<boolean>(true);
-  const [waterBillingType, setWaterBillingType] = useState<"Free" | "Included in Rent" | "Paid">("Free");
+  const [waterBillingType, setWaterBillingType] = useState<"Free" | "Included in Rent" | "Paid">("Paid");
   const [waterBillingMethod, setWaterBillingMethod] = useState<
     "Per Month" | "Per Person Per Month" | "Per Unit"
   >("Per Month");
-  const [waterAmount, setWaterAmount] = useState<string>("");
+  const [waterAmount, setWaterAmount] = useState<string>("0");
 
   // Dynamically updated Electricity Summary
   const electricitySummary = useMemo(() => {
@@ -858,7 +858,7 @@ export function RentalsPostClient() {
         }
         if (waterAvailable && waterBillingType === "Paid") {
           const amt = parseFloat(waterAmount);
-          if (isNaN(amt) || amt <= 0 || waterAmount.trim() === "") {
+          if (isNaN(amt) || amt < 0 || waterAmount.trim() === "") {
             setFormError("Please enter a valid water supply charge amount.");
             scrollToTop();
             return false;
@@ -2445,7 +2445,7 @@ export function RentalsPostClient() {
                           } else {
                             setWaterAvailable(true);
                             setWaterBillingType("Paid");
-                            if (!waterAmount) setWaterAmount("300");
+                            if (!waterAmount) setWaterAmount("0");
                           }
                           setPricingConfirmed(false);
                         }}
