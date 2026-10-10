@@ -54,6 +54,7 @@ const MapLocationPicker = dynamic(
 
 // Predefined Job Categories
 const JOB_CATEGORIES = [
+  "Services",
   "IT & Software",
   "Sales & Marketing",
   "Finance & Accounting",
@@ -67,7 +68,6 @@ const JOB_CATEGORIES = [
   "Customer Support",
   "Skilled Trades",
   "Driving",
-  "Services",
   "Other",
 ];
 
