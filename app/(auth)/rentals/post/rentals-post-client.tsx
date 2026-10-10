@@ -460,7 +460,7 @@ export function RentalsPostClient() {
     }
     const freqLabel =
       waterBillingMethod === "Per Person Per Month"
-        ? "/person/month"
+        ? "/person"
         : waterBillingMethod === "Per Unit"
         ? "/KL"
         : "/month";
@@ -2428,8 +2428,6 @@ export function RentalsPostClient() {
                         placeholder={
                           waterBillingMethod === "Per Person Per Month"
                             ? "e.g. 200"
-                            : waterBillingMethod === "Per Unit"
-                            ? "e.g. 50"
                             : "e.g. 300"
                         }
                         className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
@@ -2443,8 +2441,7 @@ export function RentalsPostClient() {
                         className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
                       >
                         <option value="Per Month">/ month</option>
-                        <option value="Per Person Per Month">/ person/mo</option>
-                        <option value="Per Unit">/ KL</option>
+                        <option value="Per Person Per Month">/ person</option>
                       </select>
                     </div>
                   )}
