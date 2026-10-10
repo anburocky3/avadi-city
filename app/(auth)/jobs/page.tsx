@@ -29,6 +29,7 @@ export default async function JobsPage() {
           id: j.id,
           role: j.role,
           businessName: j.businessName,
+          category: j.category,
           jobType: j.jobType,
           postedTime: "Recently",
           salary: j.salary,
@@ -39,6 +40,7 @@ export default async function JobsPage() {
           details: j.details,
           requirements: reqs,
           qualifications: j.qualifications || undefined,
+          imageUrl: j.imageUrl || null,
         };
       });
 

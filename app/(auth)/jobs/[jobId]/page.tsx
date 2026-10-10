@@ -121,41 +121,57 @@ export default async function JobDetailPage({ params }: PageProps) {
       {/* Main Job Header Card */}
       <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-600 border border-orange-500/20">
-                {job.jobType || "Full-Time"}
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                {job.workMode || "On-site"}
-              </span>
-              {job.category && (
+          <div className="flex items-start gap-3.5 sm:gap-4 min-w-0">
+            {job.imageUrl ? (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 shadow-xs flex items-center justify-center">
+                <img
+                  src={job.imageUrl}
+                  alt={`${job.businessName} logo`}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0 flex items-center justify-center">
+                <Building size={32} />
+              </div>
+            )}
+
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-600 border border-orange-500/20">
+                  {job.jobType || "Full-Time"}
+                </span>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {job.category}
+                  {job.workMode || "On-site"}
                 </span>
-              )}
-              {isOwner && (
-                <span
-                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                    job.status === "APPROVED"
-                      ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
-                      : job.status === "PENDING"
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                      : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
-                  }`}
-                >
-                  Status: {job.status}
-                </span>
-              )}
-            </div>
+                {job.category && (
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    {job.category}
+                  </span>
+                )}
+                {isOwner && (
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                      job.status === "APPROVED"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                        : job.status === "PENDING"
+                        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                        : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+                    }`}
+                  >
+                    Status: {job.status}
+                  </span>
+                )}
+              </div>
 
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
-              {job.role}
-            </h1>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white leading-tight">
+                {job.role}
+              </h1>
 
-            <div className="flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400">
-              <Building size={14} className="shrink-0" />
-              <span>{job.businessName}</span>
+              <div className="flex items-center gap-1.5 text-xs font-bold text-orange-600 dark:text-orange-400">
+                <Building size={14} className="shrink-0" />
+                <span>{job.businessName}</span>
+              </div>
             </div>
           </div>
 

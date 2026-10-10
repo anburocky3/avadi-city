@@ -36,6 +36,7 @@ export interface JobVacancy {
   id: string;
   role: string;
   businessName: string;
+  category?: string;
   jobType?: "Full-Time" | "Part-Time" | "Contract" | string;
   workMode?: string;
   postedTime?: string;
@@ -51,6 +52,7 @@ export interface JobVacancy {
   totalApplications?: number;
   newApplications?: number;
   ownerId?: string;
+  imageUrl?: string | null;
 }
 
 export interface JobsClientProps {
@@ -169,6 +171,8 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
         (j) =>
           (j.jobType &&
             j.jobType.toLowerCase() === activeTypeFilter.toLowerCase()) ||
+          (j.category &&
+            j.category.toLowerCase() === activeTypeFilter.toLowerCase()) ||
           (j.role &&
             j.role.toLowerCase().includes(activeTypeFilter.toLowerCase())),
       );
@@ -180,7 +184,8 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
         (j) =>
           j.role.toLowerCase().includes(q) ||
           j.businessName.toLowerCase().includes(q) ||
-          j.details.toLowerCase().includes(q),
+          j.details.toLowerCase().includes(q) ||
+          (j.category && j.category.toLowerCase().includes(q)),
       );
     }
 
@@ -379,10 +384,15 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                   >
                     {/* Top Badge & Posted Time */}
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
                           {job.jobType || "FULL-TIME"}
                         </span>
+                        {job.category && (
+                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                            {job.category}
+                          </span>
+                        )}
                         {isJustPosted && (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] bg-emerald-600 text-white font-black uppercase animate-bounce">
                             <CheckCircle2 size={10} className="mr-1" />
@@ -397,14 +407,33 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                       </span>
                     </div>
 
-                    {/* Role Title & Business Name */}
-                    <div>
-                      <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-snug">
-                        {job.role}
-                      </h3>
-                      <div className="flex items-center space-x-1.5 text-xs font-bold text-primary mt-1">
-                        <Building size={14} className="shrink-0" />
-                        <span>{job.businessName}</span>
+                    {/* Role Title, Business Name & Company Logo / Job Poster */}
+                    <div className="flex items-start gap-3.5">
+                      {job.imageUrl ? (
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 shadow-xs flex items-center justify-center">
+                          <img
+                            src={job.imageUrl}
+                            alt={`${job.businessName} logo`}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.currentTarget as HTMLElement).style.display = "none";
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-orange-500/10 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0 flex items-center justify-center">
+                          <Building size={24} />
+                        </div>
+                      )}
+
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-snug">
+                          {job.role}
+                        </h3>
+                        <div className="flex items-center space-x-1.5 text-xs font-bold text-primary mt-1">
+                          <Building size={14} className="shrink-0" />
+                          <span className="truncate">{job.businessName}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -453,8 +482,17 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                     {/* Bottom Action Buttons */}
                     <div className="grid grid-cols-4 gap-2.5 pt-2">
                       <Link
+                        href={`/jobs/${job.id}`}
+                        className="col-span-1 py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl text-xs font-black transition flex items-center justify-center space-x-1 cursor-pointer border border-slate-200/80 dark:border-slate-700"
+                        title="View Job Details"
+                      >
+                        <Eye size={14} />
+                        <span className="hidden sm:inline">View</span>
+                      </Link>
+
+                      <Link
                         href={`/jobs/${job.id}/apply`}
-                        className="col-span-3 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl text-xs font-black transition flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer"
+                        className="col-span-2 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl text-xs font-black transition flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer"
                       >
                         <Send size={14} />
                         <span>Apply</span>
@@ -544,29 +582,53 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                     className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 hover:shadow-md transition"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
-                            {job.jobType || "Full-Time"}
-                          </span>
-                          {job.workMode && (
-                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                              {job.workMode}
+                      <div className="flex items-start gap-3 min-w-0">
+                        {job.imageUrl ? (
+                          <div className="w-12 h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 shadow-xs flex items-center justify-center">
+                            <img
+                              src={job.imageUrl}
+                              alt={`${job.businessName} logo`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.currentTarget as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-600 border border-orange-500/20 shrink-0 flex items-center justify-center">
+                            <Building size={20} />
+                          </div>
+                        )}
+
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
+                              {job.jobType || "Full-Time"}
                             </span>
-                          )}
-                        </div>
+                            {job.category && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                                {job.category}
+                              </span>
+                            )}
+                            {job.workMode && (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                                {job.workMode}
+                              </span>
+                            )}
+                          </div>
 
-                        <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
-                          {job.role}
-                        </h3>
+                          <h3 className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white leading-tight truncate">
+                            {job.role}
+                          </h3>
 
-                        <div className="flex items-center gap-1.5 text-xs font-bold text-primary mt-0.5">
-                          <Building size={14} className="shrink-0" />
-                          <span className="truncate">{job.businessName}</span>
-                          <span className="text-slate-400 font-normal">•</span>
-                          <span className="text-slate-500 font-medium truncate">
-                            {job.location || `Ward ${job.ward}, Avadi`}
-                          </span>
+                          <div className="flex items-center gap-1.5 text-xs font-bold text-primary mt-0.5">
+                            <Building size={14} className="shrink-0" />
+                            <span className="truncate">{job.businessName}</span>
+                            <span className="text-slate-400 font-normal">•</span>
+                            <span className="text-slate-500 font-medium truncate">
+                              {job.location || `Ward ${job.ward}, Avadi`}
+                            </span>
+                          </div>
                         </div>
                       </div>
 

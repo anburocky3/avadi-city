@@ -67,6 +67,7 @@ const JOB_CATEGORIES = [
   "Customer Support",
   "Skilled Trades",
   "Driving",
+  "Services",
   "Other",
 ];
 
@@ -314,14 +315,20 @@ export default function PostJobVacancyPage() {
   // Location & Map
   const [streetQuery, setStreetQuery] = useState("");
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
-  const [selectedStreet, setSelectedStreet] = useState<string>("");
+  const [selectedStreetRecord, setSelectedStreetRecord] = useState<StreetItem | null>(null);
   const [hasSearchedLocation, setHasSearchedLocation] = useState(false);
   const [mapZoom, setMapZoom] = useState(14);
-  const [ward, setWard] = useState<number>(activeWard?.id || 22);
-  const [latitude, setLatitude] = useState<number>(13.1169);
-  const [longitude, setLongitude] = useState<number>(80.0972);
+  const [ward, setWard] = useState<number | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [address, setAddress] = useState("");
   const [mapError, setMapError] = useState<string | null>(null);
+
+  // Default geographical center for interactive map display before street selection
+  const defaultMapCenter = useMemo(() => {
+    const wId = activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48 ? activeWard.id : 14;
+    return AVADI_WARD_COORDINATES[wId] || { lat: 13.1169, lng: 80.0972 };
+  }, [activeWard?.id]);
 
   // Timings & Working Days
   const [workingDays, setWorkingDays] = useState<string[]>([
@@ -368,18 +375,6 @@ export default function PostJobVacancyPage() {
   // Field validation errors
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  // Sync ward if activeWard loads later and user hasn't set custom location
-  useEffect(() => {
-    if (activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48 && !selectedStreet) {
-      setWard(activeWard.id);
-      const coords = AVADI_WARD_COORDINATES[activeWard.id];
-      if (coords) {
-        setLatitude(coords.lat);
-        setLongitude(coords.lng);
-      }
-    }
-  }, [activeWard?.id, selectedStreet]);
-
   // Clean up blob URL on unmount
   useEffect(() => {
     return () => {
@@ -409,8 +404,12 @@ export default function PostJobVacancyPage() {
     setStreetQuery(query);
     setHasSearchedLocation(true);
 
-    if (selectedStreet && query !== selectedStreet) {
-      setSelectedStreet("");
+    // Invalidate previous selection and coordinates immediately if user alters the text
+    if (selectedStreetRecord && query.trim() !== selectedStreetRecord.streetName.trim()) {
+      setSelectedStreetRecord(null);
+      setLatitude(null);
+      setLongitude(null);
+      setWard(null);
     }
 
     if (!query.trim()) {
@@ -436,7 +435,7 @@ export default function PostJobVacancyPage() {
   };
 
   const handleSelectStreet = (item: StreetItem) => {
-    setSelectedStreet(item.streetName);
+    setSelectedStreetRecord(item);
     setStreetQuery(item.streetName);
     setStreetResults([]);
     setWard(item.wardNo);
@@ -450,7 +449,7 @@ export default function PostJobVacancyPage() {
     setMapError(null);
 
     // Auto-fill address prefix if blank
-    if (!address) {
+    if (!address.trim()) {
       setAddress(`${item.streetName}, Avadi (Ward ${item.wardNo})`);
     }
 
@@ -650,8 +649,11 @@ export default function PostJobVacancyPage() {
       errorKeys.push("details");
     }
 
-    if (!selectedStreet) {
-      errors.location = "Please select a valid Avadi Area or Street from the authoritative list.";
+    if (!selectedStreetRecord) {
+      errors.location = "Please select a valid Avadi Area or Street from the authoritative municipal list.";
+      errorKeys.push("location");
+    } else if (latitude === null || longitude === null || isNaN(latitude) || isNaN(longitude)) {
+      errors.location = "Valid location coordinates must be resolved for the selected street.";
       errorKeys.push("location");
     }
 
@@ -774,6 +776,12 @@ export default function PostJobVacancyPage() {
       return;
     }
 
+    if (!selectedStreetRecord || latitude === null || longitude === null) {
+      toast.error("Please select a valid Avadi Area or Street from the authoritative list.");
+      switchStepAndScrollToError(2, ["location"]);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
 
@@ -800,8 +808,8 @@ export default function PostJobVacancyPage() {
       if (minAge) formData.append("minAge", minAge);
       if (maxAge) formData.append("maxAge", maxAge);
 
-      formData.append("location", (selectedStreet || streetQuery).trim());
-      formData.append("ward", ward.toString());
+      formData.append("location", selectedStreetRecord.streetName.trim());
+      formData.append("ward", (selectedStreetRecord.wardNo || ward || 1).toString());
       formData.append("address", address.trim());
       formData.append("latitude", latitude.toString());
       formData.append("longitude", longitude.toString());
@@ -880,6 +888,12 @@ export default function PostJobVacancyPage() {
     setDetails("");
     setSkills(["Communication"]);
     setCustomSalary("");
+    setStreetQuery("");
+    setStreetResults([]);
+    setSelectedStreetRecord(null);
+    setLatitude(null);
+    setLongitude(null);
+    setWard(null);
     setAddress("");
     setImageFile(null);
     setImagePreview(null);
@@ -1744,7 +1758,7 @@ export default function PostJobVacancyPage() {
                         <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                        Avadi Ward {ward} (Auto-derived)
+                        {selectedStreetRecord ? `Avadi Ward ${selectedStreetRecord.wardNo} (Auto-derived)` : "Select from Municipal Records"}
                       </span>
                     </div>
 
@@ -1791,7 +1805,7 @@ export default function PostJobVacancyPage() {
                       {hasSearchedLocation &&
                         streetQuery.trim().length >= 2 &&
                         streetResults.length === 0 &&
-                        !selectedStreet && (
+                        !selectedStreetRecord && (
                           <div className="absolute z-50 left-0 right-0 mt-1 p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl shadow-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
                             <AlertCircle size={15} className="shrink-0 text-amber-500" />
                             <span>
@@ -1801,25 +1815,28 @@ export default function PostJobVacancyPage() {
                         )}
 
                       {/* Selected street confirmation badge */}
-                      {selectedStreet && (
+                      {selectedStreetRecord && (
                         <div className="mt-2 p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2 min-w-0">
                             <CheckCircle2 size={16} className="text-orange-500 shrink-0" />
                             <span className="font-bold text-slate-800 dark:text-slate-100 truncate">
-                              {selectedStreet}
+                              {selectedStreetRecord.streetName}
                             </span>
                             <span className="text-[10px] bg-orange-500 text-white font-bold px-2 py-0.5 rounded-full shrink-0">
-                              Ward {ward}
+                              Ward {selectedStreetRecord.wardNo}
                             </span>
                           </div>
                           <button
                             type="button"
                             onClick={() => {
-                              setSelectedStreet("");
+                              setSelectedStreetRecord(null);
                               setStreetQuery("");
                               setStreetResults([]);
+                              setLatitude(null);
+                              setLongitude(null);
+                              setWard(null);
                             }}
-                            className="text-slate-400 hover:text-rose-500 p-1 transition"
+                            className="text-slate-400 hover:text-rose-500 p-1 transition cursor-pointer"
                             title="Clear selection"
                           >
                             <X size={14} />
@@ -1842,18 +1859,22 @@ export default function PostJobVacancyPage() {
                           Pinpoint Location Marker (Drag marker or click to refine)
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">
-                          {latitude.toFixed(4)}, {longitude.toFixed(4)}
+                          {latitude !== null && longitude !== null
+                            ? `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`
+                            : "Waiting for street selection"}
                         </span>
                       </div>
                       <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 shadow-inner">
                         <MapLocationPicker
-                          defaultLat={latitude}
-                          defaultLng={longitude}
+                          defaultLat={latitude ?? defaultMapCenter.lat}
+                          defaultLng={longitude ?? defaultMapCenter.lng}
                           zoom={mapZoom}
                           onLocationSelect={(lat, lng) => {
-                            setLatitude(lat);
-                            setLongitude(lng);
-                            setMapError(null);
+                            if (selectedStreetRecord) {
+                              setLatitude(lat);
+                              setLongitude(lng);
+                              setMapError(null);
+                            }
                           }}
                           onError={(msg) => setMapError(msg)}
                         />
@@ -2390,7 +2411,7 @@ export default function PostJobVacancyPage() {
                             Location in Avadi
                           </span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200 truncate block">
-                            {selectedStreet || streetQuery || "Avadi"} (Ward {ward})
+                            {selectedStreetRecord ? `${selectedStreetRecord.streetName} (Ward ${selectedStreetRecord.wardNo})` : "—"}
                           </span>
                         </div>
                       </div>
