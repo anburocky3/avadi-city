@@ -2208,12 +2208,13 @@ export function RentalsPostClient() {
         {currentStep === 4 && (
           <div className="space-y-6 text-xs animate-in fade-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Row 1 - Left: Monthly Rent / Total Price */}
               <div>
-                <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1">
+                <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
                   {transactionType === "Sale" ? "Total Sale Price (₹) *" : transactionType === "Lease" ? "Total Lease Amount (₹) *" : "Monthly Rent (₹) *"}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
                     ₹
                   </span>
                   <input
@@ -2225,17 +2226,18 @@ export function RentalsPostClient() {
                       setFormError(null);
                     }}
                     placeholder={transactionType === "Sale" ? "e.g. 4500000" : "e.g. 12000"}
-                    className="w-full pl-8 pr-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
               </div>
 
+              {/* Row 1 - Right: Security Deposit / Advance */}
               <div>
-                <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1">
+                <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
                   {transactionType === "Sale" ? "Booking Advance (₹)" : "Security Deposit / Advance (₹) *"}
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400">
+                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
                     ₹
                   </span>
                   <input
@@ -2247,296 +2249,195 @@ export function RentalsPostClient() {
                       setFormError(null);
                     }}
                     placeholder={transactionType === "Sale" ? "e.g. 100000" : "e.g. 50000"}
-                    className="w-full pl-8 pr-3 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
               </div>
-            </div>
 
-            {!isPlot && (
-              <div>
-                <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                  {transactionType === "Sale" ? "Monthly Association Maintenance (₹) (Optional)" : "Monthly Maintenance (₹)"}
-                </label>
-                <input
-                  type="number"
-                  value={maintenance}
-                  onChange={(e) => {
-                    setMaintenance(e.target.value);
-                    setPricingConfirmed(false);
-                  }}
-                  placeholder="e.g. 500 (or 0 if none)"
-                  className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs focus:ring-2 focus:ring-primary focus:outline-none"
-                />
-              </div>
-            )}
+              {/* Row 2 - Left: Monthly Maintenance */}
+              {!isPlot && (
+                <div>
+                  <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
+                    {transactionType === "Sale" ? "Monthly Association Maintenance (₹)" : "Monthly Maintenance (₹)"}
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
+                      ₹
+                    </span>
+                    <input
+                      type="number"
+                      value={maintenance}
+                      onChange={(e) => {
+                        setMaintenance(e.target.value);
+                        setPricingConfirmed(false);
+                      }}
+                      placeholder="e.g. 500 (or 0 if none)"
+                      className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
+                    />
+                  </div>
+                </div>
+              )}
 
-            {/* Electricity & Water Policy Section — Only for Rent / Commercial / Non-Commercial, HIDE for Sale */}
-            {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
-                {/* Electricity Charges */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {/* Row 2 - Right: Electricity Charges (Rent / Non-Commercial / Commercial only) */}
+              {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 h-5">
+                    <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
                       Electricity Charges
-                    </h4>
-                    <label className="inline-flex items-center gap-2 cursor-pointer select-none text-xs text-slate-700 dark:text-slate-300 font-medium">
+                    </label>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
                       <input
                         type="checkbox"
-                        checked={electricityApplicable}
+                        checked={electricityBillingMethod === "Included in Rent"}
                         onChange={(e) => {
-                          setElectricityApplicable(e.target.checked);
-                          if (!e.target.checked) {
-                            setElectricityBillingMethod("No Separate Charges");
-                          } else if (electricityBillingMethod === "No Separate Charges") {
+                          if (e.target.checked) {
+                            setElectricityApplicable(true);
+                            setElectricityBillingMethod("Included in Rent");
+                          } else {
+                            setElectricityApplicable(true);
                             setElectricityBillingMethod("Per Unit");
+                            if (!electricityRatePerUnit) setElectricityRatePerUnit("8");
                           }
+                          setPricingConfirmed(false);
                         }}
-                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 accent-emerald-600 cursor-pointer focus:ring-emerald-500"
                       />
-                      <span>Charges Applicable</span>
+                      <span>Free</span>
                     </label>
                   </div>
 
-                  {!electricityApplicable ? (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      No separate electricity charge is configured.
-                    </p>
+                  {electricityBillingMethod === "Included in Rent" ? (
+                    <div className="h-11 px-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        Free (Included in Rent)
+                      </span>
+                      <span className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
+                        No separate bill
+                      </span>
+                    </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                          Billing Method
-                        </label>
-                        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                          {[
-                            { id: "Per Unit", label: "Per Unit" },
-                            { id: "Fixed Monthly Charge", label: "Fixed Monthly" },
-                            { id: "Included in Rent", label: "Included in Rent" },
-                          ].map((item) => (
-                            <label
-                              key={item.id}
-                              className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
-                            >
-                              <input
-                                type="radio"
-                                name="electricityBillingMethod"
-                                value={item.id}
-                                checked={electricityBillingMethod === item.id}
-                                onChange={() => setElectricityBillingMethod(item.id as any)}
-                                className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
-                              />
-                              <span>{item.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      {electricityBillingMethod === "Per Unit" && (
-                        <div className="space-y-1">
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Electricity Rate (₹/unit) <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative max-w-sm">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
-                              ₹
-                            </span>
-                            <input
-                              type="number"
-                              step="0.5"
-                              min="0"
-                              value={electricityRatePerUnit}
-                              onChange={(e) => setElectricityRatePerUnit(e.target.value)}
-                              placeholder="Enter rate per unit"
-                              className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {electricityBillingMethod === "Fixed Monthly Charge" && (
-                        <div className="space-y-1">
-                          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                            Monthly Electricity Charge (₹) <span className="text-rose-500">*</span>
-                          </label>
-                          <div className="relative max-w-sm">
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
-                              ₹
-                            </span>
-                            <input
-                              type="number"
-                              min="0"
-                              value={electricityMonthlyCharge}
-                              onChange={(e) => setElectricityMonthlyCharge(e.target.value)}
-                              placeholder="Enter monthly charge"
-                              className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none"
-                            />
-                          </div>
-                        </div>
-                      )}
-
-                      {electricityBillingMethod === "Included in Rent" && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Electricity charges are included in rent.
-                        </p>
-                      )}
-
-                      <p className="text-xs text-slate-600 dark:text-slate-400 pt-1">
-                        <span className="text-slate-400 dark:text-slate-500">Electricity: </span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{electricitySummary}</span>
-                      </p>
+                    <div className="relative flex items-center h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-primary overflow-hidden">
+                      <span className="pl-3.5 pr-1 font-bold text-slate-400 text-xs sm:text-sm shrink-0">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={electricityBillingMethod === "Fixed Monthly Charge" ? electricityMonthlyCharge : electricityRatePerUnit}
+                        onChange={(e) => {
+                          if (electricityBillingMethod === "Fixed Monthly Charge") {
+                            setElectricityMonthlyCharge(e.target.value);
+                          } else {
+                            setElectricityRatePerUnit(e.target.value);
+                          }
+                          setPricingConfirmed(false);
+                        }}
+                        placeholder={electricityBillingMethod === "Fixed Monthly Charge" ? "e.g. 500" : "e.g. 8"}
+                        className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
+                      />
+                      <select
+                        value={electricityBillingMethod === "Fixed Monthly Charge" ? "fixed" : "unit"}
+                        onChange={(e) => {
+                          if (e.target.value === "fixed") {
+                            setElectricityBillingMethod("Fixed Monthly Charge");
+                            if (!electricityMonthlyCharge && electricityRatePerUnit) {
+                              setElectricityMonthlyCharge("500");
+                            }
+                          } else {
+                            setElectricityBillingMethod("Per Unit");
+                            if (!electricityRatePerUnit) setElectricityRatePerUnit("8");
+                          }
+                          setPricingConfirmed(false);
+                        }}
+                        className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
+                      >
+                        <option value="unit">/ unit</option>
+                        <option value="fixed">/ month</option>
+                      </select>
                     </div>
                   )}
                 </div>
+              )}
 
-                {/* Section Divider */}
-                <div className="border-t border-slate-200 dark:border-slate-800" />
-
-                {/* Water Supply */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {/* Row 3 - Left: Water Supply (Rent / Non-Commercial / Commercial only) */}
+              {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5 h-5">
+                    <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
                       Water Supply
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                        Water Supply Available
-                      </span>
-                      <button
-                        type="button"
-                        role="switch"
-                        aria-checked={waterAvailable}
-                        onClick={() => setWaterAvailable(!waterAvailable)}
-                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-1 focus:ring-primary ${
-                          waterAvailable ? "bg-primary" : "bg-slate-300 dark:bg-slate-700"
-                        }`}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-xs ring-0 transition duration-200 ease-in-out ${
-                            waterAvailable ? "translate-x-4" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
+                    </label>
+                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
+                      <input
+                        type="checkbox"
+                        checked={waterBillingType === "Free" || waterBillingType === "Included in Rent"}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setWaterAvailable(true);
+                            setWaterBillingType("Free");
+                          } else {
+                            setWaterAvailable(true);
+                            setWaterBillingType("Paid");
+                            if (!waterAmount) setWaterAmount("300");
+                          }
+                          setPricingConfirmed(false);
+                        }}
+                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 accent-emerald-600 cursor-pointer focus:ring-emerald-500"
+                      />
+                      <span>Free</span>
+                    </label>
                   </div>
 
-                  {!waterAvailable ? (
-                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Water supply is not available.
-                    </p>
+                  {waterBillingType === "Free" || waterBillingType === "Included in Rent" ? (
+                    <div className="h-11 px-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                        Water Supply is Free
+                      </span>
+                      <span className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
+                        Included in Rent
+                      </span>
+                    </div>
                   ) : (
-                    <div className="space-y-3">
-                      <div>
-                        <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                          Billing
-                        </label>
-                        <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                          {[
-                            { id: "Free", label: "Free" },
-                            { id: "Included in Rent", label: "Included in Rent" },
-                            { id: "Paid", label: "Paid" },
-                          ].map((item) => (
-                            <label
-                              key={item.id}
-                              className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
-                            >
-                              <input
-                                type="radio"
-                                name="waterBillingType"
-                                value={item.id}
-                                checked={waterBillingType === item.id}
-                                onChange={() => setWaterBillingType(item.id as any)}
-                                className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
-                              />
-                              <span>{item.label}</span>
-                            </label>
-                          ))}
-                        </div>
-                      </div>
-
-                      {waterBillingType === "Free" && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Water supply is free.
-                        </p>
-                      )}
-
-                      {waterBillingType === "Included in Rent" && (
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Water charges are included in rent.
-                        </p>
-                      )}
-
-                      {waterBillingType === "Paid" && (
-                        <div className="space-y-3 pt-1">
-                          <div>
-                            <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1.5">
-                              Billing Method
-                            </label>
-                            <div className="flex flex-wrap items-center gap-4 sm:gap-6">
-                              {[
-                                { id: "Per Month", label: "Per Month" },
-                                { id: "Per Person Per Month", label: "Per Person/Month" },
-                                { id: "Per Unit", label: "Per Unit/KL" },
-                              ].map((wm) => (
-                                <label
-                                  key={wm.id}
-                                  className="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white select-none"
-                                >
-                                  <input
-                                    type="radio"
-                                    name="waterBillingMethod"
-                                    value={wm.id}
-                                    checked={waterBillingMethod === wm.id}
-                                    onChange={() => setWaterBillingMethod(wm.id as any)}
-                                    className="w-4 h-4 border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer focus:ring-primary"
-                                  />
-                                  <span>{wm.label}</span>
-                                </label>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                              {waterBillingMethod === "Per Person Per Month"
-                                ? "Water Charge (₹/person/month)"
-                                : waterBillingMethod === "Per Unit"
-                                ? "Water Rate (₹/KL)"
-                                : "Monthly Water Charge (₹)"}{" "}
-                              <span className="text-rose-500">*</span>
-                            </label>
-                            <div className="relative max-w-sm">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-xs">
-                                ₹
-                              </span>
-                              <input
-                                type="number"
-                                min="0"
-                                value={waterAmount}
-                                onChange={(e) => setWaterAmount(e.target.value)}
-                                placeholder={
-                                  waterBillingMethod === "Per Person Per Month"
-                                    ? "Enter water charge per person"
-                                    : waterBillingMethod === "Per Unit"
-                                    ? "Enter water rate per KL"
-                                    : "Enter monthly water charge"
-                                }
-                                className="w-full pl-7 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-xs font-semibold focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <p className="text-xs text-slate-600 dark:text-slate-400 pt-1">
-                        <span className="text-slate-400 dark:text-slate-500">Water: </span>
-                        <span className="font-semibold text-slate-900 dark:text-white">{waterSummary}</span>
-                      </p>
+                    <div className="relative flex items-center h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-primary overflow-hidden">
+                      <span className="pl-3.5 pr-1 font-bold text-slate-400 text-xs sm:text-sm shrink-0">
+                        ₹
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        value={waterAmount}
+                        onChange={(e) => {
+                          setWaterAmount(e.target.value);
+                          setPricingConfirmed(false);
+                        }}
+                        placeholder={
+                          waterBillingMethod === "Per Person Per Month"
+                            ? "e.g. 200"
+                            : waterBillingMethod === "Per Unit"
+                            ? "e.g. 50"
+                            : "e.g. 300"
+                        }
+                        className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
+                      />
+                      <select
+                        value={waterBillingMethod}
+                        onChange={(e) => {
+                          setWaterBillingMethod(e.target.value as any);
+                          setPricingConfirmed(false);
+                        }}
+                        className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
+                      >
+                        <option value="Per Month">/ month</option>
+                        <option value="Per Person Per Month">/ person/mo</option>
+                        <option value="Per Unit">/ KL</option>
+                      </select>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Estimated Total Move-In / Purchase Cost Summary Box - Generates only when details are filled */}
             {monthlyRent.trim() !== "" && parseFloat(monthlyRent) > 0 && (
