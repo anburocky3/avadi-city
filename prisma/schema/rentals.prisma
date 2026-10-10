@@ -11,7 +11,7 @@ model RentalListing {
   ward            Int
   imageUrl        String?        @db.LongText
   details         String         @db.Text
-  features        String?        @db.Text   // JSON-serialised string[]
+  features        String?        @db.LongText   // JSON-serialised string[]
   status          ApprovalStatus @default(PENDING)
 
   createdAt       DateTime       @default(now())
