@@ -4,7 +4,7 @@ import { ExploreClient, Place } from "./ExploreClient";
 import { prisma } from "@/lib/prisma";
 
 // Revalidate every 60s so new approvals surface quickly
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
   // Fetch ONLY DB-approved community submissions

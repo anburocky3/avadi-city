@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { PutObjectCommand } from "@aws-sdk/client-s3";
 import * as zod from "zod";
-import type { Prisma } from "@/prisma/generated/prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
