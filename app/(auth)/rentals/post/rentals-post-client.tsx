@@ -257,7 +257,7 @@ export function RentalsPostClient() {
   const [furnishing, setFurnishing] = useState<FurnishingType>("Unfurnished");
   const [builtUpArea, setBuiltUpArea] = useState<string>("950");
   const [carpetArea, setCarpetArea] = useState<string>("820");
-  const [floor, setFloor] = useState<string>("1st of 2 Floors");
+  const [floor, setFloor] = useState<string>("");
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [balconies, setBalconies] = useState<number>(1);
   const [facing, setFacing] = useState<string>("East");
@@ -1430,7 +1430,7 @@ export function RentalsPostClient() {
                       type="text"
                       value={floor}
                       onChange={(e) => setFloor(e.target.value)}
-                      placeholder="1st of 2 Floors"
+                      placeholder="e.g. Ground Floor, 1st Floor, etc."
                       className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     />
                   </div>
