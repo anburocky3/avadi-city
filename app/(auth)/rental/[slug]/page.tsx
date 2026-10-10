@@ -1,8 +1,9 @@
 import React, { Suspense } from "react";
 import { Metadata } from "next";
 import { SkeletonLoader } from "@/components/shared-components";
-import { getRentalListings, parsePropertySlug } from "@/lib/rentals";
-import { RentalsClient } from "../../rentals/rental-client";
+import { getRentalListings } from "@/lib/rentals";
+import { parsePropertySlug } from "@/lib/rental-slugs";
+import { RentalDetailPageClient } from "@/components/rentals/RentalDetailPageClient";
 
 export const dynamic = "force-dynamic";
 
@@ -25,8 +26,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const priceText =
     property.transactionType === "Sale"
-      ? `₹${((property.pricing?.monthlyRent || 0) / 100000).toFixed(1)} Lakhs`
-      : `₹${(property.pricing?.monthlyRent || 0).toLocaleString("en-IN")}/mo`;
+      ? `₹${((property.pricing?.monthlyRent || property.rent || 0) / 100000).toFixed(1)} Lakhs`
+      : `₹${(property.pricing?.monthlyRent || property.rent || 0).toLocaleString("en-IN")}/mo`;
 
   const desc = `${property.propertyTypeTag || property.category} in Ward ${property.ward}, ${
     property.streetName || "Avadi"
@@ -53,17 +54,23 @@ export default async function RentalSlugPage({ params }: Props) {
   const { slug } = await params;
   const { propertyId } = parsePropertySlug(slug);
   const rentals = await getRentalListings();
+  const property = rentals.find((r) => r.id === propertyId);
+  const similar = rentals.filter((r) => r.id !== propertyId).slice(0, 3);
 
   return (
     <Suspense
       fallback={
-        <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
-          <div className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
-          <SkeletonLoader type="card" count={2} />
+        <div className="p-4 md:p-6 max-w-6xl mx-auto space-y-6">
+          <div className="h-10 w-48 bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
+          <div className="h-80 w-full bg-slate-200 dark:bg-slate-800 rounded-3xl animate-pulse" />
         </div>
       }
     >
-      <RentalsClient initialRentals={rentals} initialPropertyId={propertyId} />
+      <RentalDetailPageClient
+        initialProperty={property || null}
+        propertyId={propertyId}
+        similarProperties={similar}
+      />
     </Suspense>
   );
 }
