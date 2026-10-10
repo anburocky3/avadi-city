@@ -1,0 +1,101 @@
+model JobVacancy {
+  id                 String         @id @default(cuid())
+  role               String         // Job Title
+  category           String         // Job Category
+  jobType            String         // Employment Type: Full-Time, Part-Time, etc.
+  workMode           String         @default("On-site") // On-site, Hybrid, Remote
+  experience         String         // Fresher, 1-3 Years, etc.
+  salary             String         // Formatted salary string e.g. ₹15,000 - ₹25,000 / month
+  minSalary          Int?
+  maxSalary          Int?
+  salaryType         String?        @default("Per Month")
+
+  // Company Details
+  businessName       String         // Company / Employer Name
+  companyDescription String?        @db.Text
+  details            String         @db.Text // Job Description
+  requirements       String?        @db.Text // JSON string array of skills/requirements
+  qualifications     String?
+  openings           Int            @default(1)
+  gender             String?        @default("Any")
+  minAge             Int?
+  maxAge             Int?
+
+  // Location
+  location           String         // Area / Street
+  ward               Int
+  address            String         @db.Text // Detailed Address
+  latitude           Float?
+  longitude          Float?
+  workingDays        String?        @db.Text
+  shift              String?        // Working Hours e.g. "9:00 AM - 6:00 PM"
+
+  // Application
+  applicationMethods String?        // JSON string array e.g. ["Phone", "Email"]
+  contact            String         // Phone
+  email              String?
+  website            String?
+  interviewAddress   String?        @db.Text
+  interviewContactPerson String?
+  interviewDate      String?
+  interviewTime      String?
+  deadline           String?        // Application deadline
+  startDate          String?        // Joining date
+  imageUrl           String?        @db.Text
+  additionalInfo     String?        @db.Text
+
+  // Status & Ownership
+  status             ApprovalStatus @default(PENDING)
+  ownerId            String
+  user               User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  applications       JobApplication[]
+
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  @@index([ward])
+  @@index([category])
+  @@index([jobType])
+  @@index([status])
+  @@index([ownerId])
+  @@map("job_vacancies")
+}
+
+enum ApplicationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  INTERVIEW
+  HIRED
+  REJECTED
+}
+
+model JobApplication {
+  id              String            @id @default(cuid())
+  jobId           String
+  job             JobVacancy        @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId     String?
+  user            User?             @relation(fields: [applicantId], references: [id], onDelete: SetNull)
+
+  fullName        String
+  email           String
+  phone           String
+  resumeUrl       String            @db.Text
+  resumeFileName  String?
+
+  coverLetter     String?           @db.Text
+  qualification   String?
+  experience      String?           @db.Text
+  skills          String?           @db.Text
+  portfolioUrl    String?
+
+  status          ApplicationStatus @default(SUBMITTED)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([jobId])
+  @@index([applicantId])
+  @@index([email])
+  @@index([status])
+  @@map("job_applications")
+}

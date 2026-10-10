@@ -1,14 +1,16 @@
-import { useRef, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 
 const MapLocationPicker = ({
   defaultLat = 13.1169,
   defaultLng = 80.0972,
+  zoom = 14,
   onLocationSelect,
   onError,
 }: {
   defaultLat?: number;
   defaultLng?: number;
+  zoom?: number;
   onLocationSelect: (lat: number, lng: number) => void;
   onError: (msg: string | null) => void;
 }) => {
@@ -40,11 +42,13 @@ const MapLocationPicker = ({
         L.latLng(13.22, 80.2), // North-East Limit
       );
 
+      const initialZoom = zoom || 14;
       const map = L.map(mapRef.current, {
         maxBounds: avadiBounds, // Restricts panning outside Avadi
         maxBoundsViscosity: 1.0,
-        minZoom: 12,
-      }).setView([defaultLat, defaultLng], 14);
+        minZoom: 11,
+        maxZoom: 18,
+      }).setView([defaultLat, defaultLng], initialZoom);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
@@ -64,7 +68,7 @@ const MapLocationPicker = ({
         } else {
           // Snap back to Avadi center if dragged outside limits
           marker.setLatLng([defaultLat, defaultLng]);
-          map.setView([defaultLat, defaultLng], 14);
+          map.setView([defaultLat, defaultLng], initialZoom);
           onLocationSelect(defaultLat, defaultLng);
           onError("Location must be within Avadi Corporation limits.");
         }
@@ -90,6 +94,7 @@ const MapLocationPicker = ({
         markerInstance.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Sync marker position and map center when coordinates change externally
@@ -101,18 +106,28 @@ const MapLocationPicker = ({
 
     if (mapInstance.current && markerInstance.current) {
       const currentPos = markerInstance.current.getLatLng();
-      if (
-        Math.abs(currentPos.lat - defaultLat) > 0.0001 ||
-        Math.abs(currentPos.lng - defaultLng) > 0.0001
-      ) {
+      const currentZoom = mapInstance.current.getZoom();
+      const targetZoom = zoom || 15;
+      const hasMoved =
+        Math.abs(currentPos.lat - defaultLat) > 0.00005 ||
+        Math.abs(currentPos.lng - defaultLng) > 0.00005;
+      const zoomChanged = zoom !== undefined && currentZoom !== zoom;
+
+      if (hasMoved || zoomChanged) {
         markerInstance.current.setLatLng([defaultLat, defaultLng]);
-        mapInstance.current.setView([defaultLat, defaultLng], 14);
+        if (typeof mapInstance.current.flyTo === "function") {
+          mapInstance.current.flyTo([defaultLat, defaultLng], targetZoom, {
+            duration: 0.8,
+          });
+        } else {
+          mapInstance.current.setView([defaultLat, defaultLng], targetZoom);
+        }
         setTimeout(() => {
           mapInstance.current?.invalidateSize();
         }, 150);
       }
     }
-  }, [defaultLat, defaultLng]);
+  }, [defaultLat, defaultLng, zoom]);
 
   return (
     <div
