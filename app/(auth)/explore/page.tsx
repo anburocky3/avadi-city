@@ -1,15 +1,38 @@
 import React, { Suspense } from "react";
-import { initialPlaces } from "@/data/places";
 import { SkeletonLoader } from "@/components/shared-components";
-import { ExploreClient } from "./ExploreClient";
+import { ExploreClient, Place } from "./ExploreClient";
+import { prisma } from "@/lib/prisma";
 
-// Mark route for dynamic rendering if reading search params dynamically on server
-export const revalidate = 3600; // Cache page for 1 hour or use 0 for full dynamic SSR
+// Revalidate every 60s so new approvals surface quickly
+export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
-  // You can perform server-side database fetches or API calls here if needed:
-  // const places = await prisma.place.findMany();
-  const places = initialPlaces;
+  // Fetch ONLY DB-approved community submissions
+  let places: Place[] = [];
+  try {
+    const dbListings = prisma.communityListing
+      ? await prisma.communityListing.findMany({
+          where: { type: "EXPLORE_PLACE", status: "APPROVED" },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
+
+    places = dbListings.map((l, idx) => ({
+      id: -1000 - idx,
+      name: l.name,
+      category: l.subCategory || "Famous Spots",
+      description: l.description,
+      address: l.address,
+      imageUrl: l.imageUrl || "/img/default-place.jpg",
+      timings: l.timings || "Contact for timings",
+      ward: l.ward || undefined,
+      is24x7: l.is24x7,
+      phone: l.phone || undefined,
+      extraDetails: (l.extraDetails as any) ?? null,
+    }));
+  } catch (err: any) {
+    console.warn("Could not fetch DB explore listings:", err?.message || err);
+  }
 
   return (
     <Suspense
