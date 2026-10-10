@@ -2211,7 +2211,8 @@ export function RentalsPostClient() {
               {/* Row 1 - Left: Monthly Rent / Total Price */}
               <div>
                 <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
-                  {transactionType === "Sale" ? "Total Sale Price (₹) *" : transactionType === "Lease" ? "Total Lease Amount (₹) *" : "Monthly Rent (₹) *"}
+                  {transactionType === "Sale" ? "Total Sale Price (₹)" : transactionType === "Lease" ? "Total Lease Amount (₹)" : "Monthly Rent (₹)"}{" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
@@ -2234,7 +2235,13 @@ export function RentalsPostClient() {
               {/* Row 1 - Right: Security Deposit / Advance */}
               <div>
                 <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
-                  {transactionType === "Sale" ? "Booking Advance (₹)" : "Security Deposit / Advance (₹) *"}
+                  {transactionType === "Sale" ? (
+                    "Booking Advance (₹)"
+                  ) : (
+                    <>
+                      Security Deposit / Advance (₹) <span className="text-rose-500">*</span>
+                    </>
+                  )}
                 </label>
                 <div className="relative">
                   <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
@@ -2284,6 +2291,9 @@ export function RentalsPostClient() {
                   <div className="flex items-center justify-between mb-1.5 h-5">
                     <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
                       Electricity Charges
+                      {electricityBillingMethod !== "Included in Rent" && (
+                        <span className="text-rose-500 ml-1">*</span>
+                      )}
                     </label>
                     <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
                       <input
@@ -2367,6 +2377,9 @@ export function RentalsPostClient() {
                   <div className="flex items-center justify-between mb-1.5 h-5">
                     <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
                       Water Supply
+                      {waterBillingType === "Paid" && (
+                        <span className="text-rose-500 ml-1">*</span>
+                      )}
                     </label>
                     <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
                       <input
