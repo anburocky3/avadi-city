@@ -8,6 +8,10 @@ import { RentalProperty } from "@/types/rental";
  * - PROPERTY FOR SALE: "property-for-sale" (or "sale")
  */
 export function getPropertyCategorySlug(property: RentalProperty): string {
+  if (property.transactionType === "Lease") {
+    return "lease";
+  }
+
   if (
     property.transactionType === "Commercial" ||
     ["Shop", "Showroom", "Office", "Commercial Building", "Warehouse", "Restaurant"].includes(
@@ -51,6 +55,7 @@ export function parsePropertySlug(slug: string): {
     "non-commercial-",
     "property-for-sale-",
     "commercial-",
+    "lease-",
     "sale-",
     "rent-",
   ];

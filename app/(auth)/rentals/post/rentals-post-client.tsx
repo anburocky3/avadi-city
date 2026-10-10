@@ -36,9 +36,9 @@ import {
   HelpCircle,
   Trees,
   Search,
-  Navigation,
   Zap,
   Droplets,
+  FileText,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
@@ -480,6 +480,9 @@ export function RentalsPostClient() {
     if (transactionType === "Sale" || mainCategory === "PROPERTY FOR SALE") {
       return rentVal;
     }
+    if (transactionType === "Lease") {
+      return rentVal + maintVal;
+    }
     return rentVal + depVal + maintVal;
   }, [monthlyRent, securityDeposit, maintenance, transactionType, mainCategory]);
 
@@ -593,6 +596,9 @@ export function RentalsPostClient() {
     if (category === "Villa") {
       return "e.g. 3BHK Luxury Duplex Villa for Rent with Private Garden & Car Parking in Gated Layout";
     }
+    if (transactionType === "Lease") {
+      return "e.g. 2BHK Independent House for Lease (₹8 Lakhs) with Car Parking near Avadi Station";
+    }
     if (category === "Independent House") {
       return "e.g. 2BHK Independent 1st Floor House for Rent with 24/7 Water & Bike Parking near Avadi Station";
     }
@@ -600,7 +606,7 @@ export function RentalsPostClient() {
       return "e.g. 2BHK Gated Community Flat for Rent with Lift, Balcony & Covered Car Parking near Avadi Checkpost";
     }
     return "e.g. 2BHK Independent House or Flat for Rent with Car Parking near Avadi Station";
-  }, [mainCategory, category]);
+  }, [mainCategory, category, transactionType]);
 
   // Dynamic title hint
   const titleHint = useMemo(() => {
@@ -631,8 +637,11 @@ export function RentalsPostClient() {
       }
       return "Mention key perks: sharing type (1/2/3 sharing), food inclusion, AC, Wi-Fi, or distance to transit.";
     }
+    if (transactionType === "Lease") {
+      return "Mention key perks: Lease amount, lease duration (e.g. 2-3 years), refundable terms, and parking/water details.";
+    }
     return "Mention key perks: BHK, floor, car/bike parking, 24/7 water supply, or distance to station.";
-  }, [mainCategory, category]);
+  }, [mainCategory, category, transactionType]);
 
   // Dynamic description placeholder
   const descriptionPlaceholder = useMemo(() => {
@@ -813,16 +822,19 @@ export function RentalsPostClient() {
     }
     if (step === 4) {
       const isSale = transactionType === "Sale" || mainCategory === "PROPERTY FOR SALE";
+      const isLease = transactionType === "Lease";
       if (!monthlyRent || parseFloat(monthlyRent) <= 0) {
         setFormError(
           isSale
             ? "Please enter a valid total sale price amount."
+            : isLease
+            ? "Please enter a valid total lease amount."
             : "Please enter a valid monthly rent amount.",
         );
         scrollToTop();
         return false;
       }
-      if (!isSale && (!securityDeposit || parseFloat(securityDeposit) < 0)) {
+      if (!isSale && !isLease && (!securityDeposit || parseFloat(securityDeposit) < 0)) {
         setFormError("Please enter the security deposit / advance amount.");
         scrollToTop();
         return false;
@@ -1292,6 +1304,45 @@ export function RentalsPostClient() {
                 })}
               </div>
             </div>
+
+            {/* Agreement Type Toggle: Monthly Rent vs Long-Term Lease (for RENT and COMMERCIAL) */}
+            {(mainCategory === "RENT" || mainCategory === "COMMERCIAL") && (
+              <div className="space-y-1.5 animate-in fade-in duration-200">
+                <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
+                  Agreement Type <span className="text-rose-500">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-2 max-w-md">
+                  <button
+                    type="button"
+                    onClick={() => setTransactionType(mainCategory === "COMMERCIAL" ? "Commercial" : "Rent")}
+                    className={`py-2 px-3 rounded-xl border text-center transition flex items-center justify-center gap-2 cursor-pointer select-none text-xs ${
+                      transactionType !== "Lease"
+                        ? "bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-orange-400 ring-1 ring-primary/30 shadow-xs font-black"
+                        : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 font-bold"
+                    }`}
+                  >
+                    {mainCategory === "COMMERCIAL" ? (
+                      <Building2 size={14} className="shrink-0" />
+                    ) : (
+                      <Home size={14} className="shrink-0" />
+                    )}
+                    <span>{mainCategory === "COMMERCIAL" ? "Commercial Rent" : "Monthly Rent"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTransactionType("Lease")}
+                    className={`py-2 px-3 rounded-xl border text-center transition flex items-center justify-center gap-2 cursor-pointer select-none text-xs ${
+                      transactionType === "Lease"
+                        ? "bg-blue-500/10 dark:bg-blue-500/20 border-blue-500 text-blue-600 dark:text-blue-400 ring-1 ring-blue-500/30 shadow-xs font-black"
+                        : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/80 font-bold"
+                    }`}
+                  >
+                    <FileText size={14} className="shrink-0" />
+                    <span>{mainCategory === "COMMERCIAL" ? "Commercial Lease" : "Long-Term Lease"}</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Dynamic Sub-Category Grid for selected Main Category - only renders once a Main Category is clicked */}
             {mainCategory && (
@@ -2208,7 +2259,7 @@ export function RentalsPostClient() {
         {currentStep === 4 && (
           <div className="space-y-6 text-xs animate-in fade-in">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Row 1 - Left: Monthly Rent / Total Price */}
+              {/* Row 1 - Left: Monthly Rent / Total Price / Total Lease */}
               <div>
                 <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
                   {transactionType === "Sale" ? "Total Sale Price (₹)" : transactionType === "Lease" ? "Total Lease Amount (₹)" : "Monthly Rent (₹)"}{" "}
@@ -2226,17 +2277,19 @@ export function RentalsPostClient() {
                       setPricingConfirmed(false);
                       setFormError(null);
                     }}
-                    placeholder={transactionType === "Sale" ? "e.g. 4500000" : "e.g. 12000"}
+                    placeholder={transactionType === "Sale" ? "e.g. 4500000" : transactionType === "Lease" ? "e.g. 800000" : "e.g. 12000"}
                     className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
               </div>
 
-              {/* Row 1 - Right: Security Deposit / Advance */}
+              {/* Row 1 - Right: Security Deposit / Token Advance */}
               <div>
                 <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
                   {transactionType === "Sale" ? (
                     "Booking Advance (₹)"
+                  ) : transactionType === "Lease" ? (
+                    "Token Advance (₹) (Optional)"
                   ) : (
                     <>
                       Security Deposit / Advance (₹) <span className="text-rose-500">*</span>
@@ -2255,7 +2308,7 @@ export function RentalsPostClient() {
                       setPricingConfirmed(false);
                       setFormError(null);
                     }}
-                    placeholder={transactionType === "Sale" ? "e.g. 100000" : "e.g. 50000"}
+                    placeholder={transactionType === "Sale" ? "e.g. 100000" : transactionType === "Lease" ? "e.g. 25000 (Optional)" : "e.g. 50000"}
                     className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
@@ -2265,7 +2318,7 @@ export function RentalsPostClient() {
               {!isPlot && (
                 <div>
                   <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
-                    {transactionType === "Sale" ? "Monthly Association Maintenance (₹)" : "Monthly Maintenance (₹)"}
+                    {transactionType === "Sale" ? "Monthly Association Maintenance (₹)" : transactionType === "Lease" ? "Monthly Maintenance (₹) (Optional)" : "Monthly Maintenance (₹)"}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
@@ -2455,10 +2508,18 @@ export function RentalsPostClient() {
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
-                      {transactionType === "Sale" ? "Purchase Cost Transparency" : "Move-In Cost Transparency"} · Direct (0% Brokerage)
+                      {transactionType === "Sale"
+                        ? "Purchase Cost Transparency"
+                        : transactionType === "Lease"
+                        ? "Lease Agreement Transparency"
+                        : "Move-In Cost Transparency"} · Direct (0% Brokerage)
                     </span>
                     <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
-                      {transactionType === "Sale" ? "Total Property Sale Price" : "Estimated Total Move-In Cost"}
+                      {transactionType === "Sale"
+                        ? "Total Property Sale Price"
+                        : transactionType === "Lease"
+                        ? "Total Lease Amount"
+                        : "Estimated Total Move-In Cost"}
                     </h4>
                   </div>
                   <div className="text-right">
@@ -2470,13 +2531,13 @@ export function RentalsPostClient() {
 
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-primary/10 text-[11px]">
                   <div>
-                    <span className="text-slate-400 block">{transactionType === "Sale" ? "Total Sale Price:" : "1st Month Rent:"}</span>
+                    <span className="text-slate-400 block">{transactionType === "Sale" ? "Total Sale Price:" : transactionType === "Lease" ? "Total Lease Amount:" : "1st Month Rent:"}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">₹{(parseFloat(monthlyRent) || 0).toLocaleString()}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block">{transactionType === "Sale" ? "Booking Advance:" : "Security Deposit:"}</span>
+                    <span className="text-slate-400 block">{transactionType === "Sale" || transactionType === "Lease" ? "Token Advance:" : "Security Deposit:"}</span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {transactionType === "Sale" && (!securityDeposit || parseFloat(securityDeposit) === 0)
+                      {(transactionType === "Sale" || transactionType === "Lease") && (!securityDeposit || parseFloat(securityDeposit) === 0)
                         ? "Negotiable / Token"
                         : `₹${(parseFloat(securityDeposit) || 0).toLocaleString()}`}
                     </span>
@@ -2503,7 +2564,7 @@ export function RentalsPostClient() {
                     className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer shrink-0"
                   />
                   <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
-                    I confirm that the {transactionType === "Sale" ? "total sale price and property details" : "monthly rent, security deposit"}, and breakdown figures above are accurate.
+                    I confirm that the {transactionType === "Sale" ? "total sale price and property details" : transactionType === "Lease" ? "total lease amount and property details" : "monthly rent, security deposit"}, and breakdown figures above are accurate.
                   </span>
                 </label>
               </div>
