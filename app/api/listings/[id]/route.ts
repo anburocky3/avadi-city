@@ -4,6 +4,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 
+export const dynamic = "force-dynamic";
+
 // GET — Fetch a single listing (APPROVED, or own submission)
 export async function GET(
   request: Request,

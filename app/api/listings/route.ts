@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 import { r2Client, BUCKET_NAME, PUBLIC_R2_DOMAIN } from "@/lib/r2";
 
+export const dynamic = "force-dynamic";
+
 // --- VALIDATION SCHEMA ---
 const serverListingSchema = zod
   .object({
