@@ -4,12 +4,6 @@ enum ListingCategory {
   HEALTHCARE
 }
 
-enum ApprovalStatus {
-  PENDING
-  APPROVED
-  REJECTED
-}
-
 model CommunityListing {
   id              String          @id @default(cuid())
   type            ListingCategory
