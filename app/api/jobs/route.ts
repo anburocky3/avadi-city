@@ -8,7 +8,11 @@ import { verifyAuthToken } from "@/lib/auth";
 import { r2Client, BUCKET_NAME, PUBLIC_R2_DOMAIN } from "@/lib/r2";
 
 const createJobSchema = zod.object({
-  role: zod.string().trim().min(2, "Job Title must be at least 2 characters").max(120),
+  role: zod
+    .string()
+    .trim()
+    .min(2, "Job Title must be at least 2 characters")
+    .max(120),
   category: zod.string().trim().min(2, "Job Category is required"),
   jobType: zod.string().trim().min(2, "Employment Type is required"),
   workMode: zod.string().trim().default("On-site"),
@@ -18,19 +22,39 @@ const createJobSchema = zod.object({
   maxSalary: zod.coerce.number().optional().nullable(),
   salaryType: zod.string().trim().optional().nullable(),
 
-  businessName: zod.string().trim().min(2, "Company / Employer Name must be at least 2 characters").max(150),
+  businessName: zod
+    .string()
+    .trim()
+    .min(2, "Company / Employer Name must be at least 2 characters")
+    .max(150),
   companyDescription: zod.string().trim().max(3000).optional().nullable(),
-  details: zod.string().trim().min(10, "Job Description must be at least 10 characters").max(4000),
+  details: zod
+    .string()
+    .trim()
+    .min(10, "Job Description must be at least 10 characters")
+    .max(4000),
   requirements: zod.string().optional().nullable(),
   qualifications: zod.string().trim().optional().nullable(),
-  openings: zod.coerce.number().int().min(1, "Number of openings must be at least 1").default(1),
+  openings: zod.coerce
+    .number()
+    .int()
+    .min(1, "Number of openings must be at least 1")
+    .default(1),
   gender: zod.string().trim().default("Any"),
   minAge: zod.coerce.number().int().min(18).optional().nullable(),
   maxAge: zod.coerce.number().int().max(100).optional().nullable(),
 
   location: zod.string().trim().min(2, "Area / Street is required"),
-  ward: zod.coerce.number().int().min(1, "Ward must be between 1 and 48").max(48, "Ward must be between 1 and 48"),
-  address: zod.string().trim().min(3, "Detailed Address must be at least 3 characters").max(400),
+  ward: zod.coerce
+    .number()
+    .int()
+    .min(1, "Ward must be between 1 and 48")
+    .max(48, "Ward must be between 1 and 48"),
+  address: zod
+    .string()
+    .trim()
+    .min(3, "Detailed Address must be at least 3 characters")
+    .max(400),
   latitude: zod.coerce.number().optional().nullable(),
   longitude: zod.coerce.number().optional().nullable(),
   workingDays: zod.string().optional().nullable(),
@@ -62,13 +86,16 @@ const createJobSchema = zod.object({
   }),
 });
 
-async function uploadImageFile(file: File | null, folder: string): Promise<string | null> {
+async function uploadImageFile(
+  file: File | null,
+  folder: string,
+): Promise<string | null> {
   if (!file || file.size === 0 || !file.type.startsWith("image/")) return null;
   const isR2Configured = Boolean(
     BUCKET_NAME &&
     PUBLIC_R2_DOMAIN &&
     process.env.CLOUDFLARE_ACCOUNT_ID &&
-    process.env.CLOUDFLARE_R2_ACCESS_KEY_ID
+    process.env.CLOUDFLARE_R2_ACCESS_KEY_ID,
   );
 
   const arrayBuffer = await file.arrayBuffer();
@@ -86,7 +113,7 @@ async function uploadImageFile(file: File | null, folder: string): Promise<strin
           Key: fileKey,
           Body: buffer,
           ContentType: file.type,
-        })
+        }),
       );
 
       return `${PUBLIC_R2_DOMAIN}/${fileKey}`;
@@ -123,8 +150,11 @@ export async function GET(request: Request) {
     if (myParam === "true") {
       if (!currentUserId) {
         return NextResponse.json(
-          { success: false, message: "Authentication required to view your job postings." },
-          { status: 401 }
+          {
+            success: false,
+            message: "Authentication required to view your job postings.",
+          },
+          { status: 401 },
         );
       }
       whereClause.ownerId = currentUserId;
@@ -163,7 +193,9 @@ export async function GET(request: Request) {
     const enrichedJobs = jobs.map((job) => {
       const apps = job.applications || [];
       const totalApplications = apps.length;
-      const newApplications = apps.filter((a) => a.status === "SUBMITTED").length;
+      const newApplications = apps.filter(
+        (a) => a.status === "SUBMITTED",
+      ).length;
       const { applications: _apps, ...rest } = job;
       return {
         ...rest,
@@ -180,7 +212,7 @@ export async function GET(request: Request) {
     console.error("Failed to fetch jobs:", error);
     return NextResponse.json(
       { success: false, message: "Unable to fetch job vacancies." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -193,16 +225,22 @@ export async function POST(request: Request) {
 
     if (!token) {
       return NextResponse.json(
-        { success: false, message: "Authentication required to post a job vacancy." },
-        { status: 401 }
+        {
+          success: false,
+          message: "Authentication required to post a job vacancy.",
+        },
+        { status: 401 },
       );
     }
 
     const session = await verifyAuthToken(token);
     if (!session?.userId) {
       return NextResponse.json(
-        { success: false, message: "Authentication required to post a job vacancy." },
-        { status: 401 }
+        {
+          success: false,
+          message: "Authentication required to post a job vacancy.",
+        },
+        { status: 401 },
       );
     }
 
@@ -217,7 +255,7 @@ export async function POST(request: Request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "User account not found." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -231,12 +269,17 @@ export async function POST(request: Request) {
       workMode: formData.get("workMode")?.toString() || "On-site",
       experience: formData.get("experience")?.toString() || "",
       salary: formData.get("salary")?.toString() || "",
-      minSalary: formData.get("minSalary") ? Number(formData.get("minSalary")) : null,
-      maxSalary: formData.get("maxSalary") ? Number(formData.get("maxSalary")) : null,
+      minSalary: formData.get("minSalary")
+        ? Number(formData.get("minSalary"))
+        : null,
+      maxSalary: formData.get("maxSalary")
+        ? Number(formData.get("maxSalary"))
+        : null,
       salaryType: formData.get("salaryType")?.toString() || "Per Month",
 
       businessName: formData.get("businessName")?.toString() || "",
-      companyDescription: formData.get("companyDescription")?.toString() || null,
+      companyDescription:
+        formData.get("companyDescription")?.toString() || null,
       details: formData.get("details")?.toString() || "",
       requirements: formData.get("requirements")?.toString() || null,
       qualifications: formData.get("qualifications")?.toString() || null,
@@ -248,17 +291,23 @@ export async function POST(request: Request) {
       location: formData.get("location")?.toString() || "",
       ward: formData.get("ward") ? Number(formData.get("ward")) : 1,
       address: formData.get("address")?.toString() || "",
-      latitude: formData.get("latitude") ? Number(formData.get("latitude")) : null,
-      longitude: formData.get("longitude") ? Number(formData.get("longitude")) : null,
+      latitude: formData.get("latitude")
+        ? Number(formData.get("latitude"))
+        : null,
+      longitude: formData.get("longitude")
+        ? Number(formData.get("longitude"))
+        : null,
       workingDays: formData.get("workingDays")?.toString() || null,
       shift: formData.get("shift")?.toString() || null,
 
-      applicationMethods: formData.get("applicationMethods")?.toString() || null,
+      applicationMethods:
+        formData.get("applicationMethods")?.toString() || null,
       contact: formData.get("contact")?.toString() || "",
       email: formData.get("email")?.toString() || null,
       website: formData.get("website")?.toString() || null,
       interviewAddress: formData.get("interviewAddress")?.toString() || null,
-      interviewContactPerson: formData.get("interviewContactPerson")?.toString() || null,
+      interviewContactPerson:
+        formData.get("interviewContactPerson")?.toString() || null,
       interviewDate: formData.get("interviewDate")?.toString() || null,
       interviewTime: formData.get("interviewTime")?.toString() || null,
       deadline: formData.get("deadline")?.toString() || null,
@@ -270,14 +319,15 @@ export async function POST(request: Request) {
     const parsed = createJobSchema.safeParse(rawData);
     if (!parsed.success) {
       const fieldErrors = parsed.error.flatten().fieldErrors;
-      const firstErrorMessage = Object.values(fieldErrors).flat()[0] || "Validation failed";
+      const firstErrorMessage =
+        Object.values(fieldErrors).flat()[0] || "Validation failed";
       return NextResponse.json(
         {
           success: false,
           message: firstErrorMessage,
           errors: fieldErrors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -349,9 +399,10 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error?.message || "Internal server error while saving job vacancy.",
+        message:
+          error?.message || "Internal server error while saving job vacancy.",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

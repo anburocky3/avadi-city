@@ -13,6 +13,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 import { initialJobsData } from "@/data/jobSpots";
+import { Metadata, ResolvingMetadata } from "next";
 
 export const dynamic = "force-dynamic";
 
@@ -20,27 +21,18 @@ interface PageProps {
   params: Promise<{ jobId: string }>;
 }
 
-export default async function JobDetailPage({ params }: PageProps) {
-  const { jobId } = await params;
+type Props = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
 
-  // 1. Check current logged-in user
-  const cookieStore = await cookies();
-  const token = cookieStore.get("avadi_session")?.value;
-  let currentUserId: string | null = null;
-  if (token) {
-    const session = await verifyAuthToken(token);
-    if (session?.userId) currentUserId = session.userId;
-  }
-
-  // 2. Fetch from database
+async function getJobData(jobId: string) {
   let job: any = null;
   try {
     job = await prisma.jobVacancy.findUnique({
       where: { id: jobId },
       include: {
-        _count: {
-          select: { applications: true },
-        },
+        _count: { select: { applications: true } },
       },
     });
   } catch (err) {
@@ -74,6 +66,49 @@ export default async function JobDetailPage({ params }: PageProps) {
     }
   }
 
+  return job;
+}
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { jobId } = await params;
+  const job = await getJobData(jobId);
+
+  // Fallback metadata if the job doesn't exist
+  if (!job) {
+    return {
+      title: "Job Not Found",
+      description:
+        "The requested job vacancy could not be found or has expired.",
+    };
+  }
+
+  // Dynamic titles and descriptions
+  return {
+    title: `${job.role} at ${job.businessName} | Avadi City | Job Vacancy`,
+    description: `Apply for the ${job.role} vacancy at ${job.businessName} located in ${job.location || "Avadi"}. Mode: ${job.workMode}, Type: ${job.jobType}.`,
+    openGraph: {
+      title: `${job.role} Job Opening`,
+      description: `Hiring now: ${job.role} at ${job.businessName}. Salary: ${job.salary} ${job.salaryType}.`,
+    },
+  };
+}
+
+export default async function JobDetailPage({ params }: PageProps) {
+  const { jobId } = await params;
+
+  // 1. Check current logged-in user
+  const cookieStore = await cookies();
+  const token = cookieStore.get("avadi_session")?.value;
+  let currentUserId: string | null = null;
+  if (token) {
+    const session = await verifyAuthToken(token);
+    if (session?.userId) currentUserId = session.userId;
+  }
+
+  const job = await getJobData(jobId);
+
   if (!job) {
     return (
       <div className="p-4 md:p-6 max-w-lg mx-auto text-center space-y-4 pt-16">
@@ -94,14 +129,19 @@ export default async function JobDetailPage({ params }: PageProps) {
     );
   }
 
-  const isOwner = Boolean(currentUserId && job.ownerId && job.ownerId === currentUserId);
+  const isOwner = Boolean(
+    currentUserId && job.ownerId && job.ownerId === currentUserId,
+  );
 
   let requirementsList: string[] = [];
   if (job.requirements) {
     try {
       requirementsList = JSON.parse(job.requirements);
     } catch {
-      requirementsList = job.requirements.split(",").map((s: string) => s.trim()).filter(Boolean);
+      requirementsList = job.requirements
+        .split(",")
+        .map((s: string) => s.trim())
+        .filter(Boolean);
     }
   }
 
@@ -155,11 +195,11 @@ export default async function JobDetailPage({ params }: PageProps) {
                       job.status === "APPROVED"
                         ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
                         : job.status === "PENDING"
-                        ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
-                        : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
+                          ? "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+                          : "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300"
                     }`}
                   >
-                    Status: {job.status}
+                    {job.status}
                   </span>
                 )}
               </div>
@@ -228,7 +268,9 @@ export default async function JobDetailPage({ params }: PageProps) {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Experience
               </span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{job.experience}</span>
+              <span className="mt-2 block font-bold text-slate-800 dark:text-slate-200">
+                {job.experience}
+              </span>
             </div>
           )}
           {job.openings && (
@@ -236,7 +278,9 @@ export default async function JobDetailPage({ params }: PageProps) {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Vacancies
               </span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{job.openings} Openings</span>
+              <span className="mt-2 block font-bold text-slate-800 dark:text-slate-200">
+                {job.openings} Openings
+              </span>
             </div>
           )}
           {job.shift && (
@@ -244,7 +288,9 @@ export default async function JobDetailPage({ params }: PageProps) {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Shift / Timings
               </span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{job.shift}</span>
+              <span className="mt-2 block font-bold text-slate-800 dark:text-slate-200">
+                {job.shift}
+              </span>
             </div>
           )}
           {job.workingDays && (
@@ -252,7 +298,9 @@ export default async function JobDetailPage({ params }: PageProps) {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Working Days
               </span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{job.workingDays}</span>
+              <span className="mt-2 block font-bold text-slate-800 dark:text-slate-200">
+                {job.workingDays}
+              </span>
             </div>
           )}
         </div>
@@ -276,8 +324,14 @@ export default async function JobDetailPage({ params }: PageProps) {
             </h2>
             <div className="space-y-2">
               {requirementsList.map((req, idx) => (
-                <div key={`${req}-${idx}`} className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
-                  <CheckCircle2 size={14} className="text-orange-500 shrink-0" />
+                <div
+                  key={`${req}-${idx}`}
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-300"
+                >
+                  <CheckCircle2
+                    size={14}
+                    className="text-orange-500 shrink-0"
+                  />
                   <span>{req}</span>
                 </div>
               ))}

@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
@@ -49,7 +48,7 @@ const MapLocationPicker = dynamic(
         Loading Avadi Interactive Map...
       </div>
     ),
-  }
+  },
 );
 
 // Predefined Job Categories
@@ -89,12 +88,7 @@ const WORK_MODES = [
 ];
 
 // Experience Options (No Fresher card)
-const EXPERIENCE_OPTIONS = [
-  "0–1 Years",
-  "1–3 Years",
-  "3–5 Years",
-  "5+ Years",
-];
+const EXPERIENCE_OPTIONS = ["0–1 Years", "1–3 Years", "3–5 Years", "5+ Years"];
 
 // Salary Types
 const SALARY_TYPES = ["Per Month", "Per Day", "Per Hour", "Per Year"];
@@ -228,7 +222,7 @@ export default function PostJobVacancyPage() {
             targetEl instanceof HTMLSelectElement
               ? targetEl
               : targetEl.querySelector<HTMLElement>(
-                  "input, textarea, select, button"
+                  "input, textarea, select, button",
                 );
 
           if (focusable && typeof focusable.focus === "function") {
@@ -276,12 +270,12 @@ export default function PostJobVacancyPage() {
         salaryType === "Per Month"
           ? "month"
           : salaryType === "Per Day"
-          ? "day"
-          : salaryType === "Per Hour"
-          ? "hour"
-          : "year";
+            ? "day"
+            : salaryType === "Per Hour"
+              ? "hour"
+              : "year";
       return `₹${Number(minSalary).toLocaleString("en-IN")} – ₹${Number(
-        maxSalary
+        maxSalary,
       ).toLocaleString("en-IN")} / ${typeSuffix}`;
     }
     if (minSalary) {
@@ -315,7 +309,8 @@ export default function PostJobVacancyPage() {
   // Location & Map
   const [streetQuery, setStreetQuery] = useState("");
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
-  const [selectedStreetRecord, setSelectedStreetRecord] = useState<StreetItem | null>(null);
+  const [selectedStreetRecord, setSelectedStreetRecord] =
+    useState<StreetItem | null>(null);
   const [hasSearchedLocation, setHasSearchedLocation] = useState(false);
   const [mapZoom, setMapZoom] = useState(14);
   const [ward, setWard] = useState<number | null>(null);
@@ -326,7 +321,10 @@ export default function PostJobVacancyPage() {
 
   // Default geographical center for interactive map display before street selection
   const defaultMapCenter = useMemo(() => {
-    const wId = activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48 ? activeWard.id : 14;
+    const wId =
+      activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48
+        ? activeWard.id
+        : 14;
     return AVADI_WARD_COORDINATES[wId] || { lat: 13.1169, lng: 80.0972 };
   }, [activeWard?.id]);
 
@@ -405,7 +403,10 @@ export default function PostJobVacancyPage() {
     setHasSearchedLocation(true);
 
     // Invalidate previous selection and coordinates immediately if user alters the text
-    if (selectedStreetRecord && query.trim() !== selectedStreetRecord.streetName.trim()) {
+    if (
+      selectedStreetRecord &&
+      query.trim() !== selectedStreetRecord.streetName.trim()
+    ) {
       setSelectedStreetRecord(null);
       setLatitude(null);
       setLongitude(null);
@@ -650,10 +651,17 @@ export default function PostJobVacancyPage() {
     }
 
     if (!selectedStreetRecord) {
-      errors.location = "Please select a valid Avadi Area or Street from the authoritative municipal list.";
+      errors.location =
+        "Please select a valid Avadi Area or Street from the authoritative municipal list.";
       errorKeys.push("location");
-    } else if (latitude === null || longitude === null || isNaN(latitude) || isNaN(longitude)) {
-      errors.location = "Valid location coordinates must be resolved for the selected street.";
+    } else if (
+      latitude === null ||
+      longitude === null ||
+      isNaN(latitude) ||
+      isNaN(longitude)
+    ) {
+      errors.location =
+        "Valid location coordinates must be resolved for the selected street.";
       errorKeys.push("location");
     }
 
@@ -675,7 +683,8 @@ export default function PostJobVacancyPage() {
       !/^\d+$/.test(trimmedOpenings) ||
       numOpenings < 1
     ) {
-      errors.openings = "Number of vacancies must be a whole number of at least 1.";
+      errors.openings =
+        "Number of vacancies must be a whole number of at least 1.";
       errorKeys.push("openings");
     }
 
@@ -706,7 +715,8 @@ export default function PostJobVacancyPage() {
     if (applicationMethods.includes("Phone")) {
       const cleanPhone = contact.replace(/[^0-9]/g, "");
       if (!cleanPhone) {
-        errors.contact = "Contact Phone is required when Phone application is selected.";
+        errors.contact =
+          "Contact Phone is required when Phone application is selected.";
         errorKeys.push("contact");
       } else if (cleanPhone.length < 10) {
         errors.contact = "Contact Phone must be at least 10 digits.";
@@ -716,7 +726,8 @@ export default function PostJobVacancyPage() {
 
     if (applicationMethods.includes("Email")) {
       if (!email.trim()) {
-        errors.email = "Contact Email is required when Email application is selected.";
+        errors.email =
+          "Contact Email is required when Email application is selected.";
         errorKeys.push("email");
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
         errors.email = "Please enter a valid email address.";
@@ -726,9 +737,13 @@ export default function PostJobVacancyPage() {
 
     if (applicationMethods.includes("Website")) {
       if (!website.trim()) {
-        errors.website = "Website URL is required when Website application is selected.";
+        errors.website =
+          "Website URL is required when Website application is selected.";
         errorKeys.push("website");
-      } else if (!website.startsWith("http://") && !website.startsWith("https://")) {
+      } else if (
+        !website.startsWith("http://") &&
+        !website.startsWith("https://")
+      ) {
         errors.website = "Website must start with http:// or https://";
         errorKeys.push("website");
       }
@@ -740,7 +755,8 @@ export default function PostJobVacancyPage() {
     }
 
     if (!termsAccepted) {
-      errors.termsAccepted = "Please accept the Terms & Conditions before posting.";
+      errors.termsAccepted =
+        "Please accept the Terms & Conditions before posting.";
       errorKeys.push("termsAccepted");
     }
 
@@ -763,7 +779,9 @@ export default function PostJobVacancyPage() {
     // 2. Validate Step 2
     const s2 = validateStep2();
     if (!s2.isValid) {
-      toast.error("Please review Step 2: Missing required company and location details.");
+      toast.error(
+        "Please review Step 2: Missing required company and location details.",
+      );
       switchStepAndScrollToError(2, s2.errors);
       return;
     }
@@ -777,7 +795,9 @@ export default function PostJobVacancyPage() {
     }
 
     if (!selectedStreetRecord || latitude === null || longitude === null) {
-      toast.error("Please select a valid Avadi Area or Street from the authoritative list.");
+      toast.error(
+        "Please select a valid Avadi Area or Street from the authoritative list.",
+      );
       switchStepAndScrollToError(2, ["location"]);
       return;
     }
@@ -809,7 +829,10 @@ export default function PostJobVacancyPage() {
       if (maxAge) formData.append("maxAge", maxAge);
 
       formData.append("location", selectedStreetRecord.streetName.trim());
-      formData.append("ward", (selectedStreetRecord.wardNo || ward || 1).toString());
+      formData.append(
+        "ward",
+        (selectedStreetRecord.wardNo || ward || 1).toString(),
+      );
       formData.append("address", address.trim());
       formData.append("latitude", latitude.toString());
       formData.append("longitude", longitude.toString());
@@ -824,7 +847,10 @@ export default function PostJobVacancyPage() {
         formData.append("interviewAddress", interviewAddress.trim());
       }
       if (interviewContactPerson.trim()) {
-        formData.append("interviewContactPerson", interviewContactPerson.trim());
+        formData.append(
+          "interviewContactPerson",
+          interviewContactPerson.trim(),
+        );
       }
       if (interviewDate) formData.append("interviewDate", interviewDate);
       if (interviewTime) formData.append("interviewTime", interviewTime);
@@ -928,7 +954,8 @@ export default function PostJobVacancyPage() {
                 </h1>
               </div>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium hidden sm:block">
-                Direct local hiring for shops, offices, factories & businesses in Avadi
+                Direct local hiring for shops, offices, factories & businesses
+                in Avadi
               </p>
             </div>
           </div>
@@ -966,7 +993,11 @@ export default function PostJobVacancyPage() {
                       onClick={() => {
                         if (step === 1) goToStep(1);
                         else if (step === 2) {
-                          if (completedSteps.includes(1) || validateStep1().isValid) goToStep(2);
+                          if (
+                            completedSteps.includes(1) ||
+                            validateStep1().isValid
+                          )
+                            goToStep(2);
                           else handleContinueStep1();
                         } else if (step === 3) {
                           const s1 = validateStep1();
@@ -986,8 +1017,8 @@ export default function PostJobVacancyPage() {
                         isCompleted
                           ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
                           : isCurrent
-                          ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-sm shadow-orange-500/50"
-                          : "bg-slate-800 hover:bg-slate-700/80"
+                            ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-sm shadow-orange-500/50"
+                            : "bg-slate-800 hover:bg-slate-700/80"
                       }`}
                       aria-label={`Step ${step} ${isCompleted ? "(Completed)" : isCurrent ? "(Current)" : ""}`}
                       title={`Step ${step} ${isCompleted ? "(Completed)" : isCurrent ? "(Current)" : ""}`}
@@ -1006,8 +1037,8 @@ export default function PostJobVacancyPage() {
                     {currentStep === 1
                       ? "Job Profile & Pay"
                       : currentStep === 2
-                      ? "Company & Location"
-                      : "Application & Review"}
+                        ? "Company & Location"
+                        : "Application & Review"}
                   </span>
                 </div>
 
@@ -1114,9 +1145,11 @@ export default function PostJobVacancyPage() {
                       </span>
                     </div>
 
-                    <div className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-1 rounded-2xl ${
-                      fieldErrors.category ? "ring-2 ring-rose-500/40" : ""
-                    }`}>
+                    <div
+                      className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 p-1 rounded-2xl ${
+                        fieldErrors.category ? "ring-2 ring-rose-500/40" : ""
+                      }`}
+                    >
                       {JOB_CATEGORIES.map((cat) => {
                         const isSelected = category === cat;
                         return (
@@ -1127,7 +1160,10 @@ export default function PostJobVacancyPage() {
                               setCategory(cat);
                               invalidateStep(1);
                               if (fieldErrors.category) {
-                                setFieldErrors((prev) => ({ ...prev, category: "" }));
+                                setFieldErrors((prev) => ({
+                                  ...prev,
+                                  category: "",
+                                }));
                               }
                             }}
                             className={`p-3 rounded-2xl border text-xs font-bold transition-all text-left flex items-center justify-between cursor-pointer ${
@@ -1137,7 +1173,12 @@ export default function PostJobVacancyPage() {
                             }`}
                           >
                             <span className="truncate">{cat}</span>
-                            {isSelected && <Check size={14} className="stroke-3 shrink-0 ml-1" />}
+                            {isSelected && (
+                              <Check
+                                size={14}
+                                className="stroke-3 shrink-0 ml-1"
+                              />
+                            )}
                           </button>
                         );
                       })}
@@ -1164,9 +1205,11 @@ export default function PostJobVacancyPage() {
                         </span>
                       </div>
 
-                      <div className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1 rounded-2xl ${
-                        fieldErrors.jobType ? "ring-2 ring-rose-500/40" : ""
-                      }`}>
+                      <div
+                        className={`grid grid-cols-2 sm:grid-cols-3 gap-2.5 p-1 rounded-2xl ${
+                          fieldErrors.jobType ? "ring-2 ring-rose-500/40" : ""
+                        }`}
+                      >
                         {EMPLOYMENT_TYPES.map((type) => {
                           const isSelected = jobType === type;
                           return (
@@ -1177,7 +1220,10 @@ export default function PostJobVacancyPage() {
                                 setJobType(type);
                                 invalidateStep(1);
                                 if (fieldErrors.jobType) {
-                                  setFieldErrors((prev) => ({ ...prev, jobType: "" }));
+                                  setFieldErrors((prev) => ({
+                                    ...prev,
+                                    jobType: "",
+                                  }));
                                 }
                               }}
                               className={`py-3 px-3.5 rounded-2xl border text-xs font-extrabold text-center transition-all cursor-pointer ${
@@ -1206,9 +1252,11 @@ export default function PostJobVacancyPage() {
                         <span className="text-rose-500 font-bold">*</span>
                       </label>
 
-                      <div className={`grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-1 rounded-2xl ${
-                        fieldErrors.workMode ? "ring-2 ring-rose-500/40" : ""
-                      }`}>
+                      <div
+                        className={`grid grid-cols-1 sm:grid-cols-3 gap-2.5 p-1 rounded-2xl ${
+                          fieldErrors.workMode ? "ring-2 ring-rose-500/40" : ""
+                        }`}
+                      >
                         {WORK_MODES.map((mode) => {
                           const isSelected = workMode === mode.id;
                           return (
@@ -1219,7 +1267,10 @@ export default function PostJobVacancyPage() {
                                 setWorkMode(mode.id);
                                 invalidateStep(1);
                                 if (fieldErrors.workMode) {
-                                  setFieldErrors((prev) => ({ ...prev, workMode: "" }));
+                                  setFieldErrors((prev) => ({
+                                    ...prev,
+                                    workMode: "",
+                                  }));
                                 }
                               }}
                               className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer ${
@@ -1229,7 +1280,9 @@ export default function PostJobVacancyPage() {
                               }`}
                             >
                               <div className="flex items-center justify-between">
-                                <span className="text-xs font-black">{mode.label}</span>
+                                <span className="text-xs font-black">
+                                  {mode.label}
+                                </span>
                                 {isSelected && (
                                   <span className="w-2 h-2 rounded-full bg-orange-500" />
                                 )}
@@ -1257,9 +1310,11 @@ export default function PostJobVacancyPage() {
                       <span className="text-rose-500 font-bold">*</span>
                     </label>
 
-                    <div className={`grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 rounded-2xl ${
-                      fieldErrors.experience ? "ring-2 ring-rose-500/40" : ""
-                    }`}>
+                    <div
+                      className={`grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 rounded-2xl ${
+                        fieldErrors.experience ? "ring-2 ring-rose-500/40" : ""
+                      }`}
+                    >
                       {EXPERIENCE_OPTIONS.map((exp) => {
                         const isSelected = experience === exp;
                         return (
@@ -1270,7 +1325,10 @@ export default function PostJobVacancyPage() {
                               setExperience(exp);
                               invalidateStep(1);
                               if (fieldErrors.experience) {
-                                setFieldErrors((prev) => ({ ...prev, experience: "" }));
+                                setFieldErrors((prev) => ({
+                                  ...prev,
+                                  experience: "",
+                                }));
                               }
                             }}
                             className={`py-2.5 px-3 rounded-2xl border text-xs font-bold text-center transition-all cursor-pointer ${
@@ -1340,7 +1398,10 @@ export default function PostJobVacancyPage() {
                             setMinSalary(e.target.value);
                             invalidateStep(1);
                             if (fieldErrors.salary) {
-                              setFieldErrors((prev) => ({ ...prev, salary: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                salary: "",
+                              }));
                             }
                           }}
                           placeholder="e.g. 15000"
@@ -1360,7 +1421,10 @@ export default function PostJobVacancyPage() {
                             setMaxSalary(e.target.value);
                             invalidateStep(1);
                             if (fieldErrors.salary) {
-                              setFieldErrors((prev) => ({ ...prev, salary: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                salary: "",
+                              }));
                             }
                           }}
                           placeholder="e.g. 25000"
@@ -1458,7 +1522,10 @@ export default function PostJobVacancyPage() {
                       onChange={(e) => {
                         setBusinessName(e.target.value);
                         if (fieldErrors.businessName) {
-                          setFieldErrors((prev) => ({ ...prev, businessName: "" }));
+                          setFieldErrors((prev) => ({
+                            ...prev,
+                            businessName: "",
+                          }));
                         }
                       }}
                       placeholder="e.g. ABC Technologies / Sri Lakshmi Traders"
@@ -1608,7 +1675,7 @@ export default function PostJobVacancyPage() {
                       <div className="flex flex-wrap gap-1.5">
                         {POPULAR_SKILLS.map((item) => {
                           const alreadyAdded = skills.some(
-                            (s) => s.toLowerCase() === item.toLowerCase()
+                            (s) => s.toLowerCase() === item.toLowerCase(),
                           );
                           if (alreadyAdded) return null;
                           return (
@@ -1632,7 +1699,10 @@ export default function PostJobVacancyPage() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                          <GraduationCap size={16} className="text-orange-500" />
+                          <GraduationCap
+                            size={16}
+                            className="text-orange-500"
+                          />
                           <span>Minimum Qualification</span>
                         </label>
                       </div>
@@ -1644,7 +1714,9 @@ export default function PostJobVacancyPage() {
                               key={q}
                               type="button"
                               onClick={() => {
-                                setQualifications((prev) => (prev === q ? "" : q));
+                                setQualifications((prev) =>
+                                  prev === q ? "" : q,
+                                );
                                 invalidateStep(2);
                               }}
                               className={`py-2 px-3 rounded-xl border text-xs font-bold text-center transition cursor-pointer ${
@@ -1680,7 +1752,10 @@ export default function PostJobVacancyPage() {
                             setOpenings(e.target.value);
                             invalidateStep(2);
                             if (fieldErrors.openings) {
-                              setFieldErrors((prev) => ({ ...prev, openings: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                openings: "",
+                              }));
                             }
                           }}
                           placeholder="Enter number of openings"
@@ -1735,7 +1810,9 @@ export default function PostJobVacancyPage() {
                             placeholder="Min 18"
                             className="w-1/2 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-bold text-center"
                           />
-                          <span className="text-xs text-slate-400 font-bold">–</span>
+                          <span className="text-xs text-slate-400 font-bold">
+                            –
+                          </span>
                           <input
                             type="number"
                             max={70}
@@ -1758,7 +1835,9 @@ export default function PostJobVacancyPage() {
                         <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                        {selectedStreetRecord ? `Avadi Ward ${selectedStreetRecord.wardNo} (Auto-derived)` : "Select from Municipal Records"}
+                        {selectedStreetRecord
+                          ? `Avadi Ward ${selectedStreetRecord.wardNo} (Auto-derived)`
+                          : "Select from Municipal Records"}
                       </span>
                     </div>
 
@@ -1792,7 +1871,9 @@ export default function PostJobVacancyPage() {
                               onClick={() => handleSelectStreet(item)}
                               className="w-full px-4 py-2.5 text-left text-xs font-semibold hover:bg-orange-500/10 hover:text-orange-500 transition flex items-center justify-between cursor-pointer"
                             >
-                              <span className="truncate">{item.streetName}</span>
+                              <span className="truncate">
+                                {item.streetName}
+                              </span>
                               <span className="text-[10px] text-slate-400 font-bold shrink-0 ml-2">
                                 Ward {item.wardNo}
                               </span>
@@ -1807,9 +1888,14 @@ export default function PostJobVacancyPage() {
                         streetResults.length === 0 &&
                         !selectedStreetRecord && (
                           <div className="absolute z-50 left-0 right-0 mt-1 p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl shadow-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                            <AlertCircle size={15} className="shrink-0 text-amber-500" />
+                            <AlertCircle
+                              size={15}
+                              className="shrink-0 text-amber-500"
+                            />
                             <span>
-                              No matching Avadi location found in authoritative municipal records. Please select from the suggestions.
+                              No matching Avadi location found in authoritative
+                              municipal records. Please select from the
+                              suggestions.
                             </span>
                           </div>
                         )}
@@ -1818,7 +1904,10 @@ export default function PostJobVacancyPage() {
                       {selectedStreetRecord && (
                         <div className="mt-2 p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2 min-w-0">
-                            <CheckCircle2 size={16} className="text-orange-500 shrink-0" />
+                            <CheckCircle2
+                              size={16}
+                              className="text-orange-500 shrink-0"
+                            />
                             <span className="font-bold text-slate-800 dark:text-slate-100 truncate">
                               {selectedStreetRecord.streetName}
                             </span>
@@ -1856,7 +1945,8 @@ export default function PostJobVacancyPage() {
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between">
                         <span className="text-[11px] font-bold text-slate-500">
-                          Pinpoint Location Marker (Drag marker or click to refine)
+                          Pinpoint Location Marker (Drag marker or click to
+                          refine)
                         </span>
                         <span className="text-[10px] text-slate-400 font-mono">
                           {latitude !== null && longitude !== null
@@ -1902,7 +1992,10 @@ export default function PostJobVacancyPage() {
                         onChange={(e) => {
                           setAddress(e.target.value);
                           if (fieldErrors.address) {
-                            setFieldErrors((prev) => ({ ...prev, address: "" }));
+                            setFieldErrors((prev) => ({
+                              ...prev,
+                              address: "",
+                            }));
                           }
                         }}
                         placeholder="Door no, Building / Complex name, Landmark, Street, Area, Avadi"
@@ -2064,7 +2157,9 @@ export default function PostJobVacancyPage() {
                             }`}
                           >
                             <span>{method}</span>
-                            {isSelected && <Check size={14} className="stroke-3" />}
+                            {isSelected && (
+                              <Check size={14} className="stroke-3" />
+                            )}
                           </button>
                         );
                       })}
@@ -2093,7 +2188,10 @@ export default function PostJobVacancyPage() {
                           onChange={(e) => {
                             setContact(e.target.value);
                             if (fieldErrors.contact) {
-                              setFieldErrors((prev) => ({ ...prev, contact: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                contact: "",
+                              }));
                             }
                           }}
                           placeholder="e.g. 9876543210 (10-digit mobile number)"
@@ -2126,7 +2224,10 @@ export default function PostJobVacancyPage() {
                           onChange={(e) => {
                             setEmail(e.target.value);
                             if (fieldErrors.email) {
-                              setFieldErrors((prev) => ({ ...prev, email: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                email: "",
+                              }));
                             }
                           }}
                           placeholder="e.g. jobs@abctech.com"
@@ -2159,7 +2260,10 @@ export default function PostJobVacancyPage() {
                           onChange={(e) => {
                             setWebsite(e.target.value);
                             if (fieldErrors.website) {
-                              setFieldErrors((prev) => ({ ...prev, website: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                website: "",
+                              }));
                             }
                           }}
                           placeholder="e.g. https://abctech.com/careers"
@@ -2180,7 +2284,10 @@ export default function PostJobVacancyPage() {
 
                     {/* Walk-in Info */}
                     {applicationMethods.includes("Walk-in") && (
-                      <div id="field-interview-address" className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+                      <div
+                        id="field-interview-address"
+                        className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800"
+                      >
                         <label className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                           <Building size={14} className="text-orange-500" />
                           <span>Walk-in / Interview Address</span>
@@ -2192,7 +2299,10 @@ export default function PostJobVacancyPage() {
                           onChange={(e) => {
                             setInterviewAddress(e.target.value);
                             if (fieldErrors.interviewAddress) {
-                              setFieldErrors((prev) => ({ ...prev, interviewAddress: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                interviewAddress: "",
+                              }));
                             }
                           }}
                           placeholder="Venue for walk-in interview (e.g. 2nd Floor, Sri Balaji Tower, Market Road, Avadi)"
@@ -2207,7 +2317,9 @@ export default function PostJobVacancyPage() {
                             <input
                               type="text"
                               value={interviewContactPerson}
-                              onChange={(e) => setInterviewContactPerson(e.target.value)}
+                              onChange={(e) =>
+                                setInterviewContactPerson(e.target.value)
+                              }
                               placeholder="e.g. Mr. Ramesh (Store Manager)"
                               className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs font-semibold"
                             />
@@ -2355,7 +2467,8 @@ export default function PostJobVacancyPage() {
                             Review Vacancy Before Posting
                           </h3>
                           <p className="text-[10px] text-slate-400">
-                            Summary of details that will be submitted for admin verification
+                            Summary of details that will be submitted for admin
+                            verification
                           </p>
                         </div>
                       </div>
@@ -2411,7 +2524,9 @@ export default function PostJobVacancyPage() {
                             Location in Avadi
                           </span>
                           <span className="font-extrabold text-slate-800 dark:text-slate-200 truncate block">
-                            {selectedStreetRecord ? `${selectedStreetRecord.streetName} (Ward ${selectedStreetRecord.wardNo})` : "—"}
+                            {selectedStreetRecord
+                              ? `${selectedStreetRecord.streetName} (Ward ${selectedStreetRecord.wardNo})`
+                              : "—"}
                           </span>
                         </div>
                       </div>
@@ -2447,13 +2562,18 @@ export default function PostJobVacancyPage() {
                           onChange={(e) => {
                             setTermsAccepted(e.target.checked);
                             if (fieldErrors.termsAccepted) {
-                              setFieldErrors((prev) => ({ ...prev, termsAccepted: "" }));
+                              setFieldErrors((prev) => ({
+                                ...prev,
+                                termsAccepted: "",
+                              }));
                             }
                           }}
                           className="mt-1 w-4 h-4 rounded text-orange-500 focus:ring-orange-500 border-slate-300"
                         />
                         <span className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                          I confirm that this job vacancy is genuine, located in or near Avadi, follows fair employment practices, and I am authorized to represent{" "}
+                          I confirm that this job vacancy is genuine, located in
+                          or near Avadi, follows fair employment practices, and
+                          I am authorized to represent{" "}
                           <span className="font-bold text-slate-900 dark:text-white">
                             {businessName || "this employer"}
                           </span>
@@ -2520,10 +2640,12 @@ export default function PostJobVacancyPage() {
                 Job Vacancy Submitted!
               </h3>
               <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 text-xs font-extrabold text-emerald-800 dark:text-emerald-200 leading-snug">
-                ✅ {submittedData.role} at {submittedData.businessName} has been submitted and is waiting for admin review.
+                ✅ {submittedData.role} at {submittedData.businessName} has been
+                submitted and is waiting for admin review.
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                Once reviewed by the municipal moderator, your posting will appear live on the Avadi Local Job Vacancies board.
+                Once reviewed by the municipal moderator, your posting will
+                appear live on the Avadi Local Job Vacancies board.
               </p>
             </div>
 

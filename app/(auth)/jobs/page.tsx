@@ -3,8 +3,16 @@ import { initialJobsData } from "@/data/jobSpots";
 import { SkeletonLoader } from "@/components/shared-components";
 import { JobsClient, JobVacancy } from "./jobs-client";
 import { prisma } from "@/lib/prisma";
+import Head from "next/head";
+import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Jobs in Avadi - Avadi City Community Portal",
+  description:
+    "Find the latest job opportunities in and around Avadim that will help you grow your career.",
+};
 
 export default async function JobsPage() {
   let jobs: JobVacancy[] = (initialJobsData || []) as JobVacancy[];
@@ -22,7 +30,10 @@ export default async function JobsPage() {
           try {
             reqs = JSON.parse(j.requirements);
           } catch {
-            reqs = j.requirements.split(",").map((s) => s.trim()).filter(Boolean);
+            reqs = j.requirements
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean);
           }
         }
         return {
@@ -33,7 +44,9 @@ export default async function JobsPage() {
           jobType: j.jobType,
           postedTime: "Recently",
           salary: j.salary,
-          location: j.location ? `${j.location} (Ward ${j.ward})` : `Ward ${j.ward}, Avadi`,
+          location: j.location
+            ? `${j.location} (Ward ${j.ward})`
+            : `Ward ${j.ward}, Avadi`,
           shift: j.shift || undefined,
           contact: j.contact,
           ward: j.ward,
@@ -46,7 +59,7 @@ export default async function JobsPage() {
 
       const dbJobIds = new Set(mappedDbJobs.map((j) => j.id));
       const remainingInitial = ((initialJobsData || []) as JobVacancy[]).filter(
-        (ij) => !dbJobIds.has(ij.id)
+        (ij) => !dbJobIds.has(ij.id),
       );
 
       jobs = [...mappedDbJobs, ...remainingInitial];
@@ -54,9 +67,14 @@ export default async function JobsPage() {
   } catch (error: unknown) {
     const err = error as { code?: string; message?: string };
     if (err?.code === "P2021" || err?.message?.includes("does not exist")) {
-      console.warn("Notice: Table `job_vacancies` not yet initialized in database. Displaying default Avadi job vacancies.");
+      console.warn(
+        "Notice: Table `job_vacancies` not yet initialized in database. Displaying default Avadi job vacancies.",
+      );
     } else {
-      console.warn("Notice: Database unavailable for jobs query. Falling back to default job vacancies.", err?.message || error);
+      console.warn(
+        "Notice: Database unavailable for jobs query. Falling back to default job vacancies.",
+        err?.message || error,
+      );
     }
     jobs = (initialJobsData || []) as JobVacancy[];
   }
