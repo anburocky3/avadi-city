@@ -49,6 +49,10 @@ const nextConfig: NextConfig = {
         source: "/hospitals",
         destination: "/healthcare",
       },
+      {
+        source: "/rental",
+        destination: "/rentals",
+      },
     ];
   },
 };

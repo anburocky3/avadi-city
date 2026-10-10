@@ -1,14 +1,14 @@
 import React, { Suspense } from "react";
 
-import { initialRentalsData } from "@/data/rentalSpots";
 import { SkeletonLoader } from "@/components/shared-components";
-import { RentalProperty, RentalsClient } from "./rental-client";
+import { getRentalListings } from "@/lib/rentals";
+import { RentalsClient } from "./rental-client";
 
-export const revalidate = 3600; // 1 hour cache or 0 for full dynamic SSR
+// Always fetch fresh data on request
+export const dynamic = "force-dynamic";
 
 export default async function RentalsPage() {
-  const rentals: RentalProperty[] = (initialRentalsData ||
-    []) as RentalProperty[];
+  const rentals = await getRentalListings();
 
   return (
     <Suspense
