@@ -874,8 +874,8 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
 
                     {/* Actions and Owner Bar */}
                     <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
-                      {/* Owner Controls — visible whenever user owns this listing */}
-                      {myListingIds.has(rental.id) && (
+                      {/* Owner Controls — visible ONLY when viewing the My Listings tab */}
+                      {activeCategory === "My Listings" && myListingIds.has(rental.id) && (
                         <div className="p-3 rounded-2xl bg-primary/5 border border-primary/20 flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5">
                             <UserCircle2
@@ -1666,8 +1666,8 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
               </div>
             </div>
 
-            {/* Owner Controls inside Details Modal */}
-            {myListingIds.has(selectedProperty.id) && (
+            {/* Owner Controls inside Details Modal — only when viewed in My Listings */}
+            {activeCategory === "My Listings" && myListingIds.has(selectedProperty.id) && (
               <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <UserCircle2
