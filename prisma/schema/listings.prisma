@@ -1,0 +1,44 @@
+enum ListingCategory {
+  EXPLORE_PLACE
+  FOOD_DINING
+  HEALTHCARE
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model CommunityListing {
+  id              String          @id @default(cuid())
+  type            ListingCategory
+  name            String
+  subCategory     String?
+  description     String          @db.Text
+  address         String
+  ward            Int?
+  timings         String?
+  is24x7          Boolean         @default(false)
+  phone           String?
+  imageUrl        String?
+  googleMapsUrl   String?
+  extraDetails    Json?
+
+  status          ApprovalStatus  @default(PENDING)
+  rejectionReason String?
+
+  submittedById   String
+  submittedBy     User            @relation(fields: [submittedById], references: [id], onDelete: Cascade)
+
+  reviewedById    String?
+  reviewedAt      DateTime?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([type, status])
+  @@index([ward])
+  @@index([submittedById])
+  @@map("community_listings")
+}

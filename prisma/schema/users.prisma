@@ -47,6 +47,7 @@ model User {
   foodFavorites       FoodFavorite[]
   foodRecentlyViewed  FoodRecentlyViewed[]
   healthcareFacilities HealthcareFacility[]
+  communityListings    CommunityListing[]
 
   @@index([wardNumber])
   @@map("users")

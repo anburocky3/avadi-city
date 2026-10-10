@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Search,
   MapPin,
@@ -18,6 +19,10 @@ import {
   Star,
   LucideIcon,
   X,
+  Plus,
+  Car,
+  Bike,
+  Ticket,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -42,6 +47,17 @@ export interface Place {
   rating?: number;
   is24x7?: boolean;
   phone?: string;
+  extraDetails?: {
+    entryFee?: "free" | "paid";
+    entryAmount?: string;
+    carParking?: "none" | "free" | "paid";
+    bikeParking?: "none" | "free" | "paid";
+    lat?: number;
+    lng?: number;
+    vibes?: string;
+    amenities?: string;
+    bestTime?: string;
+  } | null;
 }
 
 export interface Category {
@@ -122,22 +138,35 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
     return list;
   }, [selectedCategory, searchQuery, initialPlaces]);
 
-  // Construct Google Maps directions URL
-  const getDirectionsUrl = (placeName: string): string => {
-    const formattedName = encodeURIComponent(placeName.replace(/\s+/g, "+"));
+  // Construct Google Maps directions URL — prefer pinned coords, fall back to name search
+  const getDirectionsUrl = (place: Place): string => {
+    const lat = place.extraDetails?.lat;
+    const lng = place.extraDetails?.lng;
+    if (lat && lng) return `https://www.google.com/maps?q=${lat},${lng}`;
+    const formattedName = encodeURIComponent(place.name.replace(/\s+/g, "+"));
     return `https://www.google.com/maps/search/?api=1&query=${formattedName}+Avadi`;
   };
 
   return (
     <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
       {/* Header title */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white leading-none">
-          {t("exploreTitle")}
-        </h1>
-        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-medium">
-          {t("exploreSubtitle")}
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white leading-none">
+            {t("exploreTitle")}
+          </h1>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5 font-medium">
+            {t("exploreSubtitle")}
+          </p>
+        </div>
+        <Link
+          href="/explore/suggest"
+          className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black shadow-sm transition active:scale-95 cursor-pointer"
+        >
+          <Plus size={14} />
+          <span className="hidden sm:inline">Suggest a Place</span>
+          <span className="sm:hidden">Add</span>
+        </Link>
       </div>
 
       {/* Search Input */}
@@ -235,11 +264,17 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                       }`}
                     />
 
-                    {/* Ward Badge (Top-Left) */}
-                    <div className="absolute top-3 left-3">
-                      <span className="bg-slate-900/80 backdrop-blur-md text-white font-bold text-xs px-3 py-1 rounded-full shadow-md">
-                        Ward {wardNum}
-                      </span>
+                    {/* Entry Fee Badge (Top-Left) */}
+                    <div className="absolute top-3 left-3 flex gap-1.5 flex-wrap">
+                      {place.extraDetails?.entryFee === "free" ? (
+                        <span className="bg-emerald-600/90 backdrop-blur-md text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                          <Ticket size={9} />Free Entry
+                        </span>
+                      ) : place.extraDetails?.entryFee === "paid" ? (
+                        <span className="bg-amber-500/90 backdrop-blur-md text-white font-bold text-[10px] px-2.5 py-1 rounded-full shadow-md flex items-center gap-1">
+                          <Ticket size={9} />₹{place.extraDetails.entryAmount || "Paid"}
+                        </span>
+                      ) : null}
                     </div>
 
                     {/* Rating Badge (Top-Right) */}
@@ -291,11 +326,27 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                         />
                         <span className="truncate">{place.address}</span>
                       </p>
+                      {/* Parking badges */}
+                      {(place.extraDetails?.carParking && place.extraDetails.carParking !== "none") ||
+                      (place.extraDetails?.bikeParking && place.extraDetails.bikeParking !== "none") ? (
+                        <p className="flex items-center gap-1.5 flex-wrap">
+                          {place.extraDetails?.carParking !== "none" && (
+                            <span className="inline-flex items-center gap-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900">
+                              <Car size={9} />Car Parking
+                            </span>
+                          )}
+                          {place.extraDetails?.bikeParking !== "none" && (
+                            <span className="inline-flex items-center gap-0.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-blue-100 dark:border-blue-900">
+                              <Bike size={9} />Bike Parking
+                            </span>
+                          )}
+                        </p>
+                      ) : null}
                     </div>
 
                     {/* Action Button */}
                     <a
-                      href={getDirectionsUrl(place.name)}
+                      href={getDirectionsUrl(place)}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
@@ -305,7 +356,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                         size={13}
                         className="text-teal-600 dark:text-teal-400 group-hover/btn:text-white transition-colors"
                       />
-                      <span>Open in Google Maps</span>
+                      <span>Get Directions</span>
                     </a>
                   </div>
                 </Card>
@@ -390,7 +441,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
               )}
 
               <a
-                href={getDirectionsUrl(selectedPlace.name)}
+                href={getDirectionsUrl(selectedPlace)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`py-3 bg-primary hover:bg-orange-600 text-white rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm ${

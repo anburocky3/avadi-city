@@ -1,22 +1,31 @@
 import { useRef, useEffect } from "react";
 import "leaflet/dist/leaflet.css";
 
-const MapLocationPicker = ({
-  defaultLat = 13.1169,
-  defaultLng = 80.0972,
-  onLocationSelect,
-  onError,
-}: {
-  defaultLat?: number;
-  defaultLng?: number;
+interface MapLocationPickerProps {
   onLocationSelect: (lat: number, lng: number) => void;
   onError: (msg: string | null) => void;
-}) => {
+  /** When set, map flyTo + marker auto-moves to these coords (autocomplete sync) */
+  selectedCoords?: { lat: number; lng: number } | null;
+  /**
+   * Fired whenever the user taps the map or drags the marker to a valid position.
+   * Parent uses this to reverse-geocode and auto-fill the address box.
+   */
+  onReverseGeocode?: (lat: number, lng: number) => void;
+}
+
+const MapLocationPicker = ({
+  onLocationSelect,
+  onError,
+  selectedCoords,
+  onReverseGeocode,
+}: MapLocationPickerProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
-  const isInternalDragging = useRef(false);
+  // Prevent reverse-geocode firing when autocomplete drives the map
+  const isExternalUpdate = useRef(false);
 
+  // ── Initial map setup ───────────────────────────────────────────────────────
   useEffect(() => {
     if (
       typeof window !== "undefined" &&
@@ -34,35 +43,44 @@ const MapLocationPicker = ({
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
-      // Define Avadi Bounding Box (~20km radius equivalent)
+      const defaultLat = 13.1169;
+      const defaultLng = 80.0972;
+
+      // Use selectedCoords if already provided (e.g. returning to step or draft restore)
+      const initialLat = selectedCoords?.lat ?? defaultLat;
+      const initialLng = selectedCoords?.lng ?? defaultLng;
+
       const avadiBounds = L.latLngBounds(
-        L.latLng(13.01, 79.99), // South-West Limit
-        L.latLng(13.22, 80.2), // North-East Limit
+        L.latLng(13.01, 79.99), // South-West
+        L.latLng(13.22, 80.2),  // North-East
       );
 
       const map = L.map(mapRef.current, {
-        maxBounds: avadiBounds, // Restricts panning outside Avadi
+        maxBounds: avadiBounds,
         maxBoundsViscosity: 1.0,
         minZoom: 12,
-      }).setView([defaultLat, defaultLng], 14);
+        // Disable mousewheel zoom — avoids page-scroll conflict on desktop too
+        scrollWheelZoom: false,
+      }).setView([initialLat, initialLng], 15);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OpenStreetMap contributors",
       }).addTo(map);
 
-      const marker = L.marker([defaultLat, defaultLng], {
+      const marker = L.marker([initialLat, initialLng], {
         draggable: true,
       }).addTo(map);
 
-      // Validation Function
-      const validateAndSetLocation = (latlng: any) => {
-        isInternalDragging.current = true;
+      // ── Location validation + reverse-geocode trigger ──────────────────────
+      const validateAndSet = (latlng: any, fromUser: boolean) => {
         if (avadiBounds.contains(latlng)) {
           marker.setLatLng(latlng);
           onLocationSelect(latlng.lat, latlng.lng);
           onError(null);
+          if (fromUser && onReverseGeocode) {
+            onReverseGeocode(latlng.lat, latlng.lng);
+          }
         } else {
-          // Snap back to Avadi center if dragged outside limits
           marker.setLatLng([defaultLat, defaultLng]);
           map.setView([defaultLat, defaultLng], 14);
           onLocationSelect(defaultLat, defaultLng);
@@ -70,55 +88,109 @@ const MapLocationPicker = ({
         }
       };
 
-      marker.on("dragend", () => validateAndSetLocation(marker.getLatLng()));
-      map.on("click", (e: any) => validateAndSetLocation(e.latlng));
+      marker.on("dragend", () =>
+        validateAndSet(marker.getLatLng(), !isExternalUpdate.current)
+      );
+      map.on("click", (e: any) => validateAndSet(e.latlng, true));
 
       mapInstance.current = map;
       markerInstance.current = marker;
-      onLocationSelect(defaultLat, defaultLng);
+      if (!selectedCoords) {
+        onLocationSelect(defaultLat, defaultLng);
+      }
 
-      // Ensure proper tile calculations after DOM layout settles
-      setTimeout(() => {
-        map.invalidateSize();
-      }, 250);
-    }
+      // ── Mobile scroll-trap fix ─────────────────────────────────────────────
+      // On touch devices, map dragging is DISABLED by default so the user can
+      // scroll the page freely. After holding the map for >160 ms the drag
+      // re-enables, giving full control. On touchend it disables again.
+      const isTouchDevice = "ontouchstart" in window;
+      if (isTouchDevice) {
+        map.dragging.disable();
+        map.touchZoom.disable();
 
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.remove();
+        let holdTimer: ReturnType<typeof setTimeout> | null = null;
+        const el = mapRef.current;
+        if (el) {
+          el.addEventListener(
+            "touchstart",
+            () => {
+              holdTimer = setTimeout(() => {
+                map.dragging.enable();
+                map.touchZoom.enable();
+              }, 160);
+            },
+            { passive: true }
+          );
+          el.addEventListener(
+            "touchend",
+            () => {
+              if (holdTimer) clearTimeout(holdTimer);
+              // Small delay so the Leaflet click event fires before drag re-disables
+              setTimeout(() => {
+                map.dragging.disable();
+                map.touchZoom.disable();
+              }, 300);
+            },
+            { passive: true }
+          );
+          el.addEventListener(
+            "touchcancel",
+            () => {
+              if (holdTimer) clearTimeout(holdTimer);
+              map.dragging.disable();
+              map.touchZoom.disable();
+            },
+            { passive: true }
+          );
+        }
+      }
+
+      return () => {
+        try {
+          map.remove();
+        } catch {}
         mapInstance.current = null;
         markerInstance.current = null;
-      }
-    };
+      };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync marker position and map center when coordinates change externally
+  // ── Sync when external coords arrive (autocomplete / ward select) ──────────
   useEffect(() => {
-    if (isInternalDragging.current) {
-      isInternalDragging.current = false;
-      return;
-    }
-
-    if (mapInstance.current && markerInstance.current) {
-      const currentPos = markerInstance.current.getLatLng();
+    if (selectedCoords && mapInstance.current && markerInstance.current) {
+      const { lat, lng } = selectedCoords;
+      const current = markerInstance.current.getLatLng();
       if (
-        Math.abs(currentPos.lat - defaultLat) > 0.0001 ||
-        Math.abs(currentPos.lng - defaultLng) > 0.0001
+        Math.abs(current.lat - lat) < 0.0001 &&
+        Math.abs(current.lng - lng) < 0.0001
       ) {
-        markerInstance.current.setLatLng([defaultLat, defaultLng]);
-        mapInstance.current.setView([defaultLat, defaultLng], 14);
-        setTimeout(() => {
-          mapInstance.current?.invalidateSize();
-        }, 150);
+        return;
       }
+      isExternalUpdate.current = true;
+      mapInstance.current.setView([lat, lng], 15);
+      markerInstance.current.setLatLng([lat, lng]);
+      onError(null);
+      setTimeout(() => {
+        isExternalUpdate.current = false;
+      }, 500);
     }
-  }, [defaultLat, defaultLng]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCoords?.lat, selectedCoords?.lng]);
 
   return (
-    <div
-      ref={mapRef}
-      className="w-full h-64 rounded-2xl z-0 relative border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden"
-    />
+    <div className="relative">
+      {/* Map tile */}
+      <div
+        ref={mapRef}
+        className="w-full h-64 rounded-2xl z-0 relative border border-slate-200 dark:border-slate-700 shadow-sm"
+      />
+
+      {/* Mobile scroll hint */}
+      <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500 text-center select-none">
+        📱 Hold map to drag · Tap to pin
+      </p>
+    </div>
   );
 };
 
