@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Building,
   MapPin,
-  IndianRupee,
   Briefcase,
   UploadCloud,
   FileText,
@@ -475,7 +474,6 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
             )}
             {job.salary && (
               <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
-                <IndianRupee size={14} />
                 <span>{job.salary.replace(/\$/g, "₹")}</span>
               </div>
             )}

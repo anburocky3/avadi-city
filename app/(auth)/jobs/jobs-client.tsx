@@ -18,7 +18,6 @@ import {
   CheckCircle2,
   Building,
   Send,
-  IndianRupee,
   X,
   Users,
   Eye,
@@ -368,7 +367,11 @@ export const JobsClient: React.FC<JobsClientProps> = ({
 
   const formatSalary = (salary?: string) => {
     if (!salary) return "";
-    return salary.replace(/\$/g, "₹");
+    const cleaned = salary.replace(/\$/g, "₹").trim();
+    if (!cleaned.startsWith("₹") && !cleaned.toLowerCase().startsWith("rs")) {
+      return `₹${cleaned}`;
+    }
+    return cleaned;
   };
 
   // Job Hook Form
@@ -700,8 +703,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({
 
                     {/* Salary & Location Box */}
                     <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 space-y-1.5">
-                      <div className="flex items-center space-x-1.5 text-sm font-black text-emerald-600 dark:text-emerald-400">
-                        <IndianRupee size={15} className="shrink-0 stroke-[2.5]" />
+                      <div className="text-sm font-black text-emerald-600 dark:text-emerald-400">
                         <span>{formatSalary(job.salary)}</span>
                       </div>
                       <button
@@ -1073,8 +1075,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({
                             )}
 
                             {app.job?.salary && (
-                              <span className="flex items-center gap-0.5 font-bold text-emerald-600 dark:text-emerald-400 ml-auto">
-                                <IndianRupee size={12} className="stroke-[2.5]" />
+                              <span className="font-bold text-emerald-600 dark:text-emerald-400 ml-auto">
                                 <span>{formatSalary(app.job.salary)}</span>
                               </span>
                             )}
