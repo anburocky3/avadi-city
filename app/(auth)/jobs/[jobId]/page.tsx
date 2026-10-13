@@ -5,26 +5,23 @@ import {
   ArrowLeft,
   Building,
   MapPin,
-  DollarSign,
+  IndianRupee,
   Users,
   Send,
   CheckCircle2,
+  Sparkles,
+  Phone,
 } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 import { initialJobsData } from "@/data/jobSpots";
-import { Metadata, ResolvingMetadata } from "next";
+import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
 
 interface PageProps {
   params: Promise<{ jobId: string }>;
 }
-
-type Props = {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-};
 
 async function getJobData(jobId: string) {
   let job: any = null;
@@ -60,6 +57,7 @@ async function getJobData(jobId: string) {
         address: seed.location,
         contact: seed.contact,
         status: "APPROVED",
+        featured: Boolean(seed.featured),
         openings: 1,
         _count: { applications: 0 },
       };
@@ -133,6 +131,27 @@ export default async function JobDetailPage({ params }: PageProps) {
     currentUserId && job.ownerId && job.ownerId === currentUserId,
   );
 
+  let hasAppliedToCompany = false;
+  if (currentUserId && job?.businessName) {
+    try {
+      const existingApp = await prisma.jobApplication.findFirst({
+        where: {
+          applicantId: currentUserId,
+          job: {
+            OR: [
+              { businessName: { equals: job.businessName.trim() } },
+              ...(job.ownerId ? [{ ownerId: job.ownerId }] : []),
+            ],
+          },
+        },
+        select: { id: true },
+      });
+      hasAppliedToCompany = Boolean(existingApp);
+    } catch {
+      // ignore
+    }
+  }
+
   let requirementsList: string[] = [];
   if (job.requirements) {
     try {
@@ -178,6 +197,12 @@ export default async function JobDetailPage({ params }: PageProps) {
 
             <div className="space-y-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
+                {job.featured && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 shadow-2xs">
+                    <Sparkles size={11} className="mr-1 text-amber-500 shrink-0" />
+                    SPONSORED
+                  </span>
+                )}
                 <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-orange-500/10 text-orange-600 border border-orange-500/20">
                   {job.jobType || "Full-Time"}
                 </span>
@@ -225,6 +250,14 @@ export default async function JobDetailPage({ params }: PageProps) {
                 <Users size={16} />
                 <span>Manage Applicants</span>
               </Link>
+            ) : hasAppliedToCompany ? (
+              <div
+                className="px-5 py-2.5 rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-black flex items-center gap-2 select-none"
+                title="You have already submitted an application to this company"
+              >
+                <CheckCircle2 size={15} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <span>Already Applied</span>
+              </div>
             ) : (
               <Link
                 href={`/jobs/${job.id}/apply`}
@@ -240,25 +273,31 @@ export default async function JobDetailPage({ params }: PageProps) {
         {/* Salary & Location Strip */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40">
           <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300">
-            <DollarSign size={18} className="shrink-0 stroke-[2.5]" />
+            <IndianRupee size={18} className="shrink-0 stroke-[2.5]" />
             <div>
               <span className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block">
                 Offered Pay
               </span>
-              <span className="text-sm font-black">{job.salary}</span>
+              <span className="text-sm font-black">{job.salary?.replace(/\$/g, "₹")}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-            <MapPin size={18} className="shrink-0 text-slate-400" />
+          <a
+            href={`https://www.google.com/maps?q=${job.latitude ?? 13.1187},${job.longitude ?? 80.0982}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:text-orange-500 transition group cursor-pointer"
+            title="Click to view location on Map"
+          >
+            <MapPin size={18} className="shrink-0 text-slate-400 group-hover:text-orange-500 transition-colors" />
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                Location
+                Location (Click to View on Map)
               </span>
-              <span className="text-xs font-bold">
+              <span className="text-xs font-bold underline underline-offset-2 decoration-slate-300 dark:decoration-slate-700 group-hover:decoration-orange-500">
                 {job.location || `Ward ${job.ward}, Avadi`} (Ward {job.ward})
               </span>
             </div>
-          </div>
+          </a>
         </div>
 
         {/* Overview Details Grid */}
@@ -367,7 +406,7 @@ export default async function JobDetailPage({ params }: PageProps) {
       <div className="p-5 rounded-3xl bg-slate-900 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-            Employer Contact
+            Enquiry Contact
           </span>
           <p className="text-sm font-extrabold">{job.contact}</p>
         </div>
@@ -382,13 +421,13 @@ export default async function JobDetailPage({ params }: PageProps) {
               <span>Manage Applicants</span>
             </Link>
           ) : (
-            <Link
-              href={`/jobs/${job.id}/apply`}
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer shadow-lg"
+            <a
+              href={`tel:${job.contact}`}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer shadow-lg shadow-emerald-600/25"
             >
-              <Send size={15} />
-              <span>Apply Now</span>
-            </Link>
+              <Phone size={15} />
+              <span>Call Now</span>
+            </a>
           )}
         </div>
       </div>

@@ -5,7 +5,11 @@ import { cookies } from "next/headers";
 import { ArrowLeft, ShieldAlert } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
-import ApplicantsClient, { ApplicantItem, JobMeta } from "./applicants-client";
+import ApplicantsClient, {
+  ApplicantItem,
+  JobMeta,
+  ApplicationStatusType,
+} from "./applicants-client";
 
 export const dynamic = "force-dynamic";
 
@@ -94,7 +98,7 @@ export default async function JobApplicantsPage({ params }: PageProps) {
     );
   }
 
-  // 4. Fetch real applications for this job
+  // 4. Fetch real applications for this job (including applicant user profile picture)
   let rawApplications: Array<{
     id: string;
     fullName: string;
@@ -105,11 +109,17 @@ export default async function JobApplicantsPage({ params }: PageProps) {
     experience: string | null;
     skills: string | null;
     portfolioUrl: string | null;
+    resumeUrl: string;
     resumeFileName: string | null;
-    status: any;
+    status: ApplicationStatusType;
+    applicantId: string | null;
+    user: {
+      avatar: string | null;
+    } | null;
     createdAt: Date;
     updatedAt: Date;
   }> = [];
+
   try {
     rawApplications = await prisma.jobApplication.findMany({
       where: { jobId: dbJob.id },
@@ -124,8 +134,15 @@ export default async function JobApplicantsPage({ params }: PageProps) {
         experience: true,
         skills: true,
         portfolioUrl: true,
+        resumeUrl: true,
         resumeFileName: true,
         status: true,
+        applicantId: true,
+        user: {
+          select: {
+            avatar: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -134,11 +151,33 @@ export default async function JobApplicantsPage({ params }: PageProps) {
     console.error("Database error fetching applications:", error);
   }
 
+  // Lookup profile avatar by applicant email for any accounts not linked via foreign key
+  const missingAvatarEmails = rawApplications
+    .filter((a) => !a.user?.avatar && a.email)
+    .map((a) => a.email.toLowerCase());
+
+  const emailAvatarMap = new Map<string, string | null>();
+  if (missingAvatarEmails.length > 0) {
+    try {
+      const matchedUsers = await prisma.user.findMany({
+        where: { email: { in: missingAvatarEmails } },
+        select: { email: true, avatar: true },
+      });
+      matchedUsers.forEach((u) => {
+        if (u.avatar) emailAvatarMap.set(u.email.toLowerCase(), u.avatar);
+      });
+    } catch (err) {
+      console.warn("Could not query user avatars by email:", err);
+    }
+  }
+
   const initialApplications: ApplicantItem[] = rawApplications.map((app) => ({
     id: app.id,
     fullName: app.fullName,
     email: app.email,
     phone: app.phone,
+    avatar: app.user?.avatar || emailAvatarMap.get(app.email.toLowerCase()) || null,
+    hasResume: Boolean(app.resumeUrl && app.resumeUrl.trim().length > 0),
     coverLetter: app.coverLetter,
     qualification: app.qualification,
     experience: app.experience,

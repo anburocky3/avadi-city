@@ -61,11 +61,7 @@ const createJobSchema = zod.object({
   shift: zod.string().trim().optional().nullable(),
 
   applicationMethods: zod.string().optional().nullable(),
-  contact: zod
-    .string()
-    .trim()
-    .min(10, "Contact Phone must be at least 10 digits")
-    .max(15, "Contact Phone is too long"),
+  contact: zod.string().trim().optional().default(""),
   email: zod
     .string()
     .trim()
@@ -84,6 +80,58 @@ const createJobSchema = zod.object({
   termsAccepted: zod.coerce.boolean().refine((val) => val === true, {
     message: "Please accept the Terms & Conditions before posting the vacancy.",
   }),
+}).superRefine((data, ctx) => {
+  let methods: string[] = [];
+  if (data.applicationMethods) {
+    try {
+      const parsedMethods = JSON.parse(data.applicationMethods);
+      methods = Array.isArray(parsedMethods) ? parsedMethods : [data.applicationMethods];
+    } catch {
+      methods = [data.applicationMethods];
+    }
+  }
+
+  // FIX 7 - Conditional method validation: Phone required ONLY if Phone selected
+  if (methods.includes("Phone")) {
+    const cleanPhone = (data.contact || "").replace(/\D/g, "");
+    if (!cleanPhone || cleanPhone.length < 10) {
+      ctx.addIssue({
+        code: zod.ZodIssueCode.custom,
+        message: "Contact phone number (at least 10 digits) is required when Phone application method is selected.",
+        path: ["contact"],
+      });
+    }
+  }
+
+  if (methods.includes("Email")) {
+    if (!data.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      ctx.addIssue({
+        code: zod.ZodIssueCode.custom,
+        message: "Valid contact email is required when Email application method is selected.",
+        path: ["email"],
+      });
+    }
+  }
+
+  if (methods.includes("Website")) {
+    if (!data.website || (!data.website.startsWith("http://") && !data.website.startsWith("https://"))) {
+      ctx.addIssue({
+        code: zod.ZodIssueCode.custom,
+        message: "Valid website URL starting with http:// or https:// is required when Website is selected.",
+        path: ["website"],
+      });
+    }
+  }
+
+  if (methods.includes("Walk-in")) {
+    if (!data.interviewAddress || data.interviewAddress.trim().length === 0) {
+      ctx.addIssue({
+        code: zod.ZodIssueCode.custom,
+        message: "Walk-in interview address is required when Walk-in application method is selected.",
+        path: ["interviewAddress"],
+      });
+    }
+  }
 });
 
 async function uploadImageFile(
@@ -199,6 +247,7 @@ export async function GET(request: Request) {
       const { applications: _apps, ...rest } = job;
       return {
         ...rest,
+        featured: Boolean(job.featured),
         totalApplications,
         newApplications,
       };
@@ -333,12 +382,19 @@ export async function POST(request: Request) {
 
     const valid = parsed.data;
 
-    // 3. Handle image upload if provided
-    let finalImageUrl: string | null = null;
+    // 3. Handle mandatory image upload (FIX 6)
     const imageFile = formData.get("image") as File | null;
-    if (imageFile && imageFile.size > 0) {
-      finalImageUrl = await uploadImageFile(imageFile, "jobs");
+    if (!imageFile || imageFile.size === 0 || typeof imageFile === "string") {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Please upload a Company Logo or Job Poster before posting the vacancy.",
+          errors: { image: ["Please upload a Company Logo or Job Poster before posting the vacancy."] },
+        },
+        { status: 400 },
+      );
     }
+    const finalImageUrl = await uploadImageFile(imageFile, "jobs");
 
     // 4. Save to Database via Prisma (status="PENDING", ownerId=userId)
     const newJob = await prisma.jobVacancy.create({
@@ -372,7 +428,7 @@ export async function POST(request: Request) {
         shift: valid.shift || null,
 
         applicationMethods: valid.applicationMethods || null,
-        contact: valid.contact,
+        contact: valid.contact || user.phone || "N/A",
         email: valid.email || null,
         website: valid.website || null,
         interviewAddress: valid.interviewAddress || null,
@@ -385,6 +441,7 @@ export async function POST(request: Request) {
         additionalInfo: valid.additionalInfo || null,
 
         status: "PENDING",
+        featured: false, // Security: Only administrators can grant Sponsored/Featured status
         ownerId: userId,
       },
     });

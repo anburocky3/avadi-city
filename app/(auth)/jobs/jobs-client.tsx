@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,18 +18,36 @@ import {
   CheckCircle2,
   Building,
   Send,
-  DollarSign,
+  IndianRupee,
   X,
   Users,
   Eye,
   Loader2,
   Lock,
+  Sparkles,
+  FileText,
+  AlertCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 // Shared components path mapping
 import { Modal, EmptyState } from "@/components/shared-components";
 import { useWard } from "@/context/wardContext";
+import useToast from "@/hooks/useToast";
+
+// Dynamically import MapLocationPicker to prevent SSR issues with Leaflet
+const MapLocationPicker = dynamic(
+  () => import("@/components/ui/MapLocationPicker"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 bg-slate-100 dark:bg-slate-800 rounded-2xl flex items-center justify-center text-xs text-slate-400">
+        <Loader2 className="w-5 h-5 animate-spin text-orange-500 mr-2" />
+        Loading Avadi Map...
+      </div>
+    ),
+  },
+);
 
 // --- INLINE TYPESCRIPT DEFINITIONS ---
 
@@ -49,14 +68,110 @@ export interface JobVacancy {
   requirements?: string[];
   qualifications?: string;
   status?: string;
+  featured?: boolean;
   totalApplications?: number;
   newApplications?: number;
   ownerId?: string;
   imageUrl?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  address?: string;
 }
+
+export interface UserApplication {
+  id: string;
+  jobId: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  resumeUrl: string;
+  resumeFileName?: string | null;
+  coverLetter?: string | null;
+  qualification?: string | null;
+  experience?: string | null;
+  skills?: string | null;
+  portfolioUrl?: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  job?: {
+    id: string;
+    role: string;
+    businessName: string;
+    category?: string;
+    jobType?: string;
+    workMode?: string;
+    salary: string;
+    location?: string;
+    ward?: number;
+    imageUrl?: string | null;
+    status: string;
+    ownerId?: string;
+  } | null;
+}
+
+export const APPLICATION_STATUS_CONFIG: Record<
+  string,
+  { label: string; bg: string; text: string; border: string; dot: string }
+> = {
+  SUBMITTED: {
+    label: "Application Submitted",
+    bg: "bg-blue-50 dark:bg-blue-950/40",
+    text: "text-blue-700 dark:text-blue-300",
+    border: "border-blue-200 dark:border-blue-800",
+    dot: "bg-blue-500",
+  },
+  UNDER_REVIEW: {
+    label: "Under Review",
+    bg: "bg-amber-50 dark:bg-amber-950/40",
+    text: "text-amber-700 dark:text-amber-300",
+    border: "border-amber-200 dark:border-amber-800",
+    dot: "bg-amber-500",
+  },
+  SHORTLISTED: {
+    label: "Shortlisted",
+    bg: "bg-purple-50 dark:bg-purple-950/40",
+    text: "text-purple-700 dark:text-purple-300",
+    border: "border-purple-200 dark:border-purple-800",
+    dot: "bg-purple-500",
+  },
+  INTERVIEW: {
+    label: "Interview",
+    bg: "bg-indigo-50 dark:bg-indigo-950/40",
+    text: "text-indigo-700 dark:text-indigo-300",
+    border: "border-indigo-200 dark:border-indigo-800",
+    dot: "bg-indigo-500",
+  },
+  HIRED: {
+    label: "Hired / Selected",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40",
+    text: "text-emerald-700 dark:text-emerald-300",
+    border: "border-emerald-200 dark:border-emerald-800",
+    dot: "bg-emerald-500",
+  },
+  REJECTED: {
+    label: "Not Selected",
+    bg: "bg-rose-50 dark:bg-rose-950/40",
+    text: "text-rose-700 dark:text-rose-300",
+    border: "border-rose-200 dark:border-rose-800",
+    dot: "bg-rose-500",
+  },
+};
+
+export const APPLICATION_STATUS_FILTERS = [
+  { key: "ALL", label: "All Applications" },
+  { key: "UNDER_REVIEW", label: "Under Review" },
+  { key: "SHORTLISTED", label: "Shortlisted" },
+  { key: "INTERVIEW", label: "Interview" },
+  { key: "HIRED", label: "Hired" },
+  { key: "REJECTED", label: "Not Selected" },
+];
 
 export interface JobsClientProps {
   initialJobs: JobVacancy[];
+  initialTab?: "explore" | "my-applications" | "my-jobs";
+  initialApplications?: UserApplication[];
+  initialAppliedCompanies?: string[];
 }
 
 // Job Form Zod Schema
@@ -83,12 +198,119 @@ const jobSchema = zod.object({
 
 type JobFormData = zod.infer<typeof jobSchema>;
 
-export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
+export const JobsClient: React.FC<JobsClientProps> = ({
+  initialJobs,
+  initialTab = "explore",
+  initialApplications = [],
+  initialAppliedCompanies = [],
+}) => {
   const router = useRouter();
   const t = useTranslations("jobs");
-  const { activeWard, userProfile, isAuthenticated } = useWard();
+  const { activeWard, userProfile, authUser, isAuthenticated } = useWard();
+  const toast = useToast();
 
-  const [activeTab, setActiveTab] = useState<"explore" | "my-jobs">("explore");
+  const isAdmin = useMemo(() => {
+    if (typeof window !== "undefined") {
+      if (
+        document.cookie.includes("admin_session") ||
+        document.cookie.includes("admin_token")
+      ) {
+        return true;
+      }
+    }
+    const email = authUser?.email?.trim().toLowerCase();
+    return Boolean(
+      email && (email === "admin@avadi.city" || email.endsWith("@avadi.city"))
+    );
+  }, [authUser?.email]);
+
+  const [togglingFeaturedId, setTogglingFeaturedId] = useState<string | null>(null);
+
+  const handleToggleFeatured = async (jobId: string, currentFeatured: boolean) => {
+    const targetFeatured = !currentFeatured;
+    setTogglingFeaturedId(jobId);
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ featured: targetFeatured }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setJobList((prev) =>
+          prev.map((j) => (j.id === jobId ? { ...j, featured: targetFeatured } : j))
+        );
+        setMyJobs((prev) =>
+          prev.map((j) => (j.id === jobId ? { ...j, featured: targetFeatured } : j))
+        );
+        toast.success(
+          targetFeatured
+            ? "Job marked as Sponsored."
+            : "Sponsored status removed."
+        );
+      } else {
+        toast.error(data.message || data.error || "Failed to update sponsored status");
+      }
+    } catch (err) {
+      console.error("Toggle featured error:", err);
+      toast.error("Network error while updating sponsored status");
+    } finally {
+      setTogglingFeaturedId(null);
+    }
+  };
+
+  const [activeTab, setActiveTab] = useState<"explore" | "my-applications" | "my-jobs">(
+    initialTab || "explore"
+  );
+
+  // User Applications State
+  const [myApplications, setMyApplications] = useState<UserApplication[]>(
+    initialApplications || []
+  );
+  const [appliedCompanies, setAppliedCompanies] = useState<string[]>(
+    initialAppliedCompanies || []
+  );
+  const [isLoadingApplications, setIsLoadingApplications] = useState<boolean>(false);
+  const [hasLoadedApplications, setHasLoadedApplications] = useState<boolean>(
+    Boolean(initialApplications && initialApplications.length > 0)
+  );
+  const [applicationStatusFilter, setApplicationStatusFilter] = useState<string>("ALL");
+  const [applicationSearch, setApplicationSearch] = useState<string>("");
+
+  const fetchMyApplications = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setIsLoadingApplications(true);
+    try {
+      const res = await fetch("/api/jobs/my-applications");
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        setMyApplications(json.data);
+        if (Array.isArray(json.appliedCompanies)) {
+          setAppliedCompanies(json.appliedCompanies);
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load user applications:", err);
+    } finally {
+      setIsLoadingApplications(false);
+      setHasLoadedApplications(true);
+    }
+  }, [isAuthenticated]);
+
+  // Load user applications when authenticated to enforce one application per company on public cards
+  useEffect(() => {
+    if (isAuthenticated && !hasLoadedApplications) {
+      fetchMyApplications();
+    }
+  }, [isAuthenticated, hasLoadedApplications, fetchMyApplications]);
+
+  useEffect(() => {
+    if (activeTab === "my-applications" && !hasLoadedApplications && isAuthenticated) {
+      fetchMyApplications();
+    }
+  }, [activeTab, hasLoadedApplications, isAuthenticated, fetchMyApplications]);
+
+  // Employer Postings State
   const [myJobs, setMyJobs] = useState<JobVacancy[]>([]);
   const [isLoadingMyJobs, setIsLoadingMyJobs] = useState<boolean>(false);
   const [hasLoadedMyJobs, setHasLoadedMyJobs] = useState<boolean>(false);
@@ -142,6 +364,12 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [justPostedIds, setJustPostedIds] = useState<string[]>([]);
   const [actionMsg, setActionMsg] = useState<string | null>(null);
+  const [selectedMapJob, setSelectedMapJob] = useState<JobVacancy | null>(null);
+
+  const formatSalary = (salary?: string) => {
+    if (!salary) return "";
+    return salary.replace(/\$/g, "₹");
+  };
 
   // Job Hook Form
   const {
@@ -166,7 +394,9 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
   const filteredJobs = useMemo(() => {
     let list = jobList;
 
-    if (activeTypeFilter !== "All") {
+    if (activeTypeFilter === "Sponsored") {
+      list = list.filter((j) => Boolean(j.featured));
+    } else if (activeTypeFilter !== "All") {
       list = list.filter(
         (j) =>
           (j.jobType &&
@@ -192,7 +422,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
     return list;
   }, [jobList, searchQuery, activeTypeFilter]);
 
-  const handleApplyNow = (item: JobVacancy, e: React.MouseEvent) => {
+  const _handleApplyNow = (item: JobVacancy, e: React.MouseEvent) => {
     e.stopPropagation();
     setActionMsg(
       `Submitting instant application for "${item.role}" at ${item.businessName}...`,
@@ -263,8 +493,9 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
         </Link>
       </div>
 
-      {/* Primary Tab Switcher */}
+      {/* Primary Tab Switcher (Requirement 1: Explore Vacancies | My Applications | My Job Postings) */}
       <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800">
+        {/* 1. Explore Vacancies (Left) */}
         <button
           type="button"
           onClick={() => setActiveTab("explore")}
@@ -274,10 +505,33 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
-          <Briefcase size={14} />
-          <span>Explore Vacancies</span>
+          <Briefcase size={14} className="shrink-0" />
+          <span className="truncate">Explore Vacancies</span>
         </button>
 
+        {/* 2. My Applications (Center) */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("my-applications");
+            if (!hasLoadedApplications) fetchMyApplications();
+          }}
+          className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer relative ${
+            activeTab === "my-applications"
+              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
+              : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+          }`}
+        >
+          <FileText size={14} className="shrink-0" />
+          <span className="truncate">My Applications</span>
+          {myApplications.length > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shrink-0">
+              {myApplications.length}
+            </span>
+          )}
+        </button>
+
+        {/* 3. My Job Postings (Right) */}
         <button
           type="button"
           onClick={() => {
@@ -290,10 +544,10 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
-          <Users size={14} />
-          <span>My Job Postings</span>
+          <Users size={14} className="shrink-0" />
+          <span className="truncate">My Job Postings</span>
           {myJobs.length > 0 && (
-            <span className="px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold">
+            <span className="px-1.5 py-0.5 rounded-full bg-orange-500 text-white text-[10px] font-bold shrink-0">
               {myJobs.length}
             </span>
           )}
@@ -331,9 +585,10 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
 
           {/* Type Filter Chips */}
           <div className="flex items-center space-x-2 overflow-x-auto pb-1 no-scrollbar">
-            {["All", "Full-Time", "Part-Time", "Contract"].map((type) => (
+            {["All", "Full-Time", "Part-Time", "Contract", "Sponsored"].map((type) => (
               <button
                 key={type}
+                type="button"
                 onClick={() => setActiveTypeFilter(type)}
                 className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
                   activeTypeFilter === type
@@ -383,8 +638,14 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                     }`}
                   >
                     {/* Top Badge & Posted Time */}
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-2">
                       <div className="flex flex-wrap items-center gap-1.5">
+                        {job.featured && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 shadow-2xs">
+                            <Sparkles size={11} className="mr-1 text-amber-500 shrink-0" />
+                            SPONSORED
+                          </span>
+                        )}
                         <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
                           {job.jobType || "FULL-TIME"}
                         </span>
@@ -440,15 +701,24 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                     {/* Salary & Location Box */}
                     <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 space-y-1.5">
                       <div className="flex items-center space-x-1.5 text-sm font-black text-emerald-600 dark:text-emerald-400">
-                        <DollarSign size={16} className="shrink-0 stroke-[2.5]" />
-                        <span>{job.salary}</span>
+                        <IndianRupee size={15} className="shrink-0 stroke-[2.5]" />
+                        <span>{formatSalary(job.salary)}</span>
                       </div>
-                      <div className="flex items-center space-x-1 text-xs font-medium text-slate-600 dark:text-slate-400">
-                        <MapPin size={13} className="shrink-0 text-slate-400" />
-                        <span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSelectedMapJob(job);
+                        }}
+                        className="flex items-center space-x-1.5 text-xs font-bold text-slate-700 dark:text-slate-300 hover:text-orange-600 dark:hover:text-orange-400 transition text-left cursor-pointer group"
+                        title="Click to view location on map"
+                      >
+                        <MapPin size={13} className="shrink-0 text-orange-500 group-hover:scale-110 transition-transform" />
+                        <span className="underline underline-offset-2 decoration-slate-300 dark:decoration-slate-700 group-hover:decoration-orange-500">
                           {job.location || `Market Road, Avadi (Ward ${job.ward})`}
                         </span>
-                      </div>
+                      </button>
                     </div>
 
                     {/* Requirements & Qualification Section */}
@@ -490,13 +760,32 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                         <span className="hidden sm:inline">View</span>
                       </Link>
 
-                      <Link
-                        href={`/jobs/${job.id}/apply`}
-                        className="col-span-2 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl text-xs font-black transition flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer"
-                      >
-                        <Send size={14} />
-                        <span>Apply</span>
-                      </Link>
+                      {appliedCompanies.includes(job.businessName.trim().toLowerCase()) ? (
+                        <div
+                          className="col-span-2 py-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 rounded-2xl text-xs font-black flex items-center justify-center space-x-1.5 cursor-not-allowed select-none"
+                          title="You have already applied to a vacancy at this company"
+                        >
+                          <CheckCircle2 size={14} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          <span>Already Applied</span>
+                        </div>
+                      ) : Boolean(authUser?.id && job.ownerId && job.ownerId === authUser.id) ? (
+                        <Link
+                          href={`/jobs/${job.id}/applicants`}
+                          className="col-span-2 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-2xl text-xs font-black transition flex items-center justify-center space-x-1.5 shadow-md hover:shadow-lg cursor-pointer"
+                          title="Manage Applicants for your job posting"
+                        >
+                          <Users size={14} />
+                          <span>Manage</span>
+                        </Link>
+                      ) : (
+                        <Link
+                          href={`/jobs/${job.id}/apply`}
+                          className="col-span-2 py-3 bg-primary hover:bg-primary/90 text-white rounded-2xl text-xs font-black transition flex items-center justify-center space-x-2 shadow-md hover:shadow-lg cursor-pointer"
+                        >
+                          <Send size={14} />
+                          <span>Apply</span>
+                        </Link>
+                      )}
 
                       <button
                         onClick={(e) => handleCallDirect(job, e)}
@@ -507,6 +796,40 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                         <span>{t("call")}</span>
                       </button>
                     </div>
+
+                    {/* Admin Sponsored Toggle */}
+                    {isAdmin && (
+                      <div className="pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          <span>Admin Control</span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={togglingFeaturedId === job.id}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            handleToggleFeatured(job.id, Boolean(job.featured));
+                          }}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                            job.featured
+                              ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-200 border border-amber-300 dark:border-amber-700"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 border border-slate-200 dark:border-slate-700"
+                          }`}
+                        >
+                          {togglingFeaturedId === job.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Sparkles
+                              size={12}
+                              className={job.featured ? "text-amber-600 dark:text-amber-400" : "text-slate-400"}
+                            />
+                          )}
+                          <span>{job.featured ? "Remove Sponsored" : "Mark as Sponsored"}</span>
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 );
               })
@@ -523,7 +846,294 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
         </div>
       )}
 
-      {/* 2. My Job Postings View */}
+      {/* 2. My Applications View (Requirement 2, 3, 4, 12, 13, 14) */}
+      {activeTab === "my-applications" && (
+        <div className="space-y-4">
+          {!isAuthenticated ? (
+            <div className="p-8 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center mx-auto">
+                <Lock size={22} />
+              </div>
+              <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
+                Sign in to view your applications
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Track the status of the jobs you have applied for in Avadi.
+              </p>
+              <Link
+                href="/login?redirect=/jobs"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-primary/90 text-white text-xs font-black transition shadow-md"
+              >
+                <span>Sign In to Continue</span>
+              </Link>
+            </div>
+          ) : isLoadingApplications && !hasLoadedApplications ? (
+            <div className="p-12 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
+              <Loader2 size={24} className="animate-spin text-primary mx-auto" />
+              <p className="text-xs font-bold text-slate-400">Loading your applications...</p>
+            </div>
+          ) : myApplications.length === 0 ? (
+            <EmptyState
+              icon={Briefcase}
+              title="You haven't applied for any jobs yet."
+              description="Explore available vacancies and submit an application to track it here."
+              actionText="Explore Vacancies"
+              onAction={() => setActiveTab("explore")}
+            />
+          ) : (
+            <div className="space-y-4">
+              {/* Header subtitle & count */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-1">
+                <div>
+                  <h2 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    My Applications
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Track the status of the jobs you have applied for.
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="font-bold text-slate-500">
+                    {myApplications.length} {myApplications.length === 1 ? "Application" : "Applications"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={fetchMyApplications}
+                    className="font-bold text-primary hover:underline cursor-pointer"
+                  >
+                    Refresh
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Filter Chips (Requirement 13) */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
+                {APPLICATION_STATUS_FILTERS.map((f) => {
+                  const count =
+                    f.key === "ALL"
+                      ? myApplications.length
+                      : myApplications.filter((a) => a.status === f.key).length;
+                  return (
+                    <button
+                      key={f.key}
+                      type="button"
+                      onClick={() => setApplicationStatusFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition cursor-pointer shrink-0 ${
+                        applicationStatusFilter === f.key
+                          ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-xs"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {f.label}
+                      <span className="ml-1.5 opacity-70">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search input if multiple applications */}
+              {myApplications.length > 3 && (
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={applicationSearch}
+                    onChange={(e) => setApplicationSearch(e.target.value)}
+                    placeholder="Search by job title or company..."
+                    className="w-full pl-8 pr-4 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+              )}
+
+              {/* Applications List */}
+              {myApplications.filter((a) => {
+                if (applicationStatusFilter !== "ALL" && a.status !== applicationStatusFilter) {
+                  return false;
+                }
+                if (applicationSearch.trim()) {
+                  const q = applicationSearch.toLowerCase().trim();
+                  return (
+                    a.job?.role?.toLowerCase().includes(q) ||
+                    a.job?.businessName?.toLowerCase().includes(q) ||
+                    a.job?.location?.toLowerCase().includes(q)
+                  );
+                }
+                return true;
+              }).length === 0 ? (
+                <div className="p-8 text-center rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-500">
+                  No applications found matching the selected filter.
+                </div>
+              ) : (
+                <div className="space-y-3.5">
+                  {myApplications
+                    .filter((a) => {
+                      if (applicationStatusFilter !== "ALL" && a.status !== applicationStatusFilter) {
+                        return false;
+                      }
+                      if (applicationSearch.trim()) {
+                        const q = applicationSearch.toLowerCase().trim();
+                        return (
+                          a.job?.role?.toLowerCase().includes(q) ||
+                          a.job?.businessName?.toLowerCase().includes(q) ||
+                          a.job?.location?.toLowerCase().includes(q)
+                        );
+                      }
+                      return true;
+                    })
+                    .map((app) => {
+                      const statusConfig =
+                        APPLICATION_STATUS_CONFIG[app.status] || {
+                          label: app.status,
+                          bg: "bg-slate-100 dark:bg-slate-800",
+                          text: "text-slate-700 dark:text-slate-300",
+                          border: "border-slate-200 dark:border-slate-700",
+                          dot: "bg-slate-400",
+                        };
+
+                      const appliedDateStr = app.createdAt
+                        ? new Date(app.createdAt).toLocaleDateString("en-IN", {
+                            day: "numeric",
+                            month: "long",
+                            year: "numeric",
+                          })
+                        : "Recently";
+
+                      const isJobInactive =
+                        app.job && app.job.status !== "APPROVED";
+
+                      return (
+                        <motion.div
+                          key={app.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4 hover:shadow-md transition"
+                        >
+                          {/* Top: Company Logo + Job Title + Status Badge */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0">
+                              {app.job?.imageUrl ? (
+                                <div className="w-12 h-12 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shrink-0 bg-slate-100 dark:bg-slate-800 shadow-xs flex items-center justify-center">
+                                  <img
+                                    src={app.job.imageUrl}
+                                    alt={app.job?.businessName || "Company logo"}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      (e.currentTarget as HTMLElement).style.display = "none";
+                                    }}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0 flex items-center justify-center">
+                                  <Building size={20} />
+                                </div>
+                              )}
+
+                              <div className="space-y-1 min-w-0">
+                                <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight truncate">
+                                  {app.job?.role || "Job Vacancy"}
+                                </h3>
+
+                                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                                  <Building size={13} className="shrink-0" />
+                                  <span className="truncate">
+                                    {app.job?.businessName || "Company"}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status Badge */}
+                            <span
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shrink-0 border ${statusConfig.bg} ${statusConfig.text} ${statusConfig.border}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+                              {statusConfig.label}
+                            </span>
+                          </div>
+
+                          {/* Location, Type & Salary strip */}
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-600 dark:text-slate-300">
+                            {app.job?.location && (
+                              <span className="flex items-center gap-1 font-medium">
+                                <MapPin size={13} className="text-orange-500 shrink-0" />
+                                <span>{app.job.location}</span>
+                              </span>
+                            )}
+
+                            {app.job?.jobType && (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                {app.job.jobType}
+                              </span>
+                            )}
+
+                            {app.job?.workMode && (
+                              <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                                {app.job.workMode}
+                              </span>
+                            )}
+
+                            {app.job?.salary && (
+                              <span className="flex items-center gap-0.5 font-bold text-emerald-600 dark:text-emerald-400 ml-auto">
+                                <IndianRupee size={12} className="stroke-[2.5]" />
+                                <span>{formatSalary(app.job.salary)}</span>
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Applied date & Resume info strip */}
+                          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                            <div className="flex items-center gap-1.5 text-slate-500 font-medium">
+                              <Clock size={13} className="text-slate-400 shrink-0" />
+                              <span>Applied on: {appliedDateStr}</span>
+                            </div>
+
+                            {app.resumeUrl && (
+                              <a
+                                href={app.resumeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700 hover:text-primary transition"
+                                title="View uploaded PDF resume"
+                              >
+                                <FileText size={12} className="text-primary shrink-0" />
+                                <span className="truncate max-w-[130px]">
+                                  {app.resumeFileName || "PDF Resume"}
+                                </span>
+                              </a>
+                            )}
+                          </div>
+
+                          {/* If job is no longer active */}
+                          {isJobInactive && (
+                            <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                              <AlertCircle size={13} className="shrink-0" />
+                              <span>This job vacancy is no longer accepting applications.</span>
+                            </div>
+                          )}
+
+                          {/* Action buttons */}
+                          <div className="pt-1 flex items-center justify-end gap-2">
+                            {app.jobId && (
+                              <Link
+                                href={`/jobs/${app.jobId}`}
+                                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-black transition flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                              >
+                                <Eye size={13} />
+                                <span>View Job</span>
+                              </Link>
+                            )}
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 3. My Job Postings View */}
       {activeTab === "my-jobs" && (
         <div className="space-y-4">
           {!isAuthenticated ? (
@@ -602,6 +1212,12 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
 
                         <div className="space-y-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-1.5">
+                            {job.featured && (
+                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30">
+                                <Sparkles size={10} className="mr-1 text-amber-500 shrink-0" />
+                                SPONSORED
+                              </span>
+                            )}
                             <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-primary/10 text-primary border border-primary/20">
                               {job.jobType || "Full-Time"}
                             </span>
@@ -693,6 +1309,36 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
                         <span>View Job</span>
                       </Link>
                     </div>
+
+                    {/* Admin Sponsored Toggle */}
+                    {isAdmin && (
+                      <div className="pt-2.5 border-t border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          <span>Admin Control</span>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={togglingFeaturedId === job.id}
+                          onClick={() => handleToggleFeatured(job.id, Boolean(job.featured))}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-black transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 ${
+                            job.featured
+                              ? "bg-amber-100 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 hover:bg-amber-200 border border-amber-300 dark:border-amber-700"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 border border-slate-200 dark:border-slate-700"
+                          }`}
+                        >
+                          {togglingFeaturedId === job.id ? (
+                            <Loader2 size={12} className="animate-spin" />
+                          ) : (
+                            <Sparkles
+                              size={12}
+                              className={job.featured ? "text-amber-600 dark:text-amber-400" : "text-slate-400"}
+                            />
+                          )}
+                          <span>{job.featured ? "Remove Sponsored" : "Mark as Sponsored"}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -825,6 +1471,63 @@ export const JobsClient: React.FC<JobsClientProps> = ({ initialJobs }) => {
           </button>
         </form>
       </Modal>
+
+      {/* Job Location Map Modal */}
+      {selectedMapJob && (
+        <Modal
+          isOpen={Boolean(selectedMapJob)}
+          onClose={() => setSelectedMapJob(null)}
+          title="Job Location on Map"
+        >
+          <div className="space-y-4">
+            <div className="p-3 bg-slate-50 dark:bg-slate-950 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-1">
+              <div className="flex items-center justify-between gap-2">
+                <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                  {selectedMapJob.role}
+                </h4>
+                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-600 border border-orange-500/20 shrink-0">
+                  Ward {selectedMapJob.ward}
+                </span>
+              </div>
+              <p className="text-xs font-bold text-orange-600 dark:text-orange-400 flex items-center gap-1">
+                <Building size={13} className="shrink-0" />
+                <span>{selectedMapJob.businessName}</span>
+              </p>
+              <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1 pt-0.5">
+                <MapPin size={13} className="shrink-0 text-slate-400" />
+                <span>
+                  {selectedMapJob.address || selectedMapJob.location || `Ward ${selectedMapJob.ward}, Avadi`}
+                </span>
+              </p>
+            </div>
+
+            <div className="rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 relative z-0 min-h-[250px]">
+              <MapLocationPicker
+                defaultLat={selectedMapJob.latitude ?? 13.1187}
+                defaultLng={selectedMapJob.longitude ?? 80.0982}
+                zoom={15}
+                onLocationSelect={() => {}}
+                onError={() => {}}
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-3 pt-1">
+              <span className="text-[10px] font-semibold text-slate-400">
+                GPS: {(selectedMapJob.latitude ?? 13.1187).toFixed(4)}, {(selectedMapJob.longitude ?? 80.0982).toFixed(4)}
+              </span>
+              <a
+                href={`https://www.google.com/maps?q=${selectedMapJob.latitude ?? 13.1187},${selectedMapJob.longitude ?? 80.0982}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-xs font-black shadow-sm transition"
+              >
+                <MapPin size={13} />
+                <span>Open in Google Maps</span>
+              </a>
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
