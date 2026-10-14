@@ -1,21 +1,16 @@
 import React, { Suspense } from "react";
-import {
-  initialDonationsData,
-  initialVolunteersData,
-} from "@/data/volunteerSpots";
 import { SkeletonLoader } from "@/components/shared-components";
-import {
-  DonationCause,
-  Volunteer,
-  VolunteersClient,
-} from "./volunteers-client";
+import { VolunteersClient } from "./volunteers-client";
+import { getDbDonations } from "@/lib/donation-db";
+import { getDbVolunteers } from "@/lib/volunteer-db";
 
-export const revalidate = 3600; // 1 hour cache or 0 for dynamic SSR
+export const dynamic = "force-dynamic";
 
 export default async function VolunteersPage() {
-  const donations: DonationCause[] = (initialDonationsData ||
-    []) as DonationCause[];
-  const volunteers: Volunteer[] = (initialVolunteersData || []) as Volunteer[];
+  const [donations, volunteers] = await Promise.all([
+    getDbDonations(),
+    getDbVolunteers(),
+  ]);
 
   return (
     <Suspense

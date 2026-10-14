@@ -1,0 +1,61 @@
+model Volunteer {
+  id                      String      @id @default(cuid())
+  displayId               String      @unique // Formatted ID e.g., AVC-VOL-0001
+  userId                  String?
+  user                    User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  fullName                String
+  ward                    Int
+  gender                  String
+  age                     Int
+  dob                     String?
+  
+  // Contact
+  mobile                  String
+  whatsapp                String
+  area                    String
+  showPhonePublic         Boolean     @default(true)
+
+  // Emergency Contact
+  emergencyName           String
+  emergencyPhone          String
+  emergencyRelationship   String
+
+  // Profile details & Preferences (stored as JSON for structured data in MySQL)
+  languages               Json        // string[]
+  interests               Json        // string[]
+  skills                  Json        // string[]
+  otherSkill              String?
+  experience              String      // "Beginner" | "Intermediate" | "Experienced"
+  bio                     String?     @db.Text
+  vehicle                 String      // "None" | "Two-wheeler" | "Four-wheeler"
+
+  // Availability (stored as JSON)
+  // { days: string[], slots: string[], type: string, radius: string }
+  availability            Json
+
+  // Health
+  bloodGroup              String
+  willDonateBlood         Boolean     @default(false)
+  lastDonation            String?
+  fitness                 String      @default("Yes") // "Yes" | "Limited"
+  conditions              String?     @db.Text
+
+  // Guardian for minors
+  guardian                Json?       // { name: string, consent: boolean } | null
+
+  // Consents
+  conductConsent          Boolean     @default(true)
+  directoryConsent        Boolean     @default(true)
+  truthfulConsent         Boolean     @default(true)
+
+  status                  String      @default("pending") // "pending" | "active" | "approved" | "paused" | "left"
+
+  createdAt               DateTime    @default(now())
+  updatedAt               DateTime    @updatedAt
+
+  @@index([ward])
+  @@index([status])
+  @@index([userId])
+  @@index([displayId])
+  @@map("volunteers")
+}
