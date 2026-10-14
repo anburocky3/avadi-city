@@ -7,7 +7,6 @@ import {
   ArrowLeft,
   Building,
   MapPin,
-  DollarSign,
   Briefcase,
   UploadCloud,
   FileText,
@@ -37,6 +36,7 @@ export interface JobDetailSummary {
 
 interface JobApplyClientProps {
   job: JobDetailSummary;
+  initialProfile?: { name?: string; email?: string; phone?: string } | null;
 }
 
 const QUALIFICATION_CHOICES = [
@@ -51,18 +51,24 @@ const QUALIFICATION_CHOICES = [
   "Other",
 ];
 
-export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
+export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProfile }) => {
   const router = useRouter();
   const toast = useToast();
-  const { userProfile } = useWard();
+  const { authUser, userProfile } = useWard();
 
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
-  // Form State
-  const [fullName, setFullName] = useState(userProfile?.name || "");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState(userProfile?.wardNumber ? "" : "");
+  // Form State (Auto-populated from authenticated profile if available - FIX 4)
+  const [fullName, setFullName] = useState(
+    initialProfile?.name || authUser?.name || userProfile?.name || ""
+  );
+  const [email, setEmail] = useState(
+    initialProfile?.email || authUser?.email || ""
+  );
+  const [phone, setPhone] = useState(
+    initialProfile?.phone || authUser?.phone || ""
+  );
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [coverLetter, setCoverLetter] = useState("");
   const [highestQualification, setHighestQualification] = useState("");
@@ -73,18 +79,27 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
   const [skills, setSkills] = useState<string[]>([]);
   const [skillInput, setSkillInput] = useState("");
 
-  // State flags
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
   const [submittedApplicationId, setSubmittedApplicationId] = useState<string | null>(null);
+  const [alreadyAppliedMessage, setAlreadyAppliedMessage] = useState<string | null>(null);
 
-  // Prefill user profile name if authenticated
+  // Prefill user profile details when loaded
   useEffect(() => {
-    if (userProfile?.name && !fullName) {
-      setFullName(userProfile.name);
+    const profile = initialProfile || authUser;
+    if (profile) {
+      if (profile.name) {
+        setFullName((prev) => prev || profile.name || "");
+      }
+      if (profile.email) {
+        setEmail((prev) => prev || profile.email || "");
+      }
+      if (profile.phone) {
+        setPhone((prev) => prev || profile.phone || "");
+      }
     }
-  }, [userProfile?.name, fullName]);
+  }, [initialProfile, authUser]);
 
   // Skill additions
   const handleAddSkill = () => {
@@ -103,20 +118,20 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
     setSkills((prev) => prev.filter((s) => s !== skillToRemove));
   };
 
-  // Resume File Selection
+  // Resume File Selection (PDF Only & Optional - FIX 5)
   const handleResumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const allowedExtensions = [".pdf", ".doc", ".docx"];
     const fileExt = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
 
-    if (!allowedExtensions.includes(fileExt)) {
+    if (fileExt !== ".pdf" && file.type !== "application/pdf") {
       setFieldErrors((prev) => ({
         ...prev,
-        resume: "Invalid file format. Please upload PDF, DOC, or DOCX files.",
+        resume: "Please upload a PDF file only.",
       }));
-      toast.error("Only PDF, DOC, or DOCX files are allowed.");
+      toast.error("Please upload a PDF file only.");
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
       return;
     }
 
@@ -126,6 +141,7 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
         resume: "File size exceeds 5MB limit. Please upload a smaller file.",
       }));
       toast.error("Resume file size must be less than 5MB.");
+      if (resumeInputRef.current) resumeInputRef.current.value = "";
       return;
     }
 
@@ -170,10 +186,15 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
     const errors: Record<string, string> = {};
     const errorKeys: string[] = [];
 
-    if (!fullName.trim()) {
-      errors.fullName = "Full Name is required.";
+    // Full Name Validation (FIX 5 - Mandatory & Must start with Uppercase letter)
+    const trimmedName = fullName.trim();
+    if (!trimmedName) {
+      errors.fullName = "Please enter your full name.";
       errorKeys.push("fullName");
-    } else if (fullName.trim().length < 2) {
+    } else if (!/^[A-Z]/.test(trimmedName)) {
+      errors.fullName = "Please start your name with an uppercase letter.";
+      errorKeys.push("fullName");
+    } else if (trimmedName.length < 2) {
       errors.fullName = "Full Name must be at least 2 characters.";
       errorKeys.push("fullName");
     }
@@ -195,9 +216,13 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
       errorKeys.push("phone");
     }
 
-    if (!resumeFile) {
-      errors.resume = "Resume / CV file is required (PDF, DOC, or DOCX).";
-      errorKeys.push("resume");
+    // Resume / CV is Optional, but if provided must be PDF (FIX 5)
+    if (resumeFile) {
+      const ext = resumeFile.name.substring(resumeFile.name.lastIndexOf(".")).toLowerCase();
+      if (ext !== ".pdf" && resumeFile.type !== "application/pdf") {
+        errors.resume = "Please upload your resume in PDF format.";
+        errorKeys.push("resume");
+      }
     }
 
     if (portfolioUrl.trim()) {
@@ -217,7 +242,7 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
 
     const { isValid, errors } = validateForm();
     if (!isValid) {
-      toast.error("Please fill in all required fields and upload your resume.");
+      toast.error("Please fill in all required application fields correctly.");
       scrollToFirstError(errors);
       return;
     }
@@ -244,6 +269,18 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
+        if (res.status === 409 || data.alreadyApplied) {
+          setAlreadyAppliedMessage(
+            data.message ||
+              "You have already applied to a vacancy at this company. You can track your existing application under My Applications."
+          );
+          toast.error(
+            data.message ||
+              "You have already applied to a vacancy at this company."
+          );
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
         toast.error(data.message || "Failed to submit application.");
         if (data.errors) {
           setFieldErrors((prev) => ({ ...prev, ...data.errors }));
@@ -265,6 +302,48 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
       setIsSubmitting(false);
     }
   };
+
+  // Duplicate Application Screen (Requirement 14)
+  if (alreadyAppliedMessage) {
+    return (
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 transition-colors">
+        <div className="max-w-xl mx-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-4xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-6 sm:p-10 text-center space-y-6">
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center ring-8 ring-amber-500/5">
+              <AlertCircle size={44} className="stroke-2" />
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-black uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                Application Notice
+              </span>
+              <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
+                Already Applied to {job.businessName}
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-md mx-auto">
+                {alreadyAppliedMessage}
+              </p>
+            </div>
+
+            <div className="pt-2 flex flex-col sm:flex-row gap-3 justify-center">
+              <Link
+                href="/jobs?tab=my-applications"
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs transition shadow-lg shadow-primary/20 text-center cursor-pointer"
+              >
+                Track in My Applications
+              </Link>
+              <Link
+                href="/jobs"
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs transition text-center cursor-pointer"
+              >
+                Explore More Vacancies
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // ==========================================
   // SUCCESS SCREEN (Requirement 17)
@@ -325,8 +404,14 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
 
             <div className="pt-2 flex flex-col sm:flex-row gap-3">
               <Link
+                href="/jobs?tab=my-applications"
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs transition shadow-lg shadow-primary/25 text-center cursor-pointer active:scale-95"
+              >
+                Track in My Applications
+              </Link>
+              <Link
                 href="/jobs"
-                className="flex-1 py-3.5 px-6 rounded-2xl bg-orange-500 hover:bg-orange-600 text-white font-black text-sm transition-all shadow-lg shadow-orange-500/25 text-center cursor-pointer active:scale-95"
+                className="flex-1 py-3.5 px-6 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-black text-xs transition text-center cursor-pointer active:scale-95"
               >
                 Back to Job Vacancies
               </Link>
@@ -389,8 +474,7 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
             )}
             {job.salary && (
               <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
-                <DollarSign size={14} />
-                <span>{job.salary}</span>
+                <span>{job.salary.replace(/\$/g, "₹")}</span>
               </div>
             )}
           </div>
@@ -536,22 +620,21 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
                 </div>
               </div>
 
-              {/* 4. Resume / CV Upload Area (Requirement 8 & 10) */}
+              {/* 4. Resume / CV Upload Area (FIX 3 - Optional & PDF Only) */}
               <div id="field-resume" className="space-y-2 pt-2">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
                   <label className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-1">
-                    <span>Resume / CV</span>
-                    <span className="text-rose-500 font-bold">*</span>
+                    <span>Resume / CV (Optional)</span>
                   </label>
                   <span className="text-[11px] font-semibold text-slate-400">
-                    PDF, DOC, DOCX (Max 5 MB)
+                    Upload your resume in PDF format. This field is optional.
                   </span>
                 </div>
 
                 <input
                   ref={resumeInputRef}
                   type="file"
-                  accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                  accept=".pdf,application/pdf"
                   onChange={handleResumeChange}
                   className="hidden"
                   id="resume-file-input"
@@ -570,16 +653,16 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job }) => {
                       <UploadCloud size={24} />
                     </div>
                     <p className="text-xs sm:text-sm font-black text-slate-900 dark:text-white mb-1">
-                      Upload Resume / CV
+                      Resume / CV (Optional)
                     </p>
                     <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-3">
-                      Upload PDF, DOC or DOCX (maximum 5 MB)
+                      Upload your resume in PDF format. This field is optional.
                     </p>
                     <button
                       type="button"
                       className="px-4 py-2 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 hover:bg-orange-500 hover:text-white text-slate-700 dark:text-slate-300 transition cursor-pointer"
                     >
-                      Choose File
+                      Choose PDF File
                     </button>
                   </div>
                 ) : (

@@ -8,12 +8,17 @@ import { verifyAuthToken } from "@/lib/auth";
 import { r2Client, BUCKET_NAME, PUBLIC_R2_DOMAIN } from "@/lib/r2";
 import { initialJobsData } from "@/data/jobSpots";
 
-// Server-side validation schema for candidate details
+// Server-side validation schema for candidate details (FIX 5 - Uppercase Full Name)
 const applySchema = zod.object({
   fullName: zod
     .string()
-    .trim()
-    .min(2, "Full Name must be at least 2 characters")
+    .min(1, "Please enter your full name.")
+    .refine((val) => val.trim().length > 0, {
+      message: "Please enter your full name.",
+    })
+    .refine((val) => /^[A-Z]/.test(val.trim()), {
+      message: "Please start your name with an uppercase letter.",
+    })
     .max(120, "Full Name is too long"),
   email: zod
     .string()
@@ -36,14 +41,14 @@ const applySchema = zod.object({
     .nullable(),
 });
 
-// Helper to upload resume to Cloudflare R2 or persistent data URI fallback
+// Helper to upload resume to Cloudflare R2 or persistent data URI fallback (FIX 3 - PDF only)
 async function uploadResumeFile(file: File): Promise<{ url: string; fileName: string }> {
-  const allowedExtensions = [".pdf", ".doc", ".docx"];
+  const allowedExtensions = [".pdf"];
   const fileName = file.name || "resume.pdf";
   const fileExt = fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
 
-  if (!allowedExtensions.includes(fileExt)) {
-    throw new Error("Invalid resume format. Only PDF, DOC, and DOCX files are supported.");
+  if (!allowedExtensions.includes(fileExt) || (file.type && file.type !== "application/pdf")) {
+    throw new Error("Please upload a PDF file only.");
   }
 
   const maxSizeBytes = 5 * 1024 * 1024; // 5 MB
@@ -152,18 +157,8 @@ export async function POST(
       );
     }
 
-    // 3. Validate Resume file
+    // 3. Resume file is optional (FIX 5)
     const resumeFile = formData.get("resume") as File | null;
-    if (!resumeFile || resumeFile.size === 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Resume / CV file is required. Please upload a PDF, DOC, or DOCX file.",
-          errors: { resume: "Resume / CV is required." },
-        },
-        { status: 400 }
-      );
-    }
 
     // 4. Ensure target Job exists and is active
     let targetJob = await prisma.jobVacancy.findUnique({
@@ -227,53 +222,132 @@ export async function POST(
       );
     }
 
-    // 5. Check for duplicate application
-    const duplicateCheck = await prisma.jobApplication.findFirst({
-      where: {
-        jobId: targetJob.id,
-        OR: [
-          ...(userId ? [{ applicantId: userId }] : []),
-          { email: validated.data.email.toLowerCase() },
-        ],
-      },
-    });
-
-    if (duplicateCheck) {
+    // 4b. Prevent employer from applying to their own job vacancy
+    if (userId && targetJob.ownerId && targetJob.ownerId === userId) {
       return NextResponse.json(
         {
           success: false,
-          message: `You have already submitted an application for "${targetJob.role}" at ${targetJob.businessName}.`,
+          isOwner: true,
+          message:
+            "You cannot apply to your own job vacancy. You can review candidate applications under My Job Postings.",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (targetJob.ownerId) {
+      const ownerUser = await prisma.user.findUnique({
+        where: { id: targetJob.ownerId },
+        select: { email: true },
+      });
+      if (
+        ownerUser?.email &&
+        ownerUser.email.trim().toLowerCase() === validated.data.email.trim().toLowerCase()
+      ) {
+        return NextResponse.json(
+          {
+            success: false,
+            isOwner: true,
+            message:
+              "You cannot apply to your own job vacancy. You can review candidate applications under My Job Postings.",
+          },
+          { status: 403 }
+        );
+      }
+    }
+
+    // 5. Check for duplicate application (CRITICAL: One application per company restriction)
+    const applicantEmail = validated.data.email.trim().toLowerCase();
+
+    // Query for any existing application by this applicant (by userId or email)
+    // to ANY vacancy belonging to this company (matched by normalized businessName or employer ownerId)
+    const existingCompanyApplication = await prisma.jobApplication.findFirst({
+      where: {
+        OR: [
+          ...(userId ? [{ applicantId: userId }] : []),
+          { email: applicantEmail },
+        ],
+        job: {
+          OR: [
+            { businessName: { equals: targetJob.businessName.trim() } },
+            ...(targetJob.ownerId ? [{ ownerId: targetJob.ownerId }] : []),
+          ],
+        },
+      },
+      include: {
+        job: {
+          select: {
+            id: true,
+            role: true,
+            businessName: true,
+            status: true,
+          },
+        },
+      },
+    });
+
+    if (existingCompanyApplication) {
+      return NextResponse.json(
+        {
+          success: false,
+          alreadyApplied: true,
+          message:
+            "You have already applied to a vacancy at this company. You can track your existing application under My Applications.",
+          existingApplication: {
+            id: existingCompanyApplication.id,
+            jobId: existingCompanyApplication.jobId,
+            role: existingCompanyApplication.job?.role,
+            businessName: existingCompanyApplication.job?.businessName,
+            status: existingCompanyApplication.status,
+          },
         },
         { status: 409 }
       );
     }
 
-    // 6. Upload Resume
-    let uploadedResume: { url: string; fileName: string };
-    try {
-      uploadedResume = await uploadResumeFile(resumeFile);
-    } catch (uploadErr) {
-      const msg = uploadErr instanceof Error ? uploadErr.message : "Failed to upload resume file.";
-      return NextResponse.json(
-        {
-          success: false,
-          message: msg,
-          errors: { resume: msg },
-        },
-        { status: 400 }
-      );
+    // 6. Upload Resume (if provided - FIX 3)
+    let uploadedResume: { url: string; fileName: string } | null = null;
+    if (resumeFile && resumeFile.size > 0 && typeof resumeFile !== "string") {
+      try {
+        uploadedResume = await uploadResumeFile(resumeFile);
+      } catch (uploadErr) {
+        const msg =
+          uploadErr instanceof Error
+            ? uploadErr.message
+            : "Please upload a PDF file only.";
+        return NextResponse.json(
+          {
+            success: false,
+            message: msg,
+            errors: { resume: msg },
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Determine applicant account ID
+    let linkedUserId = userId;
+    if (!linkedUserId && validated.data.email) {
+      const existingUser = await prisma.user.findUnique({
+        where: { email: validated.data.email.toLowerCase() },
+        select: { id: true },
+      });
+      if (existingUser) {
+        linkedUserId = existingUser.id;
+      }
     }
 
     // 7. Persist application in Prisma
     const application = await prisma.jobApplication.create({
       data: {
         jobId: targetJob.id,
-        applicantId: userId || null,
+        applicantId: linkedUserId || null,
         fullName: validated.data.fullName,
         email: validated.data.email.toLowerCase(),
         phone: validated.data.phone,
-        resumeUrl: uploadedResume.url,
-        resumeFileName: uploadedResume.fileName,
+        resumeUrl: uploadedResume?.url || "",
+        resumeFileName: uploadedResume?.fileName || null,
         coverLetter: validated.data.coverLetter || null,
         qualification: validated.data.qualification || null,
         experience: validated.data.experience || null,

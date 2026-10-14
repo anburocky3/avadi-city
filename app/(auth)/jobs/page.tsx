@@ -1,9 +1,10 @@
 import React, { Suspense } from "react";
+import { cookies } from "next/headers";
 import { initialJobsData } from "@/data/jobSpots";
 import { SkeletonLoader } from "@/components/shared-components";
-import { JobsClient, JobVacancy } from "./jobs-client";
+import { JobsClient, JobVacancy, UserApplication } from "./jobs-client";
 import { prisma } from "@/lib/prisma";
-import Head from "next/head";
+import { verifyAuthToken } from "@/lib/auth";
 import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +12,79 @@ export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
   title: "Jobs in Avadi - Avadi City Community Portal",
   description:
-    "Find the latest job opportunities in and around Avadim that will help you grow your career.",
+    "Find the latest job opportunities in and around Avadi that will help you grow your career.",
 };
 
-export default async function JobsPage() {
+interface JobsPageProps {
+  searchParams?: Promise<{ tab?: string }>;
+}
+
+export default async function JobsPage({ searchParams }: JobsPageProps) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const requestedTab =
+    resolvedSearchParams?.tab === "my-applications"
+      ? "my-applications"
+      : resolvedSearchParams?.tab === "my-jobs"
+      ? "my-jobs"
+      : "explore";
+
+  // Pre-load authenticated user application info if logged in
+  const cookieStore = await cookies();
+  const token = cookieStore.get("avadi_session")?.value;
+  let appliedCompanies: string[] = [];
+  let userApplications: UserApplication[] = [];
+
+  if (token) {
+    try {
+      const session = await verifyAuthToken(token);
+      if (session?.userId) {
+        const apps = await prisma.jobApplication.findMany({
+          where: {
+            OR: [
+              { applicantId: session.userId },
+              ...(session.email ? [{ email: session.email.trim().toLowerCase() }] : []),
+            ],
+          },
+          include: {
+            job: {
+              select: {
+                id: true,
+                role: true,
+                businessName: true,
+                category: true,
+                jobType: true,
+                workMode: true,
+                salary: true,
+                location: true,
+                ward: true,
+                imageUrl: true,
+                status: true,
+                ownerId: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        });
+
+        userApplications = apps.map((a) => ({
+          ...a,
+          createdAt: a.createdAt.toISOString(),
+          updatedAt: a.updatedAt.toISOString(),
+        }));
+
+        const set = new Set<string>();
+        apps.forEach((a) => {
+          if (a.job?.businessName) {
+            set.add(a.job.businessName.trim().toLowerCase());
+          }
+        });
+        appliedCompanies = Array.from(set);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
   let jobs: JobVacancy[] = (initialJobsData || []) as JobVacancy[];
 
   try {
@@ -54,6 +124,11 @@ export default async function JobsPage() {
           requirements: reqs,
           qualifications: j.qualifications || undefined,
           imageUrl: j.imageUrl || null,
+          featured: Boolean(j.featured),
+          latitude: j.latitude ?? null,
+          longitude: j.longitude ?? null,
+          address: j.address || undefined,
+          ownerId: j.ownerId,
         };
       });
 
@@ -88,7 +163,12 @@ export default async function JobsPage() {
         </div>
       }
     >
-      <JobsClient initialJobs={jobs} />
+      <JobsClient
+        initialJobs={jobs}
+        initialTab={requestedTab}
+        initialApplications={userApplications}
+        initialAppliedCompanies={appliedCompanies}
+      />
     </Suspense>
   );
 }

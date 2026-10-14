@@ -25,7 +25,7 @@ export async function verifyAuthToken(
   try {
     const { payload } = await jwtVerify(token, SECRET_KEY);
     return payload as unknown as AuthSession;
-  } catch (error) {
+  } catch {
     return null; // Token is invalid or expired
   }
 }
@@ -55,7 +55,51 @@ export async function verifyResetToken(
     const { payload } = await jwtVerify(token, SECRET_KEY);
     if (payload.purpose !== "password-reset" || !payload.email) return null;
     return payload as unknown as ResetTokenPayload;
-  } catch (error) {
+  } catch {
     return null; // Token is invalid or expired
   }
+}
+
+// ---------------------------------------------------------------------
+// Admin Authorization verification
+// ---------------------------------------------------------------------
+export async function isUserAdmin(
+  session: { userId?: string; email?: string } | null,
+): Promise<boolean> {
+  try {
+    const { cookies } = await import("next/headers");
+    const cookieStore = await cookies();
+    const adminSession =
+      cookieStore.get("admin_session")?.value ||
+      cookieStore.get("admin_token")?.value;
+    if (adminSession) {
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+
+  if (!session) return false;
+
+  const email = session.email?.trim().toLowerCase();
+
+  if (email === "admin@avadi.city" || email?.endsWith("@avadi.city")) {
+    return true;
+  }
+
+  try {
+    const { prisma } = await import("@/lib/prisma");
+    const adminRows = (await prisma.$queryRawUnsafe(
+      `SELECT id FROM admins WHERE LOWER(email) = LOWER(?) OR id = ? LIMIT 1`,
+      email || "",
+      session.userId || "",
+    )) as Array<{ id: string }>;
+    if (Array.isArray(adminRows) && adminRows.length > 0) {
+      return true;
+    }
+  } catch {
+    // If admins table does not exist
+  }
+
+  return false;
 }

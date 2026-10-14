@@ -69,8 +69,8 @@ export async function GET(
       );
     }
 
-    // 3. Fetch applications for this vacancy
-    const applications = await prisma.jobApplication.findMany({
+    // 3. Fetch applications for this vacancy (with applicant profile picture)
+    const rawApplications = await prisma.jobApplication.findMany({
       where: { jobId: job.id },
       orderBy: { createdAt: "desc" },
       select: {
@@ -83,12 +83,56 @@ export async function GET(
         experience: true,
         skills: true,
         portfolioUrl: true,
+        resumeUrl: true,
         resumeFileName: true,
         status: true,
+        applicantId: true,
+        user: {
+          select: {
+            avatar: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
     });
+
+    const missingAvatarEmails = rawApplications
+      .filter((a) => !a.user?.avatar && a.email)
+      .map((a) => a.email.toLowerCase());
+
+    const emailAvatarMap = new Map<string, string | null>();
+    if (missingAvatarEmails.length > 0) {
+      try {
+        const matchedUsers = await prisma.user.findMany({
+          where: { email: { in: missingAvatarEmails } },
+          select: { email: true, avatar: true },
+        });
+        matchedUsers.forEach((u) => {
+          if (u.avatar) emailAvatarMap.set(u.email.toLowerCase(), u.avatar);
+        });
+      } catch (err) {
+        console.warn("Could not query user avatars by email in API:", err);
+      }
+    }
+
+    const applications = rawApplications.map((app) => ({
+      id: app.id,
+      fullName: app.fullName,
+      email: app.email,
+      phone: app.phone,
+      avatar: app.user?.avatar || emailAvatarMap.get(app.email.toLowerCase()) || null,
+      hasResume: Boolean(app.resumeUrl && app.resumeUrl.trim().length > 0),
+      coverLetter: app.coverLetter,
+      qualification: app.qualification,
+      experience: app.experience,
+      skills: app.skills,
+      portfolioUrl: app.portfolioUrl,
+      resumeFileName: app.resumeFileName,
+      status: app.status,
+      createdAt: app.createdAt,
+      updatedAt: app.updatedAt,
+    }));
 
     return NextResponse.json({
       success: true,

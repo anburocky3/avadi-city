@@ -46,6 +46,7 @@ model JobVacancy {
 
   // Status & Ownership
   status             ApprovalStatus @default(PENDING)
+  featured           Boolean        @default(false)
   ownerId            String
   user               User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   applications       JobApplication[]
@@ -57,6 +58,7 @@ model JobVacancy {
   @@index([category])
   @@index([jobType])
   @@index([status])
+  @@index([featured])
   @@index([ownerId])
   @@map("job_vacancies")
 }

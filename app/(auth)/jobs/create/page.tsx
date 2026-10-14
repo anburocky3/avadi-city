@@ -21,7 +21,7 @@ import {
   Plus,
   Calendar,
   FileText,
-  DollarSign,
+  IndianRupee,
   GraduationCap,
   Search,
   Check,
@@ -138,7 +138,7 @@ const APPLICATION_METHODS = ["Phone", "Email", "Walk-in", "Website"];
 export default function PostJobVacancyPage() {
   const router = useRouter();
   const toast = useToast();
-  const { activeWard, isAuthenticated, isLoadingAuth } = useWard();
+  const { activeWard, isAuthenticated, isLoadingAuth, authUser } = useWard();
 
   // Element references for scroll behavior & file inputs
   const wizardTopRef = useRef<HTMLDivElement>(null);
@@ -202,6 +202,7 @@ export default function PostJobVacancyPage() {
       email: "field-contact-email",
       website: "field-website",
       interviewAddress: "field-interview-address",
+      image: "field-image",
       termsAccepted: "field-terms",
     };
 
@@ -308,10 +309,10 @@ export default function PostJobVacancyPage() {
 
   // Location & Map
   const [streetQuery, setStreetQuery] = useState("");
+  const [hasSearchedLocation, setHasSearchedLocation] = useState(false);
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
   const [selectedStreetRecord, setSelectedStreetRecord] =
     useState<StreetItem | null>(null);
-  const [hasSearchedLocation, setHasSearchedLocation] = useState(false);
   const [mapZoom, setMapZoom] = useState(14);
   const [ward, setWard] = useState<number | null>(null);
   const [latitude, setLatitude] = useState<number | null>(null);
@@ -529,7 +530,7 @@ export default function PostJobVacancyPage() {
     }
   };
 
-  // Application Method Toggle
+  // Application Method Toggle (FIX 7 - Clear validation errors on deselect)
   const toggleApplicationMethod = (method: string) => {
     setApplicationMethods((prev) => {
       const exists = prev.includes(method);
@@ -538,8 +539,22 @@ export default function PostJobVacancyPage() {
           toast.error("At least one application method is required.");
           return prev;
         }
+        // Deselecting: clear validation errors for this method so it doesn't block submission
+        setFieldErrors((curr) => {
+          const updated = { ...curr };
+          if (method === "Phone") delete updated.contact;
+          if (method === "Email") delete updated.email;
+          if (method === "Website") delete updated.website;
+          if (method === "Walk-in") delete updated.interviewAddress;
+          return updated;
+        });
         return prev.filter((m) => m !== method);
       } else {
+        setFieldErrors((curr) => {
+          const updated = { ...curr };
+          delete updated.applicationMethods;
+          return updated;
+        });
         return [...prev, method];
       }
     });
@@ -564,6 +579,7 @@ export default function PostJobVacancyPage() {
     }
     setImageFile(file);
     setImagePreview(URL.createObjectURL(file));
+    setFieldErrors((prev) => ({ ...prev, image: "" }));
   };
 
   const handleRemoveImage = () => {
@@ -754,6 +770,13 @@ export default function PostJobVacancyPage() {
       errorKeys.push("interviewAddress");
     }
 
+    // FIX 6 - Company Logo or Job Poster is mandatory
+    if (!imageFile) {
+      errors.image =
+        "Please upload a Company Logo or Job Poster before posting the vacancy.";
+      errorKeys.push("image");
+    }
+
     if (!termsAccepted) {
       errors.termsAccepted =
         "Please accept the Terms & Conditions before posting.";
@@ -840,7 +863,8 @@ export default function PostJobVacancyPage() {
       formData.append("shift", `${startTime} - ${endTime}`);
 
       formData.append("applicationMethods", JSON.stringify(applicationMethods));
-      formData.append("contact", contact.trim());
+      // FIX 7 - Provide fallback if Phone not selected
+      formData.append("contact", contact.trim() || authUser?.phone || "N/A");
       if (email.trim()) formData.append("email", email.trim());
       if (website.trim()) formData.append("website", website.trim());
       if (interviewAddress.trim()) {
@@ -1354,7 +1378,7 @@ export default function PostJobVacancyPage() {
                   <div id="field-salary" className="pt-8 space-y-4">
                     <div className="flex items-center justify-between">
                       <label className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
-                        <DollarSign size={16} className="text-orange-500" />
+                        <IndianRupee size={16} className="text-orange-500" />
                         <span>Salary / Pay Range</span>
                         <span className="text-rose-500 font-bold">*</span>
                       </label>
@@ -1882,24 +1906,6 @@ export default function PostJobVacancyPage() {
                         </div>
                       )}
 
-                      {/* No match notice */}
-                      {hasSearchedLocation &&
-                        streetQuery.trim().length >= 2 &&
-                        streetResults.length === 0 &&
-                        !selectedStreetRecord && (
-                          <div className="absolute z-50 left-0 right-0 mt-1 p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-2xl shadow-xl text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
-                            <AlertCircle
-                              size={15}
-                              className="shrink-0 text-amber-500"
-                            />
-                            <span>
-                              No matching Avadi location found in authoritative
-                              municipal records. Please select from the
-                              suggestions.
-                            </span>
-                          </div>
-                        )}
-
                       {/* Selected street confirmation badge */}
                       {selectedStreetRecord && (
                         <div className="mt-2 p-2.5 rounded-xl bg-orange-500/10 border border-orange-500/30 flex items-center justify-between text-xs">
@@ -2386,15 +2392,16 @@ export default function PostJobVacancyPage() {
                     </div>
                   </div>
 
-                  {/* 4. Company Logo / Job Poster Image (Optional) */}
-                  <div className="pt-8 space-y-3">
+                  {/* 4. Company Logo / Job Poster Image (FIX 6 - Mandatory) */}
+                  <div id="field-image" className="pt-8 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs sm:text-sm font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                         <UploadCloud size={16} className="text-orange-500" />
-                        <span>Company Logo or Job Poster (Optional)</span>
+                        <span>Company Logo or Job Poster</span>
+                        <span className="text-rose-500 font-bold">*</span>
                       </label>
                       <span className="text-[10px] font-semibold text-slate-400">
-                        Max 5MB (JPG, PNG, WebP)
+                        Required · Max 5MB (JPG, PNG, WebP)
                       </span>
                     </div>
 
@@ -2410,16 +2417,26 @@ export default function PostJobVacancyPage() {
                       <button
                         type="button"
                         onClick={() => imageFileInputRef.current?.click()}
-                        className="w-full py-7 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center space-y-2 hover:border-orange-500/50 hover:bg-orange-500/5 transition cursor-pointer"
+                        className={`w-full py-7 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center space-y-2 transition cursor-pointer ${
+                          fieldErrors.image
+                            ? "border-rose-500 bg-rose-500/5 hover:border-rose-600"
+                            : "border-slate-200 dark:border-slate-800 hover:border-orange-500/50 hover:bg-orange-500/5"
+                        }`}
                       >
-                        <div className="p-3 rounded-full bg-orange-500/10 text-orange-500">
+                        <div
+                          className={`p-3 rounded-full ${
+                            fieldErrors.image
+                              ? "bg-rose-500/10 text-rose-500"
+                              : "bg-orange-500/10 text-orange-500"
+                          }`}
+                        >
                           <UploadCloud size={24} />
                         </div>
                         <span className="text-xs font-black text-slate-700 dark:text-slate-300">
-                          Upload Logo or Hiring Poster
+                          Upload Logo or Hiring Poster *
                         </span>
                         <span className="text-[10px] text-slate-400">
-                          Click to browse image files
+                          Click to browse image files (Required)
                         </span>
                       </button>
                     ) : (
@@ -2438,6 +2455,13 @@ export default function PostJobVacancyPage() {
                           <X size={14} />
                         </button>
                       </div>
+                    )}
+
+                    {fieldErrors.image && (
+                      <p className="text-[11px] font-bold text-rose-500 flex items-center gap-1">
+                        <AlertCircle size={12} />
+                        <span>{fieldErrors.image}</span>
+                      </p>
                     )}
                   </div>
 

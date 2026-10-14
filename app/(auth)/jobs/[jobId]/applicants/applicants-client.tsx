@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowLeft,
   Search,
@@ -36,6 +37,8 @@ export interface ApplicantItem {
   fullName: string;
   email: string;
   phone: string;
+  avatar?: string | null;
+  hasResume?: boolean;
   coverLetter?: string | null;
   qualification?: string | null;
   experience?: string | null;
@@ -63,7 +66,7 @@ interface ApplicantsClientProps {
   initialApplications: ApplicantItem[];
 }
 
-const STATUS_CONFIG: Record<
+export const STATUS_CONFIG: Record<
   ApplicationStatusType,
   { label: string; badgeClass: string; dotClass: string }
 > = {
@@ -79,18 +82,18 @@ const STATUS_CONFIG: Record<
   },
   SHORTLISTED: {
     label: "Shortlisted",
-    badgeClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
-    dotClass: "bg-emerald-500",
-  },
-  INTERVIEW: {
-    label: "Interview",
     badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800",
     dotClass: "bg-purple-500",
   },
+  INTERVIEW: {
+    label: "Interview",
+    badgeClass: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
+    dotClass: "bg-indigo-500",
+  },
   HIRED: {
     label: "Hired",
-    badgeClass: "bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 border-teal-200 dark:border-teal-800",
-    dotClass: "bg-teal-500",
+    badgeClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+    dotClass: "bg-emerald-500",
   },
   REJECTED: {
     label: "Rejected",
@@ -98,6 +101,40 @@ const STATUS_CONFIG: Record<
     dotClass: "bg-rose-500",
   },
 };
+
+// Resilient profile avatar component with letter initial fallback on error or missing image
+function ApplicantAvatar({
+  avatar,
+  name,
+}: {
+  avatar?: string | null;
+  name: string;
+}) {
+  const [imageFailed, setImageFailed] = useState(false);
+  const initial = name ? name.trim().charAt(0).toUpperCase() : "A";
+
+  if (avatar && !imageFailed) {
+    return (
+      <div className="w-11 h-11 rounded-2xl overflow-hidden ring-1 ring-slate-200 dark:ring-slate-700 shadow-2xs shrink-0 bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
+        <Image
+          src={avatar}
+          alt={name}
+          width={44}
+          height={44}
+          unoptimized
+          onError={() => setImageFailed(true)}
+          className="w-full h-full object-cover"
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-11 h-11 rounded-2xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white flex items-center justify-center font-black text-sm shadow-2xs shrink-0 ring-1 ring-indigo-500/20 dark:ring-indigo-400/20">
+      <span>{initial}</span>
+    </div>
+  );
+}
 
 export default function ApplicantsClient({
   job,
@@ -153,20 +190,14 @@ export default function ApplicantsClient({
     return result;
   }, [applications, statusFilter, searchQuery, sortBy]);
 
-  // Handle status update
+  // Handle status update (Persisted to Prisma, refreshed only after confirmation)
   const handleStatusChange = async (
     applicantId: string,
     newStatus: ApplicationStatusType
   ) => {
-    const prevStatus = applications.find((a) => a.id === applicantId)?.status;
-    if (prevStatus === newStatus) return;
+    const currentApp = applications.find((a) => a.id === applicantId);
+    if (!currentApp || currentApp.status === newStatus) return;
 
-    // Optimistic update
-    setApplications((prev) =>
-      prev.map((app) =>
-        app.id === applicantId ? { ...app, status: newStatus } : app
-      )
-    );
     setUpdatingId(applicantId);
 
     try {
@@ -182,18 +213,20 @@ export default function ApplicantsClient({
         throw new Error(data.message || "Failed to update status");
       }
 
-      toast.success(`Candidate status updated to ${STATUS_CONFIG[newStatus]?.label || newStatus}.`);
+      // Refresh displayed status only after server confirms success
+      setApplications((prev) =>
+        prev.map((app) =>
+          app.id === applicantId ? { ...app, status: newStatus } : app
+        )
+      );
+      toast.success(
+        `Candidate status updated to ${STATUS_CONFIG[newStatus]?.label || newStatus}.`
+      );
     } catch (err) {
       console.error("Status update error:", err);
-      toast.error("Could not update the application status. Your changes have not been saved.");
-      // Rollback
-      if (prevStatus) {
-        setApplications((prev) =>
-          prev.map((app) =>
-            app.id === applicantId ? { ...app, status: prevStatus } : app
-          )
-        );
-      }
+      toast.error(
+        "Could not update application status. Your changes have not been saved."
+      );
     } finally {
       setUpdatingId(null);
     }
@@ -371,7 +404,7 @@ export default function ApplicantsClient({
             onClick={() => setStatusFilter("SHORTLISTED")}
             className={`px-3 py-1.5 rounded-full whitespace-nowrap transition cursor-pointer ${
               statusFilter === "SHORTLISTED"
-                ? "bg-emerald-600 text-white shadow-sm"
+                ? "bg-purple-600 text-white shadow-sm"
                 : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -382,7 +415,7 @@ export default function ApplicantsClient({
             onClick={() => setStatusFilter("INTERVIEW")}
             className={`px-3 py-1.5 rounded-full whitespace-nowrap transition cursor-pointer ${
               statusFilter === "INTERVIEW"
-                ? "bg-purple-600 text-white shadow-sm"
+                ? "bg-indigo-600 text-white shadow-sm"
                 : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -393,7 +426,7 @@ export default function ApplicantsClient({
             onClick={() => setStatusFilter("HIRED")}
             className={`px-3 py-1.5 rounded-full whitespace-nowrap transition cursor-pointer ${
               statusFilter === "HIRED"
-                ? "bg-teal-600 text-white shadow-sm"
+                ? "bg-emerald-600 text-white shadow-sm"
                 : "bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800"
             }`}
           >
@@ -425,12 +458,10 @@ export default function ApplicantsClient({
                 key={app.id}
                 className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 hover:shadow-md transition duration-200"
               >
-                {/* Top Row: Name, Status Dropdown, and Date */}
+                {/* Top Row: Applicant Profile Picture, Name, Status Dropdown, and Date */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-orange-500/10 text-orange-600 flex items-center justify-center font-black text-sm shrink-0">
-                      {app.fullName.charAt(0).toUpperCase()}
-                    </div>
+                    <ApplicantAvatar avatar={app.avatar} name={app.fullName} />
                     <div>
                       <h3 className="font-extrabold text-base text-slate-900 dark:text-white leading-tight">
                         {app.fullName}
@@ -444,33 +475,55 @@ export default function ApplicantsClient({
 
                   {/* Status Dropdown */}
                   <div className="flex items-center gap-2">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                       Status:
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={app.status}
-                        disabled={isUpdating}
-                        onChange={(e) =>
-                          handleStatusChange(app.id, e.target.value as ApplicationStatusType)
-                        }
-                        className={`text-xs font-bold pl-3 pr-8 py-1.5 rounded-full border cursor-pointer focus:outline-none focus:ring-2 focus:ring-orange-500 transition appearance-none ${
+                    </span>
+                    <div className="relative inline-flex items-center">
+                      <div
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition shadow-2xs ${
                           currentStatusCfg.badgeClass
                         } ${isUpdating ? "opacity-60 cursor-not-allowed" : ""}`}
                       >
-                        <option value="SUBMITTED">New</option>
-                        <option value="UNDER_REVIEW">Under Review</option>
-                        <option value="SHORTLISTED">Shortlisted</option>
-                        <option value="INTERVIEW">Interview</option>
-                        <option value="HIRED">Hired</option>
-                        <option value="REJECTED">Rejected</option>
-                      </select>
-                      <ChevronDown
-                        size={12}
-                        className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
-                      />
+                        <span
+                          className={`w-2 h-2 rounded-full ${currentStatusCfg.dotClass} ${
+                            isUpdating ? "animate-ping" : ""
+                          }`}
+                        />
+                        <select
+                          value={app.status}
+                          disabled={isUpdating}
+                          onChange={(e) =>
+                            handleStatusChange(app.id, e.target.value as ApplicationStatusType)
+                          }
+                          className="bg-transparent font-bold cursor-pointer focus:outline-none pr-5 appearance-none text-inherit"
+                          aria-label="Change candidate application status"
+                        >
+                          <option value="SUBMITTED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                            New
+                          </option>
+                          <option value="UNDER_REVIEW" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                            Under Review
+                          </option>
+                          <option value="SHORTLISTED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                            Shortlisted
+                          </option>
+                          <option value="INTERVIEW" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                            Interview
+                          </option>
+                          <option value="HIRED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                            Hired
+                          </option>
+                          <option value="REJECTED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                            Rejected
+                          </option>
+                        </select>
+                        <ChevronDown
+                          size={12}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
+                        />
+                      </div>
+                      {isUpdating && <Loader2 size={14} className="animate-spin text-orange-500 ml-2" />}
                     </div>
-                    {isUpdating && <Loader2 size={14} className="animate-spin text-orange-500" />}
                   </div>
                 </div>
 
@@ -530,9 +583,9 @@ export default function ApplicantsClient({
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                           Skills:
                         </span>
-                        {app.skills.split(",").map((s, idx) => (
+                        {app.skills.split(",").map((s) => (
                           <span
-                            key={`${s.trim()}-${idx}`}
+                            key={`skill-${s.trim()}`}
                             className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                           >
                             {s.trim()}
@@ -570,42 +623,60 @@ export default function ApplicantsClient({
                   </div>
                 )}
 
-                {/* Resume Card & Action Buttons */}
+                {/* Resume Availability & Action Buttons (FIX 1 & FIX 3) */}
                 <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   {/* Resume file info */}
-                  <div className="flex items-center gap-2 text-xs">
-                    <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
-                      <FileText size={16} />
+                  {app.hasResume ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 shrink-0">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-900 dark:text-white truncate block">
+                          {app.resumeFileName || "Candidate Resume.pdf"}
+                        </span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                          Resume attached (PDF)
+                        </span>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <span className="font-bold text-slate-900 dark:text-white truncate block">
-                        {app.resumeFileName || "Candidate Resume.pdf"}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-medium">
-                        Stored securely
-                      </span>
+                  ) : (
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 shrink-0">
+                        <FileText size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="font-bold text-slate-500 dark:text-slate-400 truncate block">
+                          No resume attached
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">
+                          Optional field
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Actions */}
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <a
-                      href={`/api/jobs/${job.id}/applicants/${app.id}/resume`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
-                    >
-                      <Eye size={13} />
-                      <span>View Resume</span>
-                    </a>
-                    <a
-                      href={`/api/jobs/${job.id}/applicants/${app.id}/resume?download=true`}
-                      className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
-                    >
-                      <Download size={13} />
-                      <span>Download</span>
-                    </a>
-                  </div>
+                  {/* Actions (Only when resume is provided) */}
+                  {app.hasResume && (
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <a
+                        href={`/api/jobs/${job.id}/applicants/${app.id}/resume`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-900 dark:text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
+                      >
+                        <Eye size={13} />
+                        <span>View Resume</span>
+                      </a>
+                      <a
+                        href={`/api/jobs/${job.id}/applicants/${app.id}/resume?download=true`}
+                        className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+                      >
+                        <Download size={13} />
+                        <span>Download</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             );
