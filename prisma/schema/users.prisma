@@ -51,6 +51,8 @@ model User {
   jobApplications     JobApplication[]
   explorePlaces       ExplorePlace[]
   placeReviews        PlaceReview[]
+  volunteers          Volunteer[]
+  donations           DonationRequest[]
 
   @@index([wardNumber])
   @@map("users")
