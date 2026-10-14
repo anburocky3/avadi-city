@@ -83,8 +83,8 @@ export const OFFICIALS_DIRECTORY: Record<string, OfficialAdminData> = {
   commissioner: {
     title: "Corporation Commissioner",
     role: "Commissioner",
-    name: "Tmt.R.SARANYA, IAS",
-    avatar: "/img/officials/avadi-comissioner.jpeg",
+    name: "Tmt.Ambica Jain, IAS",
+    avatar: "/img/officials/avadi-commissioner.jpeg",
     department: "Avadi Corporation Office",
     jurisdiction: "All 48 Wards · Avadi Corporation",
     phone: "+91 044-26554440",
