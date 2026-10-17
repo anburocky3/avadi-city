@@ -14,6 +14,7 @@ import {
   MapPin,
   ChefHat,
   Wrench,
+  Gift,
   HeartHandshake,
   Train,
   Briefcase,
@@ -211,12 +212,12 @@ const WARD_SERVICES = [
     icon: Train,
     bg: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
   },
-  // {
-  //   name: "Volunteers",
-  //   path: "/volunteers",
-  //   icon: HeartHandshake,
-  //   bg: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
-  // },
+  {
+    name: "Donations",
+    path: "/donations",
+    icon: Gift,
+    bg: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
+  },
   {
     name: "Local Alerts",
     path: "/notifications",

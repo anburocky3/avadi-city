@@ -184,7 +184,7 @@ export const MyVolunteerProfile: React.FC<MyVolunteerProfileProps> = ({
             {volunteer.skills.map((s) => (
               <span
                 key={s}
-                className="px-2.5 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/40 text-[10px] font-extrabold"
+                className="px-2.5 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-primary border border-orange-200/50 dark:border-orange-900/40 text-[10px] font-extrabold"
               >
                 {s}
               </span>

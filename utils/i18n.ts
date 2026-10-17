@@ -4,7 +4,7 @@ export const volunteerTranslations = {
     subtitle: "Avadi City hyper-local civic force & community mutual aid",
     tabDonations: "Donation Requests",
     tabVolunteers: "Volunteer Force",
-    createDonationBtn: "+ Create Request",
+    createDonationBtn: "+ Request Donation",
     joinForceBtn: "Join Citizen Force",
     editProfileBtn: "Edit Profile",
     pauseAvailability: "Pause Availability",

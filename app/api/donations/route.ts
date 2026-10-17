@@ -61,29 +61,60 @@ export async function POST(request: Request) {
 
     const body = (await request.json()) as DonationFormData;
 
-    const totalCount = await prisma.donationRequest.count();
-    const displayId = `AVC-DON-${String(totalCount + 1).padStart(4, "0")}`;
+    const prospectiveUserId = body.createdBy || sessionUserId;
+    let validUserId: string | null = null;
+    if (prospectiveUserId) {
+      const userExists = await prisma.user.findUnique({
+        where: { id: prospectiveUserId },
+        select: { id: true },
+      });
+      if (userExists) {
+        validUserId = userExists.id;
+      }
+    }
+
+    // Safely generate next displayId by scanning existing records for max numeric suffix
+    const existing = await prisma.donationRequest.findMany({
+      select: { displayId: true },
+    });
+    let maxNum = 0;
+    for (const item of existing) {
+      const match = item.displayId?.match(/AVC-DON-(\d+)/);
+      if (match) {
+        const num = parseInt(match[1], 10);
+        if (num > maxNum) maxNum = num;
+      }
+    }
+    const displayId = `AVC-DON-${String(maxNum + 1).padStart(4, "0")}`;
+
+    const parsedWard = parseInt(String(body.ward || 1).replace(/\D/g, ""), 10) || 1;
+    const authorName =
+      body.createdByName ||
+      (prospectiveUserId !== "user-avadi-citizen" ? prospectiveUserId : null) ||
+      sessionUserName ||
+      body.contact?.name ||
+      "Avadi Citizen";
 
     const created = await prisma.donationRequest.create({
       data: {
         displayId,
-        userId: body.createdBy || sessionUserId || null,
-        createdByName: body.createdByName || sessionUserName || null,
-        type: body.type,
-        urgency: body.urgency,
-        title: body.title,
+        userId: validUserId || null,
+        createdByName: authorName,
+        type: body.type || "Charity Need",
+        urgency: body.urgency || "Normal",
+        title: body.title || "Community Assistance Request",
         description: body.description || null,
-        ward: Number(body.ward),
-        address: body.address,
-        lat: body.lat || null,
-        lng: body.lng || null,
-        beneficiary: body.beneficiary,
+        ward: parsedWard,
+        address: body.address || "Avadi, Chennai",
+        lat: body.lat ? Number(body.lat) : null,
+        lng: body.lng ? Number(body.lng) : null,
+        beneficiary: body.beneficiary || "Individual",
         items: (body.items as any) || [],
         target: (body.target as any) || null,
         requiredBy: body.requiredBy || null,
-        contactName: body.contact.name,
-        contactPhone: body.contact.phone,
-        contactWhatsapp: body.contact.whatsapp,
+        contactName: body.contact?.name || authorName,
+        contactPhone: body.contact?.phone || "",
+        contactWhatsapp: body.contact?.whatsapp || body.contact?.phone || "",
         images: (body.images as any) || [],
         organisation: (body.organisation as any) || null,
         supportingProof: body.supportingProof || null,

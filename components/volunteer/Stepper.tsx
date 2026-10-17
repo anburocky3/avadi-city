@@ -29,7 +29,7 @@ export const Stepper: React.FC<StepperProps> = ({
         <span className="text-primary font-black uppercase tracking-wider text-[11px]">
           Step {currentStep} of {total}
         </span>
-        <span className="text-slate-600 dark:text-slate-300 font-semibold truncate max-w-[180px]">
+        <span className="text-slate-700 dark:text-slate-200 font-extrabold truncate max-w-[180px]">
           {steps.find((s) => s.id === currentStep)?.title}
         </span>
       </div>
@@ -43,46 +43,59 @@ export const Stepper: React.FC<StepperProps> = ({
       </div>
 
       {/* Desktop Stepper Dots & Labels */}
-      <div className="hidden sm:grid grid-cols-5 gap-2 pt-1">
-        {steps.map((step) => {
+      <div className="hidden sm:flex items-center justify-between gap-2 pt-1">
+        {steps.map((step, idx) => {
           const isCompleted = step.id < currentStep;
           const isCurrent = step.id === currentStep;
           const isClickable =
             onStepClick && step.id <= Math.max(currentStep, maxValidStepReached);
 
           return (
-            <button
-              key={step.id}
-              type="button"
-              disabled={!isClickable}
-              onClick={() => isClickable && onStepClick && onStepClick(step.id)}
-              className={`flex flex-col items-center text-center p-1.5 rounded-xl transition-all ${
-                isClickable ? "cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50" : "cursor-default"
-              }`}
-            >
-              <div
-                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black transition-all mb-1.5 ${
-                  isCompleted
-                    ? "bg-emerald-500 text-white shadow-sm"
-                    : isCurrent
-                      ? "bg-primary text-white shadow-md ring-4 ring-orange-500/20"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
+            <React.Fragment key={step.id}>
+              <button
+                type="button"
+                disabled={!isClickable}
+                onClick={() => isClickable && onStepClick && onStepClick(step.id)}
+                className={`flex flex-col items-center text-center p-1.5 rounded-xl transition-all flex-1 ${
+                  isClickable
+                    ? "cursor-pointer hover:bg-orange-50/50 dark:hover:bg-slate-800/50"
+                    : "cursor-default"
                 }`}
               >
-                {isCompleted ? <Check size={14} strokeWidth={3} /> : step.id}
-              </div>
-              <span
-                className={`text-[11px] font-extrabold leading-tight ${
-                  isCurrent
-                    ? "text-primary"
-                    : isCompleted
-                      ? "text-slate-800 dark:text-slate-200"
-                      : "text-slate-400 dark:text-slate-500"
-                }`}
-              >
-                {step.title}
-              </span>
-            </button>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black transition-all mb-1.5 ${
+                    isCompleted
+                      ? "bg-primary text-white shadow-sm"
+                      : isCurrent
+                        ? "bg-primary text-white shadow-md ring-4 ring-orange-500/25 scale-105"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500"
+                  }`}
+                >
+                  {isCompleted ? <Check size={14} strokeWidth={3} /> : step.id}
+                </div>
+                <span
+                  className={`text-[11px] font-extrabold leading-tight ${
+                    isCurrent
+                      ? "text-primary font-black"
+                      : isCompleted
+                        ? "text-slate-800 dark:text-slate-200"
+                        : "text-slate-400 dark:text-slate-500"
+                  }`}
+                >
+                  {step.title}
+                </span>
+              </button>
+
+              {idx < steps.length - 1 && (
+                <div
+                  className={`h-0.5 flex-1 max-w-[36px] -mt-5 transition-all ${
+                    isCompleted
+                      ? "bg-primary"
+                      : "bg-slate-200 dark:bg-slate-800"
+                  }`}
+                />
+              )}
+            </React.Fragment>
           );
         })}
       </div>

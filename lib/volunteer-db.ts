@@ -75,7 +75,7 @@ export async function getDbVolunteers(): Promise<Volunteer[]> {
       await prisma.volunteer.create({
         data: {
           displayId: sv.id,
-          userId: sv.userId,
+          userId: null,
           fullName: sv.fullName,
           ward: sv.ward,
           gender: sv.gender,

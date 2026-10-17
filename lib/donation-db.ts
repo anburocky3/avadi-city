@@ -5,7 +5,7 @@ import { seedDonationRequests } from "@/data/seed";
 export function mapPrismaDonationToDonation(d: any): DonationRequest {
   return {
     id: d.displayId || d.id,
-    createdBy: d.userId || "anonymous",
+    createdBy: d.userId || d.createdByName || "anonymous",
     createdByName: d.createdByName || undefined,
     type: d.type,
     urgency: d.urgency,
@@ -65,7 +65,7 @@ export async function getDbDonations(): Promise<DonationRequest[]> {
       await prisma.donationRequest.create({
         data: {
           displayId: sd.id,
-          userId: sd.createdBy,
+          userId: null,
           createdByName: sd.createdByName || null,
           type: sd.type,
           urgency: sd.urgency,

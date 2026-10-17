@@ -16,6 +16,7 @@ import {
   MapPin,
   Calendar,
   Lock,
+  Loader2,
 } from "lucide-react";
 import { Stepper } from "./Stepper";
 import { FormField } from "./FormField";
@@ -116,6 +117,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
   const [createdVolunteer, setCreatedVolunteer] = useState<Volunteer | null>(
     null,
   );
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Form State
   const [formData, setFormData] = useState<VolunteerFormData>(() => {
@@ -262,11 +264,52 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
     }
   }, [currentStep, formData]);
 
+  const scrollToFirstError = (errorObj: Record<string, string>) => {
+    const errorKeys = Object.keys(errorObj);
+    if (!errorKeys || errorKeys.length === 0) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    setTimeout(() => {
+      let targetEl: HTMLElement | null = null;
+      for (const key of errorKeys) {
+        targetEl = document.querySelector<HTMLElement>(
+          `[data-field="${key}"], [name="${key}"], #${key}, #vol-${key}`
+        );
+        if (targetEl) break;
+      }
+
+      if (!targetEl) {
+        targetEl = document.querySelector<HTMLElement>(
+          '.border-rose-500, [aria-invalid="true"]'
+        );
+      }
+
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => {
+          if (
+            targetEl &&
+            (targetEl instanceof HTMLInputElement ||
+              targetEl instanceof HTMLTextAreaElement ||
+              targetEl instanceof HTMLSelectElement)
+          ) {
+            targetEl.focus({ preventScroll: true });
+          }
+        }, 120);
+      } else {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    }, 40);
+  };
+
   const handleNextStep = () => {
     const res = stepValidation;
     if (!res.isValid) {
       setErrors(res.errors);
       toast.error("Please resolve the required fields before continuing.");
+      scrollToFirstError(res.errors);
       return;
     }
     setErrors({});
@@ -280,7 +323,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     // Validate all steps
     const s1 = validateVolunteerStep1(formData);
@@ -289,27 +332,45 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
     const s4 = validateVolunteerStep4(formData);
 
     if (!s1.isValid || !s2.isValid || !s3.isValid || !s4.isValid) {
+      const allErrors = {
+        ...s1.errors,
+        ...s2.errors,
+        ...s3.errors,
+        ...s4.errors,
+      };
+      setErrors(allErrors);
+      if (!s1.isValid && currentStep !== 1) setCurrentStep(1);
+      else if (!s2.isValid && currentStep !== 2 && s1.isValid) setCurrentStep(2);
+      else if (!s3.isValid && currentStep !== 3 && s1.isValid && s2.isValid) setCurrentStep(3);
+      else if (!s4.isValid && currentStep !== 4) setCurrentStep(4);
       toast.error("Please verify all sections have valid required information.");
+      scrollToFirstError(allErrors);
       return;
     }
 
+    setIsSubmitting(true);
     try {
       let saved: Volunteer;
       if (initialData?.id) {
-        saved = volunteerService.update(initialData.id, formData);
+        saved = await volunteerService.updateAsync(initialData.id, formData);
         toast.success("Volunteer profile successfully updated in database!");
       } else {
-        saved = volunteerService.create({
+        saved = await volunteerService.createAsync({
           ...formData,
-          status: "pending",
+          status: "active",
         });
-        toast.success("Registration submitted! Saved to database awaiting admin approval.");
+        toast.success("Welcome! You are now registered as an Avadi Citizen Volunteer!");
       }
       setCreatedVolunteer(saved);
       setCurrentStep(6); // Success screen
+      if (onComplete) {
+        onComplete(saved);
+      }
     } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || "Failed to submit volunteer registration.");
+      console.error("Volunteer registration error:", err);
+      toast.error(err?.message || "Failed to submit volunteer registration to database.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -402,31 +463,33 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
 
   return (
     <Card className="p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-6 shadow-sm">
-      {/* Wizard Header */}
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-primary rounded-2xl border border-orange-100 dark:border-orange-900/40">
-            <HeartHandshake size={22} />
+      {/* Wizard Header (Shown when editing existing profile) */}
+      {initialData && (
+        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-primary rounded-2xl border border-orange-100 dark:border-orange-900/40">
+              <HeartHandshake size={22} />
+            </div>
+            <div>
+              <h3 className="font-black text-sm md:text-base text-slate-800 dark:text-white leading-tight">
+                Edit Volunteer Profile
+              </h3>
+              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                Update your contact, availability, or skill preferences
+              </p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-black text-sm md:text-base text-slate-800 dark:text-white leading-tight">
-              {initialData ? "Edit Volunteer Profile" : "Join Avadi Volunteer Force"}
-            </h3>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-              4-Step registration to serve your ward and fellow citizens
-            </p>
-          </div>
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded-lg cursor-pointer"
+            >
+              Cancel
+            </button>
+          )}
         </div>
-        {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded-lg"
-          >
-            Cancel
-          </button>
-        )}
-      </div>
+      )}
 
       {/* Stepper with progress bar */}
       <Stepper
@@ -695,7 +758,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
               options={SKILL_OPTIONS}
               value={formData.skills}
               multiple
-              accent="teal"
+              accent="primary"
               onChange={(vals) =>
                 setFormData((prev) => ({ ...prev, skills: vals }))
               }
@@ -711,7 +774,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
                   }))
                 }
                 placeholder="Other specific skill (e.g. Ham Radio, Electrician, Swimmer)"
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none"
               />
             </div>
           </FormField>
@@ -814,7 +877,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
               options={TIME_SLOTS}
               value={formData.availability.slots}
               multiple
-              accent="teal"
+              accent="primary"
               onChange={(vals) =>
                 setFormData((prev) => ({
                   ...prev,
@@ -984,13 +1047,13 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
       {currentStep === 4 && (
         <div className="space-y-4 pt-1">
           {/* Privacy Toggle */}
-          <div className="p-4 rounded-2xl bg-teal-50/50 dark:bg-teal-950/20 border border-teal-200 dark:border-teal-900/40 space-y-2">
-            <div className="flex items-center gap-1.5 text-xs font-black text-teal-800 dark:text-teal-400">
-              <Lock size={14} />
+          <div className="p-4 rounded-2xl bg-orange-50/60 dark:bg-orange-950/20 border border-orange-200/70 dark:border-orange-900/40 space-y-2">
+            <div className="flex items-center gap-1.5 text-xs font-black text-orange-900 dark:text-orange-300">
+              <Lock size={14} className="text-primary" />
               <span>Contact Privacy Control</span>
             </div>
             <ToggleSwitch
-              accent="teal"
+              accent="primary"
               checked={formData.contact.showPhonePublic}
               onChange={(checked) =>
                 setFormData((prev) => ({
@@ -1244,13 +1307,13 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
                   {formData.skills.map((s) => (
                     <span
                       key={s}
-                      className="px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/50 font-bold text-[10px]"
+                      className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-primary border border-orange-200/50 dark:border-orange-900/50 font-bold text-[10px]"
                     >
                       {s}
                     </span>
                   ))}
                   {formData.otherSkill && (
-                    <span className="px-2 py-0.5 rounded-lg bg-teal-50 dark:bg-teal-950/30 text-teal-700 dark:text-teal-400 border border-teal-200/50 dark:border-teal-900/50 font-bold text-[10px]">
+                    <span className="px-2 py-0.5 rounded-lg bg-orange-50 dark:bg-orange-950/30 text-primary border border-orange-200/50 dark:border-orange-900/50 font-bold text-[10px]">
                       {formData.otherSkill}
                     </span>
                   )}
@@ -1377,11 +1440,21 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
         ) : (
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={handleSubmit}
-            className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
+            className="px-6 py-2.5 rounded-xl bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-black text-xs shadow-md transition flex items-center gap-1.5 cursor-pointer"
           >
-            <CheckCircle2 size={15} />
-            <span>Submit & Join Force</span>
+            {isSubmitting ? (
+              <>
+                <Loader2 size={15} className="animate-spin" />
+                <span>Saving to Database...</span>
+              </>
+            ) : (
+              <>
+                <CheckCircle2 size={15} />
+                <span>Submit &amp; Join Force</span>
+              </>
+            )}
           </button>
         )}
       </div>

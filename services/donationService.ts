@@ -74,6 +74,84 @@ class DonationService {
     return list.filter((req) => req.createdBy === userId);
   }
 
+  public getMyCreatedIds(): string[] {
+    if (!this.isBrowser()) return [];
+    try {
+      const data = localStorage.getItem("avadi_my_donation_ids");
+      return data ? (JSON.parse(data) as string[]) : [];
+    } catch {
+      return [];
+    }
+  }
+
+  public recordMyCreatedId(id: string): void {
+    if (!this.isBrowser() || !id) return;
+    try {
+      const current = this.getMyCreatedIds();
+      if (!current.includes(id)) {
+        localStorage.setItem("avadi_my_donation_ids", JSON.stringify([id, ...current]));
+      }
+    } catch {}
+  }
+
+  public forgetMyCreatedId(id: string): void {
+    if (!this.isBrowser() || !id) return;
+    try {
+      const current = this.getMyCreatedIds().filter((i) => i !== id);
+      localStorage.setItem("avadi_my_donation_ids", JSON.stringify(current));
+    } catch {}
+  }
+
+  public async createAsync(
+    data: Omit<DonationRequest, "id" | "createdAt" | "updatedAt" | "status" | "reports"> & {
+      status?: DonationStatus;
+    },
+  ): Promise<DonationRequest> {
+    const list = this.getStored();
+    const count = list.length + 1;
+    const fallbackId = `AVC-DON-${String(count).padStart(4, "0")}`;
+    const now = new Date().toISOString();
+
+    const localRequest: DonationRequest = {
+      ...data,
+      id: fallbackId,
+      status: data.status || "approved",
+      reports: [],
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    if (this.isBrowser()) {
+      try {
+        const res = await fetch("/api/donations", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(localRequest),
+        });
+
+        if (res.ok) {
+          const saved = (await res.json()) as DonationRequest;
+          if (saved?.id) {
+            const updatedList = [saved, ...this.getStored().filter((r) => r.id !== saved.id && r.id !== fallbackId)];
+            this.saveStored(updatedList);
+            this.recordMyCreatedId(saved.id);
+            this.clearDraft();
+            return saved;
+          }
+        }
+      } catch (err) {
+        console.error("Failed to persist donation to MySQL database:", err);
+      }
+    }
+
+    // Fallback if offline / server failed
+    const updatedList = [localRequest, ...list];
+    this.saveStored(updatedList);
+    this.recordMyCreatedId(localRequest.id);
+    this.clearDraft();
+    return localRequest;
+  }
+
   public create(
     data: Omit<DonationRequest, "id" | "createdAt" | "updatedAt" | "status" | "reports"> & {
       status?: DonationStatus;
@@ -95,6 +173,7 @@ class DonationService {
 
     const updatedList = [newRequest, ...list];
     this.saveStored(updatedList);
+    this.recordMyCreatedId(nextId);
     this.clearDraft();
 
     // Persist to MySQL database asynchronously
@@ -108,6 +187,7 @@ class DonationService {
           if (res.ok) {
             const saved = (await res.json()) as DonationRequest;
             if (saved?.id) {
+              this.recordMyCreatedId(saved.id);
               const current = this.getStored().map((req) =>
                 req.id === nextId ? saved : req,
               );
@@ -199,11 +279,31 @@ class DonationService {
     return updated;
   }
 
+  public async removeAsync(id: string): Promise<boolean> {
+    const list = this.getStored();
+    const filtered = list.filter((req) => req.id !== id);
+    this.saveStored(filtered);
+    this.forgetMyCreatedId(id);
+
+    if (this.isBrowser()) {
+      try {
+        await fetch(`/api/donations/${encodeURIComponent(id)}`, {
+          method: "DELETE",
+        });
+      } catch (err) {
+        console.error("Failed to delete donation from MySQL database:", err);
+      }
+    }
+
+    return true;
+  }
+
   public remove(id: string): boolean {
     const list = this.getStored();
     const filtered = list.filter((req) => req.id !== id);
     if (filtered.length !== list.length) {
       this.saveStored(filtered);
+      this.forgetMyCreatedId(id);
 
       if (this.isBrowser()) {
         fetch(`/api/donations/${encodeURIComponent(id)}`, {
