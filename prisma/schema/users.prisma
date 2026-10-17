@@ -49,6 +49,8 @@ model User {
   healthcareFacilities HealthcareFacility[]
   jobVacancies        JobVacancy[]
   jobApplications     JobApplication[]
+  explorePlaces       ExplorePlace[]
+  placeReviews        PlaceReview[]
 
   @@index([wardNumber])
   @@map("users")
