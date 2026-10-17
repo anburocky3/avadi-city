@@ -1,0 +1,62 @@
+model DonationRequest {
+  id                      String           @id @default(cuid())
+  displayId               String           @unique // Formatted ID e.g., AVC-DON-0001
+  userId                  String?
+  user                    User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  createdByName           String?
+  
+  type                    String           // "Charity Need" | "Emergency Relief" | "Blood Requirement" etc.
+  urgency                 String           // "Normal" | "Urgent" | "Critical"
+  title                   String
+  description             String?          @db.Text
+  ward                    Int
+  address                 String           @db.Text
+  lat                     Float?
+  lng                     Float?
+  beneficiary             String           @default("Individual") // "Individual" | "Family" | "Community or Institution"
+  
+  // Items needed (array of { id, name, qty, unit })
+  items                   Json?
+
+  // Financial target
+  target                  Json?            // { amount?: number | string, upi?: string }
+
+  requiredBy              String?          // YYYY-MM-DD
+  
+  // Contact details
+  contactName             String
+  contactPhone            String
+  contactWhatsapp         String
+
+  images                  Json?            // string[] image URLs
+  organisation            Json?            // { name?: string, regNo?: string }
+  supportingProof         String?          @db.Text
+  
+  status                  String           @default("approved") // "pending" | "approved" | "fulfilled" | "closed" | "rejected"
+
+  reports                 DonationReport[]
+
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
+
+  @@index([ward])
+  @@index([status])
+  @@index([type])
+  @@index([urgency])
+  @@index([userId])
+  @@index([displayId])
+  @@map("donation_requests")
+}
+
+model DonationReport {
+  id          String          @id @default(cuid())
+  donationId  String
+  donation    DonationRequest @relation(fields: [donationId], references: [id], onDelete: Cascade)
+  reason      String
+  details     String?         @db.Text
+  reportedBy  String?
+  createdAt   DateTime        @default(now())
+
+  @@index([donationId])
+  @@map("donation_reports")
+}

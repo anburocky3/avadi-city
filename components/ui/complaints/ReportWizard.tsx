@@ -268,6 +268,22 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
   // Need to store actual File objects alongside preview URLs to send to backend
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const modalTopRef = useRef<HTMLDivElement>(null);
+
+  const scrollToModalTop = () => {
+    if (modalTopRef.current) {
+      const scrollableParent = modalTopRef.current.closest(".overflow-y-auto");
+      if (scrollableParent) {
+        scrollableParent.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        modalTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  };
+
+  useEffect(() => {
+    scrollToModalTop();
+  }, [reportStep, selectedGroup]);
 
   const {
     register,
@@ -412,6 +428,7 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
       }
     >
       <div className="flex flex-col min-h-screen sm:min-h-0 sm:h-auto sm:max-h-128 lg:max-h-full bg-white dark:bg-slate-900 rounded-b-3xl">
+        <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
         {/* STEP 1 */}
         {reportStep === 1 && (
           <div className="flex flex-col flex-1 min-h-0 relative overflow-hidden mt-4">

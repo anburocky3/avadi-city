@@ -49,6 +49,8 @@ model User {
   healthcareFacilities HealthcareFacility[]
   jobVacancies        JobVacancy[]
   jobApplications     JobApplication[]
+  volunteers          Volunteer[]
+  donations           DonationRequest[]
 
   @@index([wardNumber])
   @@map("users")

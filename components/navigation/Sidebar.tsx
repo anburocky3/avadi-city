@@ -13,7 +13,7 @@ import {
   Bell,
   ChefHat,
   Wrench,
-  HeartHandshake,
+  Gift,
   Train,
   Briefcase,
   Building2,
@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: t("services.servicesTitle"), path: "/services", icon: Wrench },
     { name: t("rentals.title"), path: "/rentals", icon: Building2 },
     { name: t("jobs.title"), path: "/jobs", icon: Briefcase },
-    { name: t("volunteers.title"), path: "/volunteers", icon: HeartHandshake },
+    { name: t("donations") || "Donations", path: "/donations", icon: Gift },
     { name: t("transport"), path: "/transport", icon: Train },
     { name: "Lost & Found", path: "/lost-found", icon: PackageSearch },
   ];
