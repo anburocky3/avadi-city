@@ -145,6 +145,87 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const userWard = editingRequest?.ward || authUser?.wardNumber || activeWardId || 14;
+  const modalTopRef = useRef<HTMLDivElement>(null);
+
+  const scrollToModalTop = () => {
+    if (modalTopRef.current) {
+      const scrollableParent = modalTopRef.current.closest(".overflow-y-auto");
+      if (scrollableParent) {
+        scrollableParent.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        modalTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Scroll to the first empty / invalid box field, or fallback to modal top
+  const scrollToFirstError = (errorObj: Record<string, string>) => {
+    const errorKeys = Object.keys(errorObj);
+    if (!errorKeys || errorKeys.length === 0) {
+      scrollToModalTop();
+      return;
+    }
+
+    setTimeout(() => {
+      let targetEl: HTMLElement | null = null;
+
+      // 1. Try finding input element by data-field, name, or id
+      for (const key of errorKeys) {
+        targetEl = document.querySelector<HTMLElement>(
+          `[data-field="${key}"], [name="${key}"], #${key}, #donation-${key}`
+        );
+        if (targetEl) break;
+      }
+
+      // 2. Fallback to any element marked with error border or aria-invalid
+      if (!targetEl) {
+        targetEl = document.querySelector<HTMLElement>(
+          '.border-rose-500, [aria-invalid="true"]'
+        );
+      }
+
+      if (targetEl) {
+        const scrollableParent = targetEl.closest(".overflow-y-auto") as HTMLElement | null;
+        if (scrollableParent) {
+          const parentRect = scrollableParent.getBoundingClientRect();
+          const elRect = targetEl.getBoundingClientRect();
+          const relativeTop = elRect.top - parentRect.top + scrollableParent.scrollTop;
+          // Offset by 85px to keep field label and prompt clearly visible
+          scrollableParent.scrollTo({
+            top: Math.max(0, relativeTop - 85),
+            behavior: "smooth",
+          });
+        } else {
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        // Auto-focus input if it's an interactive field
+        setTimeout(() => {
+          if (
+            targetEl &&
+            (targetEl instanceof HTMLInputElement ||
+              targetEl instanceof HTMLTextAreaElement ||
+              targetEl instanceof HTMLSelectElement)
+          ) {
+            targetEl.focus({ preventScroll: true });
+          }
+        }, 120);
+      } else {
+        scrollToModalTop();
+      }
+    }, 40);
+  };
+
+  // Automatically scroll to the top of the modal on step change
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollToModalTop();
+    }, 40);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   // Street Autocomplete & Ward Selection Modal state
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
@@ -232,6 +313,14 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submittedDonation, setSubmittedDonation] = useState<DonationRequest | null>(null);
+
+  // Reset acknowledgement state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setSubmittedDonation(null);
+    }
+  }, [isOpen]);
 
   // Autosave draft
   useEffect(() => {
@@ -240,7 +329,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
     }
   }, [formData, editingRequest, isOpen]);
 
-  // Next Step with clear error messaging
+  // Next Step with clear error messaging & auto-scroll to invalid field
   const handleNextStep = () => {
     let res;
     if (currentStep === 1) {
@@ -255,16 +344,19 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
       setErrors(res.errors);
       const firstErrorMessage = Object.values(res.errors)[0];
       toast.error(firstErrorMessage || "Please complete the required details.");
+      scrollToFirstError(res.errors);
       return;
     }
 
     setErrors({});
     setCurrentStep((prev) => prev + 1);
+    scrollToModalTop();
   };
 
   const handlePrevStep = () => {
     setErrors({});
     setCurrentStep((prev) => Math.max(1, prev - 1));
+    scrollToModalTop();
   };
 
   // Re-pin map to ward centroid
@@ -356,7 +448,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const s1 = validateDonationStep1(formData);
     const s2 = validateDonationStep2(formData);
@@ -365,8 +457,15 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
     if (!s1.isValid || !s2.isValid || !s3.isValid) {
       const allErrors = { ...s1.errors, ...s2.errors, ...s3.errors };
       setErrors(allErrors);
+      // If error belongs to an earlier step, automatically return to that step
+      if (!s1.isValid && currentStep !== 1) {
+        setCurrentStep(1);
+      } else if (!s2.isValid && currentStep !== 2 && s1.isValid) {
+        setCurrentStep(2);
+      }
       const first = Object.values(allErrors)[0];
       toast.error(first || "Please complete all required fields properly.");
+      scrollToFirstError(allErrors);
       return;
     }
 
@@ -377,9 +476,16 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
         (i) => i.name && i.name.trim().length > 0,
       );
 
+      const authorUserId = authUser?.id || "user-avadi-citizen";
+      const authorName =
+        authUser?.name || formData.contact?.name || "Avadi Resident";
+
       const payload = {
         ...formData,
+        createdBy: authorUserId,
+        createdByName: authorName,
         items: cleanItems,
+        status: "approved" as DonationStatus,
       };
 
       let result: DonationRequest;
@@ -387,16 +493,26 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
         result = donationService.update(editingRequest.id, payload);
         toast.success("Donation request successfully updated!");
       } else {
-        result = donationService.create(payload);
+        result = await donationService.createAsync(payload);
         toast.success("Donation request submitted and posted to the Avadi feed!");
       }
       onSuccess(result);
-      onClose();
+      setSubmittedDonation(result);
+      scrollToModalTop();
     } catch (err: any) {
       toast.error(err?.message || "Failed to submit donation request.");
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleDone = () => {
+    const res = submittedDonation;
+    setSubmittedDonation(null);
+    if (res) {
+      onSuccess(res);
+    }
+    onClose();
   };
 
   const stepsList = [
@@ -405,20 +521,163 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
     { id: 3, title: "Verify & Submit" },
   ];
 
+  // ==========================================
+  // ACKNOWLEDGEMENT SCREEN
+  // ==========================================
+  if (submittedDonation) {
+    const isEditing = Boolean(editingRequest?.id);
+
+    return (
+      <Modal
+        isOpen={isOpen}
+        onClose={handleDone}
+        title="Request Acknowledgement"
+        maxWidth="sm:max-w-xl"
+      >
+        <div className="space-y-6 py-2 text-center">
+          <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
+
+          {/* Success Animated Check Icon */}
+          <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border-4 border-emerald-100 dark:border-emerald-900/40 shadow-sm">
+            <CheckCircle2 size={36} strokeWidth={2.5} />
+          </div>
+
+          {/* Status badge & headings */}
+          <div className="space-y-2">
+            <span className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-widest text-emerald-700 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {isEditing ? "Request Successfully Updated" : "Request Successfully Completed"}
+            </span>
+            <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white">
+              {isEditing
+                ? "Donation Details Updated!"
+                : "Donation Request Broadcasted!"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              Your donation request is live in the Avadi City portal and has been posted to Ward {submittedDonation.ward} residents, donors, and verified civic volunteers.
+            </p>
+          </div>
+
+          {/* Identity & Request Summary Card */}
+          <div className="p-5 bg-gradient-to-br from-slate-50 to-orange-50/30 dark:from-slate-950 dark:to-orange-950/10 border border-orange-200/80 dark:border-orange-900/40 rounded-3xl text-left space-y-3.5 relative overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+                Avadi Donation Reference
+              </span>
+              <span className="text-[11px] font-mono font-extrabold text-primary bg-primary/10 px-2.5 py-0.5 rounded-md">
+                {submittedDonation.id}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Badge variant="primary" className="text-[10px] font-bold">
+                  {submittedDonation.type}
+                </Badge>
+                <StatusBadge type="urgency" value={submittedDonation.urgency} />
+              </div>
+              <span className="text-[10px] font-bold text-slate-400">
+                {new Date().toLocaleDateString("en-IN", {
+                  day: "numeric",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+
+            <div>
+              <p className="text-sm font-black text-slate-800 dark:text-slate-100">
+                {submittedDonation.title}
+              </p>
+              {submittedDonation.description && (
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                  {submittedDonation.description}
+                </p>
+              )}
+            </div>
+
+            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Location
+                </span>
+                <span className="font-extrabold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5 text-[11px]">
+                  <MapPin size={12} className="text-primary shrink-0" />
+                  Ward {submittedDonation.ward} · {submittedDonation.address}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Beneficiary
+                </span>
+                <span className="font-extrabold text-slate-700 dark:text-slate-200 block mt-0.5 text-[11px]">
+                  {submittedDonation.beneficiary}
+                </span>
+              </div>
+            </div>
+
+            {submittedDonation.items && submittedDonation.items.length > 0 && (
+              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                  Requested Items ({submittedDonation.items.length})
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {submittedDonation.items.map((it, idx) => (
+                    <span
+                      key={idx}
+                      className="px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-700 dark:text-slate-300"
+                    >
+                      {it.name} ({it.qty} {it.unit})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px]">
+              <span className="text-slate-500 dark:text-slate-400 font-semibold">
+                Coordinator: <strong className="text-slate-800 dark:text-slate-200">{submittedDonation.contact?.name}</strong> ({submittedDonation.contact?.phone})
+              </span>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                ✓ Active on Feed
+              </span>
+            </div>
+          </div>
+
+          {/* Action Button */}
+          <button
+            type="button"
+            onClick={handleDone}
+            className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <span>View in Donations Feed</span>
+            <ArrowRight size={14} />
+          </button>
+        </div>
+      </Modal>
+    );
+  }
+
   return (
     <>
       <Modal
         isOpen={isOpen}
         onClose={onClose}
-        title={editingRequest ? "Edit Donation Request" : "Create Donation Request"}
+        title={editingRequest ? "Edit Donation Request" : "Request Donation"}
         maxWidth="sm:max-w-xl"
       >
         <div className="space-y-5">
+          <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
           {/* Stepper with progress */}
           <Stepper
             steps={stepsList}
             currentStep={currentStep}
-            onStepClick={(s) => s < currentStep && setCurrentStep(s)}
+            onStepClick={(s) => {
+              if (s < currentStep) {
+                setCurrentStep(s);
+                scrollToModalTop();
+              }
+            }}
           />
 
           {/* ========================================== */}
@@ -430,6 +689,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <FormField label="Request Type" required error={errors.type}>
                   <select
+                    id="donation-type"
+                    name="type"
+                    data-field="type"
                     value={formData.type}
                     onChange={(e) =>
                       setFormData((prev) => ({
@@ -437,7 +699,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                         type: e.target.value as DonationType,
                       }))
                     }
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-semibold focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                    className={`w-full px-3 py-2.5 rounded-xl border ${
+                      errors.type
+                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                        : "border-slate-200 dark:border-slate-800"
+                    } bg-white dark:bg-slate-950 text-xs font-semibold focus:ring-2 focus:ring-primary/40 focus:outline-none`}
                   >
                     {REQUEST_TYPES.map((t) => (
                       <option key={t} value={t}>
@@ -450,6 +716,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 <FormField label="Urgency Level" required error={errors.urgency}>
                   <div className="flex items-center gap-2">
                     <select
+                      id="donation-urgency"
+                      name="urgency"
+                      data-field="urgency"
                       value={formData.urgency}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -457,7 +726,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                           urgency: e.target.value as DonationUrgency,
                         }))
                       }
-                      className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-bold focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                      className={`w-full px-3 py-2.5 rounded-xl border ${
+                        errors.urgency
+                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                          : "border-slate-200 dark:border-slate-800"
+                      } bg-white dark:bg-slate-950 text-xs font-bold focus:ring-2 focus:ring-primary/40 focus:outline-none`}
                     >
                       <option value="Normal">Normal</option>
                       <option value="Urgent">Urgent</option>
@@ -477,6 +750,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 hint="Between 3 and 80 characters"
               >
                 <input
+                  id="donation-title"
+                  name="title"
+                  data-field="title"
                   type="text"
                   maxLength={80}
                   value={formData.title}
@@ -484,7 +760,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
                   }
                   placeholder="e.g. Food relief, School notebooks, or Emergency blood requirement"
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                  className={`w-full px-3 py-2.5 rounded-xl border ${
+                    errors.title
+                      ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                      : "border-slate-200 dark:border-slate-800"
+                  } bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs font-semibold focus:ring-2 focus:ring-primary/40 focus:outline-none`}
                 />
               </FormField>
 
@@ -499,6 +779,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 hint="Explain who needs help, why the items are required, or any specific details"
               >
                 <textarea
+                  id="donation-description"
+                  name="description"
+                  data-field="description"
                   rows={3}
                   maxLength={500}
                   value={formData.description || ""}
@@ -509,7 +792,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     }))
                   }
                   placeholder="Provide background context or instructions (optional)..."
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none resize-none"
+                  className={`w-full px-3 py-2 rounded-xl border ${
+                    errors.description
+                      ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                      : "border-slate-200 dark:border-slate-800"
+                  } bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none resize-none`}
                 />
               </FormField>
 
@@ -527,6 +814,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     <span className="text-rose-500 font-bold">*</span>
                   </label>
                   <input
+                    id="donation-address"
+                    name="address"
+                    data-field="address"
                     type="text"
                     value={formData.address}
                     onChange={(e) => {
@@ -544,7 +834,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       setStreetResults(filtered);
                     }}
                     placeholder="e.g. Kamaraj Nagar, Near Pattabiram Railway Station, Gandhi Road..."
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                    className={`w-full px-3.5 py-2.5 rounded-xl border ${
+                      errors.address
+                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                        : "border-slate-200 dark:border-slate-800"
+                    } bg-white dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50`}
                   />
                   {errors.address && (
                     <p className="text-[11px] font-bold text-rose-500 mt-1">
@@ -595,8 +889,14 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     Municipal Ward <span className="text-rose-500">*</span>
                   </label>
                   <div
+                    id="donation-ward"
+                    data-field="ward"
                     onClick={() => setIsStreetWardModalOpen(true)}
-                    className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60 hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-2xs"
+                    className={`w-full p-3 rounded-xl border ${
+                      errors.ward
+                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
+                        : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
+                    } hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-2xs`}
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0">
@@ -618,6 +918,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       <span>{formData.address?.trim() ? "Change" : "Find"}</span>
                     </span>
                   </div>
+                  {errors.ward && (
+                    <p className="text-[11px] font-bold text-rose-500 mt-1">
+                      {errors.ward}
+                    </p>
+                  )}
                   <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 flex items-start gap-1.5 leading-normal">
                     <Info size={12} className="text-slate-400 mt-0.5 shrink-0" />
                     <span>
@@ -683,7 +988,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
 
               {/* Beneficiary */}
               <FormField label="Beneficiary Type" required error={errors.beneficiary}>
-                <div className="grid grid-cols-3 gap-2">
+                <div
+                  id="donation-beneficiary"
+                  data-field="beneficiary"
+                  className="grid grid-cols-3 gap-2"
+                >
                   {BENEFICIARY_TYPES.map((b) => (
                     <button
                       key={b}
@@ -694,6 +1003,8 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       className={`p-2.5 rounded-xl text-center text-xs font-bold border transition cursor-pointer ${
                         formData.beneficiary === b
                           ? "bg-primary text-white border-primary shadow-sm"
+                          : errors.beneficiary
+                          ? "bg-rose-50/40 border-rose-400 text-rose-700 dark:bg-rose-950/20 dark:border-rose-900"
                           : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300"
                       }`}
                     >
@@ -711,7 +1022,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
           {currentStep === 2 && (
             <div className="space-y-4 pt-1">
               {/* Needed Items List (NOW OPTIONAL) */}
-              <div className="space-y-2">
+              <div id="donation-items" data-field="items" className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
@@ -814,6 +1125,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
                   <FormField label="Target Amount (₹, optional)">
                     <input
+                      id="donation-targetAmount"
+                      name="targetAmount"
+                      data-field="targetAmount"
                       type="number"
                       min={0}
                       value={formData.target?.amount || ""}
@@ -836,6 +1150,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     error={errors.targetUpi}
                   >
                     <input
+                      id="donation-targetUpi"
+                      name="targetUpi"
+                      data-field="targetUpi"
                       type="text"
                       value={formData.target?.upi || ""}
                       onChange={(e) =>
@@ -848,7 +1165,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                         }))
                       }
                       placeholder="e.g. trust@okhdfcbank"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none"
+                      className={`w-full px-3 py-2 rounded-xl border ${
+                        errors.targetUpi
+                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
+                          : "border-slate-200 dark:border-slate-800"
+                      } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                     />
                   </FormField>
                 </div>
@@ -861,6 +1182,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 hint="Date by which aid or supplies are needed"
               >
                 <input
+                  id="donation-requiredBy"
+                  name="requiredBy"
+                  data-field="requiredBy"
                   type="date"
                   min={new Date().toISOString().split("T")[0]}
                   value={formData.requiredBy}
@@ -870,7 +1194,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       requiredBy: e.target.value,
                     }))
                   }
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-xs font-semibold focus:ring-2 focus:ring-primary/40 focus:outline-none"
+                  className={`w-full px-3 py-2.5 rounded-xl border ${
+                    errors.requiredBy
+                      ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                      : "border-slate-200 dark:border-slate-800"
+                  } bg-white dark:bg-slate-950 text-xs font-semibold focus:ring-2 focus:ring-primary/40 focus:outline-none`}
                 />
               </FormField>
 
@@ -886,6 +1214,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                   error={errors.contactName}
                 >
                   <input
+                    id="donation-contactName"
+                    name="contactName"
+                    data-field="contactName"
                     type="text"
                     value={formData.contact.name}
                     onChange={(e) =>
@@ -895,7 +1226,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       }))
                     }
                     placeholder="e.g. S. Ramanathan"
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-primary focus:outline-none"
+                    className={`w-full px-3 py-2 rounded-xl border ${
+                      errors.contactName
+                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                        : "border-slate-200 dark:border-slate-800"
+                    } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-primary focus:outline-none`}
                   />
                 </FormField>
 
@@ -906,12 +1241,19 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     error={errors.contactPhone}
                   >
                     <input
+                      id="donation-contactPhone"
+                      name="contactPhone"
+                      data-field="contactPhone"
                       type="tel"
                       maxLength={10}
                       value={formData.contact.phone}
                       onChange={(e) => handlePhoneChange(e.target.value)}
                       placeholder="9840123456"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-primary focus:outline-none"
+                      className={`w-full px-3 py-2 rounded-xl border ${
+                        errors.contactPhone
+                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                          : "border-slate-200 dark:border-slate-800"
+                      } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-primary focus:outline-none`}
                     />
                   </FormField>
 
@@ -922,6 +1264,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                   >
                     <div className="space-y-1">
                       <input
+                        id="donation-contactWhatsapp"
+                        name="contactWhatsapp"
+                        data-field="contactWhatsapp"
                         type="tel"
                         maxLength={10}
                         disabled={sameAsPhone}
@@ -936,7 +1281,11 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                           }))
                         }
                         placeholder="9840123456"
-                        className={`w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-primary focus:outline-none ${
+                        className={`w-full px-3 py-2 rounded-xl border ${
+                          errors.contactWhatsapp
+                            ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                            : "border-slate-200 dark:border-slate-800"
+                        } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-primary focus:outline-none ${
                           sameAsPhone ? "opacity-70 cursor-not-allowed" : ""
                         }`}
                       />
@@ -1027,6 +1376,9 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     error={errors.orgName}
                   >
                     <input
+                      id="donation-orgName"
+                      name="orgName"
+                      data-field="orgName"
                       type="text"
                       value={formData.organisation?.name || ""}
                       onChange={(e) =>
@@ -1039,12 +1391,19 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                         }))
                       }
                       placeholder="e.g. Avadi Care Charitable Trust"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none"
+                      className={`w-full px-3 py-2 rounded-xl border ${
+                        errors.orgName
+                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
+                          : "border-slate-200 dark:border-slate-800"
+                      } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none`}
                     />
                   </FormField>
 
                   <FormField label="Registration / NGO Number (Optional)">
                     <input
+                      id="donation-orgRegNo"
+                      name="orgRegNo"
+                      data-field="orgRegNo"
                       type="text"
                       value={formData.organisation?.regNo || ""}
                       onChange={(e) =>
@@ -1094,7 +1453,13 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
 
               {/* Verification Checkboxes */}
               <div className="space-y-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/80 dark:border-slate-800">
-                <div className="space-y-1">
+                <div
+                  id="donation-confirmedGenuine"
+                  data-field="confirmedGenuine"
+                  className={`space-y-1 p-2 rounded-xl transition ${
+                    errors.confirmedGenuine ? "bg-rose-50/50 border border-rose-300 dark:border-rose-900/60" : ""
+                  }`}
+                >
                   <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
                     <input
                       type="checkbox"
@@ -1119,7 +1484,13 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                   )}
                 </div>
 
-                <div className="space-y-1">
+                <div
+                  id="donation-agreedGuidelines"
+                  data-field="agreedGuidelines"
+                  className={`space-y-1 p-2 rounded-xl transition ${
+                    errors.agreedGuidelines ? "bg-rose-50/50 border border-rose-300 dark:border-rose-900/60" : ""
+                  }`}
+                >
                   <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
                     <input
                       type="checkbox"

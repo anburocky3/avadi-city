@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   MapPin,
   Gift,
@@ -30,6 +30,7 @@ import toast from "@/utils/toast";
 export interface DonationFeedProps {
   requests: DonationRequest[];
   currentUserId?: string;
+  authUser?: any;
   onCreateNew: () => void;
   onEdit: (request: DonationRequest) => void;
   onRequestUpdated: (updatedList: DonationRequest[]) => void;
@@ -51,6 +52,7 @@ const URGENCIES: (DonationUrgency | "All")[] = ["All", "Critical", "Urgent", "No
 export const DonationFeed: React.FC<DonationFeedProps> = ({
   requests,
   currentUserId,
+  authUser,
   onCreateNew,
   onEdit,
   onRequestUpdated,
@@ -62,16 +64,70 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
   const [sortBy, setSortBy] = useState<"newest" | "urgent">("urgent");
   const [showOnlyMyRequests, setShowOnlyMyRequests] = useState<boolean>(false);
 
+  // Track hydration mount state to eliminate SSR/client HTML divergence
+  const [isMounted, setIsMounted] = useState<boolean>(false);
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   // Report Modal state
   const [reportingRequest, setReportingRequest] =
     useState<DonationRequest | null>(null);
 
+  // IDs created locally on this browser
+  const myCreatedIds = useMemo(() => {
+    if (!isMounted) return [];
+    return donationService.getMyCreatedIds();
+  }, [requests, isMounted]);
+
+  const checkIsOwner = (req: DonationRequest): boolean => {
+    if (!isMounted) return false;
+    if (req.id && myCreatedIds.includes(req.id)) return true;
+    if (currentUserId && req.createdBy && req.createdBy === currentUserId) return true;
+    if (authUser?.id && req.createdBy && req.createdBy === authUser.id) return true;
+    if (
+      authUser?.name &&
+      req.contact?.name &&
+      req.contact.name.trim().toLowerCase() === authUser.name.trim().toLowerCase()
+    ) {
+      return true;
+    }
+    if (
+      authUser?.name &&
+      req.createdByName &&
+      req.createdByName.trim().toLowerCase() === authUser.name.trim().toLowerCase()
+    ) {
+      return true;
+    }
+    if (
+      authUser?.phone &&
+      req.contact?.phone &&
+      req.contact.phone.replace(/\D/g, "") === authUser.phone.replace(/\D/g, "")
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const myRequestsCount = useMemo(() => {
+    if (!isMounted) return 0;
+    return requests.filter((r) => checkIsOwner(r)).length;
+  }, [requests, isMounted, myCreatedIds, authUser, currentUserId]);
+
   // Filter & Sort Logic
   const filteredRequests = useMemo(() => {
     let result = requests.filter((req) => {
-      // My Requests Filter
-      if (showOnlyMyRequests && currentUserId) {
-        return req.createdBy === currentUserId;
+      // My Requests View
+      if (showOnlyMyRequests) {
+        if (!checkIsOwner(req)) return false;
+        if (selectedType !== "All" && req.type !== selectedType) return false;
+        if (selectedUrgency !== "All" && req.urgency !== selectedUrgency) return false;
+        return true;
+      }
+
+      // Public Community Feed: hide fulfilled or rejected requests
+      if (req.status === "rejected" || req.status === "fulfilled") {
+        return false;
       }
 
       // Type Filter
@@ -86,16 +142,7 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
       const matchesWard =
         selectedWard === "All" || String(req.ward) === String(selectedWard);
 
-      // Status Filter
-      const matchesStatus =
-        selectedStatus === "All" || req.status === selectedStatus;
-
-      return (
-        matchesType &&
-        matchesUrgency &&
-        matchesWard &&
-        matchesStatus
-      );
+      return matchesType && matchesUrgency && matchesWard;
     });
 
     // Sorting
@@ -120,6 +167,9 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
     sortBy,
     showOnlyMyRequests,
     currentUserId,
+    authUser,
+    myCreatedIds,
+    isMounted,
   ]);
 
   // WhatsApp Donate Action
@@ -134,145 +184,134 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
     window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
   };
 
-  // Mark fulfilled
-  const handleMarkFulfilled = (id: string) => {
+  // Mark fulfilled -> Deletes the request from MySQL & local storage feed as requested
+  const handleMarkFulfilled = async (id: string) => {
     try {
-      const updated = donationService.updateStatus(id, "fulfilled");
-      toast.success("Request marked as fulfilled! Thank you for the community update.");
+      await donationService.removeAsync(id);
+      toast.success("Request marked as fulfilled and removed from the feed!");
       onRequestUpdated(donationService.list());
     } catch (e: any) {
-      toast.error(e?.message || "Failed to update status.");
+      toast.error(e?.message || "Failed to remove fulfilled request.");
     }
   };
 
   // Delete Request
-  const handleDeleteRequest = (id: string) => {
+  const handleDeleteRequest = async (id: string) => {
     if (confirm("Are you sure you want to delete this donation request?")) {
-      donationService.remove(id);
-      toast.info("Donation request deleted.");
-      onRequestUpdated(donationService.list());
+      try {
+        await donationService.removeAsync(id);
+        toast.info("Donation request deleted.");
+        onRequestUpdated(donationService.list());
+      } catch (e: any) {
+        toast.error(e?.message || "Failed to delete request.");
+      }
     }
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header Bar with Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <h2 className="text-sm font-black text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-            <Gift size={16} className="text-primary" />
-            <span>Avadi Community Donation Needs</span>
-          </h2>
-          <p className="text-[11px] text-slate-400 font-medium">
-            Verified resident and relief requirements across all 48 wards
-          </p>
-        </div>
+    <div className="space-y-3.5">
+      {/* Primary Tab Switcher: Community Needs vs My Requests */}
+      <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800">
+        <button
+          type="button"
+          onClick={() => setShowOnlyMyRequests(false)}
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+            !showOnlyMyRequests
+              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+              : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+          }`}
+        >
+          <Gift size={14} className={!showOnlyMyRequests ? "text-primary" : ""} />
+          <span>Community Needs</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold">
+            {requests.length}
+          </span>
+        </button>
 
-        <div className="flex items-center gap-2">
-          {/* Create Request CTA */}
-          <button
-            type="button"
-            onClick={onCreateNew}
-            className="px-4 py-2.5 bg-primary hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer"
-          >
-            <span>+ Create Request</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowOnlyMyRequests(true)}
+          className={`flex-1 py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer relative ${
+            showOnlyMyRequests
+              ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs"
+              : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+          }`}
+        >
+          <User size={14} className={showOnlyMyRequests ? "text-primary" : ""} />
+          <span>My Requests</span>
+          {myRequestsCount > 0 && (
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary text-white font-bold">
+              {myRequestsCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Filter Row 1: Ward, Type, Urgency */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-        {/* Ward Filter */}
-        <select
-          value={selectedWard}
-          onChange={(e) => setSelectedWard(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none"
-        >
-          <option value="All">All 48 Wards</option>
-          {Array.from({ length: 48 }, (_, i) => i + 1).map((w) => (
-            <option key={w} value={String(w)}>
-              Ward {w}
-            </option>
-          ))}
-        </select>
+      {/* Sleek Single-Row Filter & Sorting Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Category Dropdown */}
+          <div className="relative">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="h-8.5 pl-3 pr-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-primary/30 focus:outline-none shadow-2xs"
+            >
+              {DONATION_TYPES.map((t) => (
+                <option key={t} value={t}>
+                  {t === "All" ? "All Categories" : t}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            />
+          </div>
 
-        {/* Request Type Filter */}
-        <select
-          value={selectedType}
-          onChange={(e) => setSelectedType(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none"
-        >
-          {DONATION_TYPES.map((t) => (
-            <option key={t} value={t}>
-              {t === "All" ? "All Request Types" : t}
-            </option>
-          ))}
-        </select>
+          {/* Urgency Filter */}
+          <div className="relative">
+            <select
+              value={selectedUrgency}
+              onChange={(e) => setSelectedUrgency(e.target.value)}
+              className="h-8.5 pl-3 pr-7 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 text-xs font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-primary/30 focus:outline-none shadow-2xs"
+            >
+              {URGENCIES.map((u) => (
+                <option key={u} value={u}>
+                  {u === "All" ? "All Urgencies" : `${u} Urgency`}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={13}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+            />
+          </div>
 
-        {/* Urgency Filter */}
-        <select
-          value={selectedUrgency}
-          onChange={(e) => setSelectedUrgency(e.target.value)}
-          className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none"
-        >
-          {URGENCIES.map((u) => (
-            <option key={u} value={u}>
-              {u === "All" ? "All Urgencies" : `Urgency: ${u}`}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Filter Row 2: Tabs (All / My Requests / Status / Sort) */}
-      <div className="flex flex-wrap items-center justify-between gap-2.5 pt-1">
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full">
-          <button
-            type="button"
-            onClick={() => setShowOnlyMyRequests(false)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
-              !showOnlyMyRequests
-                ? "bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
-            }`}
-          >
-            All Community Requests
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setShowOnlyMyRequests(true)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1 ${
-              showOnlyMyRequests
-                ? "bg-primary text-white shadow-sm"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200"
-            }`}
-          >
-            <User size={12} />
-            <span>My Requests</span>
-          </button>
-
-          <select
-            value={selectedStatus}
-            onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-2.5 py-1.5 rounded-xl text-xs font-bold border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 focus:outline-none"
-          >
-            <option value="approved">Status: Approved</option>
-            <option value="pending">Status: Pending Review</option>
-            <option value="fulfilled">Status: Fulfilled</option>
-            <option value="All">All Statuses</option>
-          </select>
+          {/* Reset Filters Shortcut */}
+          {(selectedType !== "All" || selectedUrgency !== "All") && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedType("All");
+                setSelectedUrgency("All");
+              }}
+              className="text-xs font-bold text-primary hover:underline px-1 cursor-pointer"
+            >
+              Clear
+            </button>
+          )}
         </div>
 
-        {/* Sort By Toggle */}
-        <div className="flex items-center gap-1 text-xs">
-          <span className="text-slate-400 font-medium">Sort:</span>
+        {/* Sort Toggle (Urgent / Newest) */}
+        <div className="flex items-center p-0.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-800 text-[11px] font-bold">
           <button
             type="button"
             onClick={() => setSortBy("urgent")}
-            className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-lg transition cursor-pointer ${
               sortBy === "urgent"
-                ? "bg-orange-50 dark:bg-orange-950/40 text-primary border border-orange-200/50"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-white dark:bg-slate-900 text-primary shadow-2xs font-black"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
             }`}
           >
             Most Urgent
@@ -280,10 +319,10 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
           <button
             type="button"
             onClick={() => setSortBy("newest")}
-            className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+            className={`px-3 py-1 rounded-lg transition cursor-pointer ${
               sortBy === "newest"
-                ? "bg-orange-50 dark:bg-orange-950/40 text-primary border border-orange-200/50"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-white dark:bg-slate-900 text-primary shadow-2xs font-black"
+                : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-300"
             }`}
           >
             Newest
@@ -295,7 +334,7 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
       <div className="space-y-4 pt-1">
         {filteredRequests.length > 0 ? (
           filteredRequests.map((req) => {
-            const isOwner = currentUserId && req.createdBy === currentUserId;
+            const isOwner = checkIsOwner(req);
 
             return (
               <Card
@@ -414,6 +453,31 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                   </div>
                 )}
 
+                {/* Owner Banner: Mark as Fulfilled to delete request */}
+                {isOwner && (
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between gap-3 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="text-emerald-600 dark:text-emerald-400 shrink-0" size={16} />
+                      <div>
+                        <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                          Need fulfilled or completed?
+                        </p>
+                        <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
+                          Touch &quot;Fulfilled&quot; to mark this completed and delete it from the feed.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleMarkFulfilled(req.id)}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-sm transition flex items-center gap-1.5 cursor-pointer ml-auto shrink-0"
+                    >
+                      <CheckCircle size={13} />
+                      <span>Fulfilled</span>
+                    </button>
+                  </div>
+                )}
+
                 {/* Primary Action Button: WhatsApp to Donate */}
                 <button
                   type="button"
@@ -439,16 +503,14 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                           <span>Edit</span>
                         </button>
 
-                        {req.status !== "fulfilled" && (
-                          <button
-                            type="button"
-                            onClick={() => handleMarkFulfilled(req.id)}
-                            className="font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
-                          >
-                            <CheckCircle size={11} />
-                            <span>Mark Fulfilled</span>
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => handleMarkFulfilled(req.id)}
+                          className="font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 flex items-center gap-1 cursor-pointer"
+                        >
+                          <CheckCircle size={11} />
+                          <span>Fulfilled</span>
+                        </button>
 
                         <button
                           type="button"
@@ -481,7 +543,7 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
               No donation requests match your active filters.
             </p>
             <p className="text-[11px] text-slate-400">
-              Try switching filters or click "+ Create Request" to submit a new community need.
+              Try switching filters or click "+ Request Donation" to submit a new community need.
             </p>
           </div>
         )}
