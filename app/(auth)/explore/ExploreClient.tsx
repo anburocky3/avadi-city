@@ -21,14 +21,13 @@ import {
   LucideIcon,
   X,
   Plus,
-  Ticket,
   Sparkles,
-  ExternalLink,
   Globe,
   Info,
   MessageSquare,
   Send,
   CheckCircle2,
+  Share2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -96,6 +95,7 @@ export interface Category {
 export interface ExploreClientProps {
   initialPlaces: Place[];
   initialReviewStats?: Record<string, ReviewStats>;
+  hasError?: boolean;
 }
 
 const ACCESSIBILITY_FACILITIES = new Set([
@@ -127,9 +127,12 @@ const categories: Category[] = [
   { id: "Government Offices", name: "Govt Offices", icon: Map },
 ];
 
+const DEFAULT_REVIEW_STATS: Record<string, ReviewStats> = {};
+
 export const ExploreClient: React.FC<ExploreClientProps> = ({
   initialPlaces,
-  initialReviewStats = {},
+  initialReviewStats = DEFAULT_REVIEW_STATS,
+  hasError = false,
 }) => {
   const t = useTranslations();
   const searchParams = useSearchParams();
@@ -144,6 +147,71 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
     Record<string | number, boolean>
   >({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  // Share Place Handler (Native Share with Clipboard fallback)
+  const handleSharePlace = async (place: Place, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation();
+      e.preventDefault();
+    }
+
+    const origin =
+      typeof window !== "undefined" && window.location.origin
+        ? window.location.origin
+        : "";
+    const shareUrl = `${origin}/explore/card/${place.id}`;
+    const shareTitle = `${place.name} | Avadi Explore`;
+    const shareText = place.description
+      ? place.description.length > 120
+        ? `${place.description.substring(0, 117)}...`
+        : place.description
+      : `Check out ${place.name} in Avadi!`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err: unknown) {
+        if ((err as { name?: string })?.name !== "AbortError") {
+          try {
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success("Link copied successfully!");
+          } catch {
+            toast.error("Unable to share link.");
+          }
+        }
+      }
+    } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast.success("Link copied successfully!");
+      } catch {
+        toast.error("Unable to copy link to clipboard.");
+      }
+    } else {
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = shareUrl;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        const successful = document.execCommand("copy");
+        document.body.removeChild(textArea);
+        if (successful) {
+          toast.success("Link copied successfully!");
+        } else {
+          toast.error("Unable to copy link.");
+        }
+      } catch {
+        toast.error("Unable to copy link.");
+      }
+    }
+  };
 
   // Feature 7: Ratings & Reviews state
   const [reviewStatsMap, setReviewStatsMap] =
@@ -363,61 +431,115 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
         </Link>
       </div>
 
-      {/* Search Input */}
-      <div className="relative">
-        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-          <Search size={18} />
-        </span>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            setSearchQuery(e.target.value)
-          }
-          placeholder="Search landmarks, parks, nature, heritage, activities..."
-          className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition text-xs sm:text-sm shadow-sm"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery("")}
-            className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-            aria-label="Clear search"
-          >
-            <X size={16} />
-          </button>
-        )}
-      </div>
+      {/* Search Input & Category Chips - Only rendered when places exist */}
+      {initialPlaces.length > 0 && (
+        <>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <Search size={18} />
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setSearchQuery(e.target.value)
+              }
+              placeholder="Search landmarks, parks, nature, heritage, activities..."
+              className="w-full pl-10 pr-10 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition text-xs sm:text-sm shadow-sm"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
 
-      {/* Category Chips Container */}
-      <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-none flex space-x-2">
-        {categories.map((cat) => {
-          const Icon = cat.icon;
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => setSelectedCategory(cat.id)}
-              className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-200 cursor-pointer ${
-                isSelected
-                  ? "bg-primary border-primary text-white shadow-sm"
-                  : cat.isHighlighted
-                    ? `${cat.color} font-black animate-pulse-subtle`
-                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
-              }`}
-            >
-              <Icon size={14} />
-              <span>{cat.name}</span>
-            </button>
-          );
-        })}
-      </div>
+          <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-none flex space-x-2">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isSelected = selectedCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setSelectedCategory(cat.id)}
+                  className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap border transition duration-200 cursor-pointer ${
+                    isSelected
+                      ? "bg-primary border-primary text-white shadow-sm"
+                      : cat.isHighlighted
+                        ? `${cat.color} font-black animate-pulse-subtle`
+                        : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                  }`}
+                >
+                  <Icon size={14} />
+                  <span>{cat.name}</span>
+                </button>
+              );
+            })}
+          </div>
+        </>
+      )}
 
-      {/* Places Grid */}
+      {/* Places Grid or Genuinely Empty State / Search Empty State */}
       <AnimatePresence mode="wait">
         {isLoading ? (
           <SkeletonLoader type="card" count={2} />
+        ) : hasError ? (
+          <motion.div
+            key="error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <EmptyState
+              icon={ShieldAlert}
+              title="Unable to Load Places"
+              description="There was a temporary problem loading places. Please refresh or try again later."
+              actionText="Refresh Page"
+              onAction={() => window.location.reload()}
+            />
+          </motion.div>
+        ) : initialPlaces.length === 0 ? (
+          /* FIX 3: Genuinely empty module - show uploaded illustration */
+          <motion.div
+            key="empty-all"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-12 px-4 text-center max-w-lg mx-auto"
+          >
+            <div className="w-60 sm:w-72 max-w-full mb-4 mx-auto flex items-center justify-center">
+              {/* Light mode: original transparent image (untouched) */}
+              <img
+                src="/img/empty-places.png"
+                alt="Illustration showing a person exploring information"
+                className="w-full h-auto object-contain mx-auto drop-shadow-sm dark:hidden"
+              />
+              {/* Dark mode: tailored border & contrast-adjusted illustration */}
+              <img
+                src="/img/empty-places-dark.png"
+                alt="Illustration showing a person exploring information"
+                className="w-full h-auto object-contain mx-auto drop-shadow-sm hidden dark:block"
+              />
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2">
+              No Places to Explore Yet
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed font-medium">
+              Discover exciting places around Avadi. New places will appear here as they become available.
+            </p>
+            <Link
+              href="/explore/create"
+              className="px-5 py-2.5 bg-primary hover:bg-orange-600 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md transition inline-flex items-center gap-1.5 cursor-pointer active:scale-98"
+            >
+              <Plus size={16} />
+              <span>Post Place</span>
+            </Link>
+          </motion.div>
         ) : filteredPlaces.length > 0 ? (
+          /* Places Grid */
           <motion.div
             key="grid"
             initial={{ opacity: 0 }}
@@ -434,7 +556,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
               return (
                 <Card
                   key={place.id}
-                  onClick={() => setSelectedPlace(place)}
+                  onClick={() => router.push(`/explore/card/${place.id}`)}
                   className={`rounded-3xl sm:rounded-[28px] overflow-hidden bg-white dark:bg-slate-900 border transition cursor-pointer p-0 flex flex-col justify-between group shadow-sm hover:shadow-md ${
                     place.is24x7
                       ? "border-rose-300 dark:border-rose-800/60 ring-2 ring-rose-500/10"
@@ -535,7 +657,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                         </div>
                       )}
 
-                      {/* Compact Visitor Facilities Badges on Card (Feature 8) */}
+                      {/* Compact Visitor Facilities Badges on Card */}
                       {place.facilities && place.facilities.length > 0 && (
                         <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
                           {place.facilities.slice(0, 2).map((fac) => {
@@ -583,18 +705,19 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                       </p>
                     </div>
 
-                    {/* Action Buttons: View Details & Google Maps */}
-                    <div className="grid grid-cols-2 gap-2 mt-2 pt-1">
+                    {/* Action Buttons: Details | Directions | Share */}
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 mt-2 pt-1">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setSelectedPlace(place);
+                          router.push(`/explore/card/${place.id}`);
                         }}
-                        className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl flex items-center justify-center space-x-1 transition cursor-pointer"
+                        className="w-full py-2 sm:py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-[11px] sm:text-xs rounded-xl flex items-center justify-center space-x-1 transition cursor-pointer"
+                        aria-label={`View details for ${place.name}`}
                       >
-                        <Info size={13} />
-                        <span>View Details</span>
+                        <Info size={13} className="shrink-0" />
+                        <span className="truncate">Details</span>
                       </button>
 
                       <a
@@ -602,14 +725,29 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="w-full py-2.5 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 dark:hover:bg-teal-600 border border-teal-200/80 dark:border-teal-800/80 hover:border-teal-600 text-teal-700 dark:text-teal-300 hover:text-white dark:hover:text-white font-bold text-xs rounded-xl flex items-center justify-center space-x-1.5 transition-all duration-200 cursor-pointer shadow-2xs group/btn"
+                        className="w-full py-2 sm:py-2.5 bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-600 dark:hover:bg-teal-600 border border-teal-200/80 dark:border-teal-800/80 hover:border-teal-600 text-teal-700 dark:text-teal-300 hover:text-white dark:hover:text-white font-bold text-[11px] sm:text-xs rounded-xl flex items-center justify-center space-x-1 transition-all duration-200 cursor-pointer shadow-2xs group/btn"
+                        aria-label={`Get directions to ${place.name}`}
                       >
                         <Navigation
                           size={13}
-                          className="text-teal-600 dark:text-teal-400 group-hover/btn:text-white transition-colors"
+                          className="text-teal-600 dark:text-teal-400 group-hover/btn:text-white transition-colors shrink-0"
                         />
-                        <span>Directions</span>
+                        <span className="truncate">Directions</span>
                       </a>
+
+                      <button
+                        type="button"
+                        onClick={(e) => handleSharePlace(place, e)}
+                        className="w-full py-2 sm:py-2.5 bg-orange-50 dark:bg-orange-950/40 hover:bg-orange-500 border border-orange-200/80 dark:border-orange-800/80 hover:border-orange-500 text-orange-600 dark:text-orange-400 hover:text-white dark:hover:text-white font-bold text-[11px] sm:text-xs rounded-xl flex items-center justify-center space-x-1 transition-all duration-200 cursor-pointer shadow-2xs group/share"
+                        title="Share this place"
+                        aria-label={`Share ${place.name}`}
+                      >
+                        <Share2
+                          size={13}
+                          className="text-orange-500 dark:text-orange-400 group-hover/share:text-white transition-colors shrink-0"
+                        />
+                        <span className="truncate">Share</span>
+                      </button>
                     </div>
                   </div>
                 </Card>
@@ -617,16 +755,17 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
             })}
           </motion.div>
         ) : (
+          /* Search / Filter Empty State */
           <motion.div
-            key="empty"
+            key="empty-search"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
             <EmptyState
               icon={HelpCircle}
-              title="No places found"
-              description="We couldn't find any locations matching your filters or search keywords."
-              actionText="Reset Category"
+              title="No places match your search"
+              description="No places match your search. Try a different keyword or category."
+              actionText="Reset Filters"
               onAction={() => {
                 setSelectedCategory("All");
                 setSearchQuery("");

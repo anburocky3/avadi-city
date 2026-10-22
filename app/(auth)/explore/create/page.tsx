@@ -22,9 +22,8 @@ import {
   ExternalLink,
   Plus,
   Sparkles,
-  Info,
-  Calendar,
   IndianRupee,
+  Check,
 } from "lucide-react";
 
 import { useWard } from "@/context/wardContext";
@@ -213,8 +212,40 @@ const VISITOR_FACILITY_GROUPS: FacilityGroup[] = [
   },
 ];
 
-// 5. Best Time to Visit options
-const BEST_TIMES = ["Morning", "Afternoon", "Evening", "Any Time"];
+// 5. Best Time to Visit options (Grouped & Rich Multi-Choice)
+export interface BestTimeGroup {
+  group: string;
+  items: { id: string; label: string; icon: string; desc?: string }[];
+}
+
+const BEST_TIME_GROUPS: BestTimeGroup[] = [
+  {
+    group: "Times of Day",
+    items: [
+      { id: "Early Morning", label: "Early Morning", icon: "🌅", desc: "5:00 AM – 8:00 AM" },
+      { id: "Morning", label: "Morning", icon: "☀️", desc: "8:00 AM – 12:00 PM" },
+      { id: "Afternoon", label: "Afternoon", icon: "🌤️", desc: "12:00 PM – 4:00 PM" },
+      { id: "Evening", label: "Evening", icon: "🌇", desc: "4:00 PM – 8:00 PM" },
+      { id: "Night", label: "Night", icon: "🌙", desc: "After 8:00 PM" },
+    ],
+  },
+  {
+    group: "Days of Week",
+    items: [
+      { id: "Weekdays", label: "Weekdays", icon: "💼", desc: "Monday – Friday" },
+      { id: "Weekends", label: "Weekends", icon: "🎉", desc: "Saturday – Sunday" },
+    ],
+  },
+  {
+    group: "Seasons & Occasions",
+    items: [
+      { id: "Winter (Nov–Feb)", label: "Winter / Cooler Months", icon: "❄️", desc: "Nov – Feb" },
+      { id: "Monsoon Season", label: "Monsoon Season", icon: "🌧️", desc: "Rainy & scenic" },
+      { id: "Festivals & Events", label: "Festivals & Special Events", icon: "🎊", desc: "Celebrations" },
+      { id: "Any Time / All Year", label: "Any Time / All Year", icon: "🕒", desc: "Open throughout" },
+    ],
+  },
+];
 
 export default function PostPlacePage() {
   const router = useRouter();
@@ -333,9 +364,41 @@ export default function PostPlacePage() {
   const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([]);
 
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
-  const [bestTimeToVisit, setBestTimeToVisit] = useState<string>("");
+  const [selectedBestTimes, setSelectedBestTimes] = useState<string[]>([]);
+  const [customBestTimeInput, setCustomBestTimeInput] = useState("");
   const [guidelines, setGuidelines] = useState("");
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Toggle helper for multi-choice Best Time to Visit
+  const toggleBestTime = (timeOption: string) => {
+    setSelectedBestTimes((prev) => {
+      const isAnyTime =
+        timeOption === "Any Time" || timeOption === "Any Time / All Year";
+      if (isAnyTime) {
+        return prev.includes(timeOption) ? [] : [timeOption];
+      }
+      const withoutAnyTime = prev.filter(
+        (t) => t !== "Any Time" && t !== "Any Time / All Year",
+      );
+      if (withoutAnyTime.includes(timeOption)) {
+        return withoutAnyTime.filter((t) => t !== timeOption);
+      } else {
+        return [...withoutAnyTime, timeOption];
+      }
+    });
+  };
+
+  const handleAddCustomBestTime = () => {
+    const trimmed = customBestTimeInput.trim();
+    if (!trimmed) return;
+    if (!selectedBestTimes.includes(trimmed)) {
+      setSelectedBestTimes((prev) => [
+        ...prev.filter((t) => t !== "Any Time" && t !== "Any Time / All Year"),
+        trimmed,
+      ]);
+    }
+    setCustomBestTimeInput("");
+  };
 
   // Form submission and validation states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -731,8 +794,8 @@ export default function PostPlacePage() {
       if (selectedFacilities.length > 0) {
         formData.append("facilities", JSON.stringify(selectedFacilities));
       }
-      if (bestTimeToVisit) {
-        formData.append("bestTimeToVisit", bestTimeToVisit);
+      if (selectedBestTimes.length > 0) {
+        formData.append("bestTimeToVisit", selectedBestTimes.join(", "));
       }
       if (guidelines.trim()) {
         formData.append("guidelines", guidelines.trim());
@@ -1719,37 +1782,132 @@ export default function PostPlacePage() {
                 </div>
               </div>
 
-              {/* 4. Best Time to Visit */}
-              <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
-                  Best Time to Visit{" "}
-                  <span className="text-xs font-normal text-slate-400">
-                    (Optional)
-                  </span>
-                </label>
+              {/* 4. Best Time to Visit (Multiple Choice) */}
+              <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
+                      Best Time to Visit{" "}
+                      <span className="text-xs font-normal text-slate-400">
+                        (Multiple Choice — Select all that apply)
+                      </span>
+                    </label>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Help visitors know the ideal hours, days, or seasons to visit this place.
+                    </p>
+                  </div>
+                  {selectedBestTimes.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedBestTimes([])}
+                      className="text-[11px] font-semibold text-rose-500 hover:text-rose-600 transition cursor-pointer"
+                    >
+                      Clear All ({selectedBestTimes.length})
+                    </button>
+                  )}
+                </div>
 
-                <div className="flex flex-wrap gap-2">
-                  {BEST_TIMES.map((timeOption) => {
-                    const isSelected = bestTimeToVisit === timeOption;
-                    return (
-                      <button
-                        key={timeOption}
-                        type="button"
-                        onClick={() =>
-                          setBestTimeToVisit((prev) =>
-                            prev === timeOption ? "" : timeOption,
-                          )
+                <div className="space-y-3.5">
+                  {BEST_TIME_GROUPS.map((group) => (
+                    <div key={group.group} className="space-y-1.5">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400 block">
+                        {group.group}
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                        {group.items.map((item) => {
+                          const isSelected = selectedBestTimes.includes(item.id);
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => toggleBestTime(item.id)}
+                              className={`p-2.5 rounded-2xl border text-xs font-medium transition flex items-center justify-between text-left cursor-pointer active:scale-98 ${
+                                isSelected
+                                  ? "bg-primary/10 border-primary text-slate-900 dark:text-white font-bold shadow-2xs ring-1 ring-primary/40"
+                                  : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300"
+                              }`}
+                            >
+                              <div className="flex items-center space-x-2 min-w-0 pr-1">
+                                <span className="text-base shrink-0">{item.icon}</span>
+                                <div className="truncate">
+                                  <p className="font-bold text-xs truncate leading-snug">{item.label}</p>
+                                  {item.desc && (
+                                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate leading-tight">
+                                      {item.desc}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div
+                                className={`w-4 h-4 rounded-md border flex items-center justify-center shrink-0 transition-colors ${
+                                  isSelected
+                                    ? "bg-primary border-primary text-white"
+                                    : "border-slate-300 dark:border-slate-700"
+                                }`}
+                              >
+                                {isSelected && <Check size={11} strokeWidth={3} />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Custom Best Time write-in */}
+                <div className="pt-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={customBestTimeInput}
+                      onChange={(e) => setCustomBestTimeInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleAddCustomBestTime();
                         }
-                        className={`px-4 py-2 rounded-xl border text-xs font-semibold transition cursor-pointer ${
-                          isSelected
-                            ? "bg-primary/10 border-primary text-slate-900 dark:text-white font-bold shadow-2xs"
-                            : "bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-300 font-medium"
-                        }`}
-                      >
-                        {timeOption}
-                      </button>
-                    );
-                  })}
+                      }}
+                      placeholder="Add custom timing (e.g. Sunset, Full Moon Day, Flower Bloom)..."
+                      className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-xs bg-white dark:bg-slate-950 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomBestTime}
+                      disabled={!customBestTimeInput.trim()}
+                      className="px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-primary hover:text-white text-slate-700 dark:text-slate-300 text-xs font-bold transition disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1 shrink-0"
+                    >
+                      <Plus size={13} />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {/* Display any user-added custom tags */}
+                  {selectedBestTimes.filter(
+                    (t) => !BEST_TIME_GROUPS.some((g) => g.items.some((i) => i.id === t)),
+                  ).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {selectedBestTimes
+                        .filter(
+                          (t) => !BEST_TIME_GROUPS.some((g) => g.items.some((i) => i.id === t)),
+                        )
+                        .map((customTag) => (
+                          <span
+                            key={customTag}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary/10 border border-primary/30 text-primary text-xs font-bold"
+                          >
+                            <span>{customTag}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleBestTime(customTag)}
+                              className="hover:text-rose-500 cursor-pointer"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -1844,6 +2002,17 @@ export default function PostPlacePage() {
                       </span>
                       <p className="font-semibold text-slate-700 dark:text-slate-300">
                         {selectedFacilities.join(", ")}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedBestTimes.length > 0 && (
+                    <div className="sm:col-span-2">
+                      <span className="text-slate-400 text-[11px] block">
+                        Best Time to Visit:
+                      </span>
+                      <p className="font-semibold text-slate-700 dark:text-slate-300">
+                        {selectedBestTimes.join(", ")}
                       </p>
                     </div>
                   )}

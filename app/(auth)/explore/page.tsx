@@ -7,6 +7,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ExplorePage() {
   let dbPlaces: Place[] = [];
+  let hasError = false;
   const reviewStatsMap: Record<
     string,
     { averageRating: number; reviewCount: number }
@@ -79,9 +80,10 @@ export default async function ExplorePage() {
     });
   } catch (err) {
     console.error("Error fetching explore places from database:", err);
+    hasError = true;
   }
 
-  // Combined places list (Database approved places prioritized first, then initialPlaces)
+  // Combined places list (Database approved places prioritized first)
   const places = [...dbPlaces];
 
   return (
@@ -96,6 +98,7 @@ export default async function ExplorePage() {
       <ExploreClient
         initialPlaces={places}
         initialReviewStats={reviewStatsMap}
+        hasError={hasError}
       />
     </Suspense>
   );

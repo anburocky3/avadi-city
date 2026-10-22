@@ -49,7 +49,7 @@ const createPlaceSchema = zod.object({
     .or(zod.literal(""))
     .nullable(),
   facilities: zod.string().optional().nullable(),
-  bestTimeToVisit: zod.string().trim().max(50).optional().nullable(),
+  bestTimeToVisit: zod.string().trim().max(500).optional().nullable(),
   guidelines: zod.string().trim().max(2000).optional().nullable(),
   termsAccepted: zod.coerce.boolean().refine((val) => val === true, {
     message: "Please confirm that the information provided is accurate.",
