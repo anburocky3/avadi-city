@@ -30,7 +30,11 @@ import {
 import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
 import { TimePickerDropdown } from "@/components/ui/TimePickerDropdown";
-import { ALL_AVADI_STREETS, StreetItem, AVADI_WARD_COORDINATES } from "@/lib/wards";
+import {
+  ALL_AVADI_STREETS,
+  StreetItem,
+  AVADI_WARD_COORDINATES,
+} from "@/lib/wards";
 import "leaflet/dist/leaflet.css";
 
 // Dynamically import MapLocationPicker to prevent SSR issues with Leaflet
@@ -43,7 +47,7 @@ const MapLocationPicker = dynamic(
         Loading Avadi Interactive Map...
       </div>
     ),
-  }
+  },
 );
 
 // 1. Categories configuration
@@ -51,12 +55,24 @@ const CATEGORIES = [
   { id: "Parks & Gardens", name: "Parks & Gardens", icon: "🌳" },
   { id: "Historical Places", name: "Historical Places", icon: "🏛️" },
   { id: "Lakes & Nature", name: "Lakes & Nature", icon: "🏞️" },
-  { id: "Cultural & Heritage Places", name: "Cultural & Heritage Places", icon: "🛕" },
+  {
+    id: "Cultural & Heritage Places",
+    name: "Cultural & Heritage Places",
+    icon: "🛕",
+  },
   { id: "Sports & Recreation", name: "Sports & Recreation", icon: "🏟️" },
-  { id: "Cultural & Event Spaces", name: "Cultural & Event Spaces", icon: "🎭" },
+  {
+    id: "Cultural & Event Spaces",
+    name: "Cultural & Event Spaces",
+    icon: "🎭",
+  },
   { id: "Tourist Attractions", name: "Tourist Attractions", icon: "📸" },
   { id: "Public Landmarks", name: "Public Landmarks", icon: "🏙️" },
-  { id: "Shopping & Public Spaces", name: "Shopping & Public Spaces", icon: "🛍️" },
+  {
+    id: "Shopping & Public Spaces",
+    name: "Shopping & Public Spaces",
+    icon: "🛍️",
+  },
   { id: "Art & Community Spaces", name: "Art & Community Spaces", icon: "🎨" },
 ];
 
@@ -169,7 +185,11 @@ const VISITOR_FACILITY_GROUPS: FacilityGroup[] = [
     group: "Accessibility",
     items: [
       { id: "Wheelchair Access", label: "Wheelchair Access", icon: "♿" },
-      { id: "Accessible Restrooms", label: "Accessible Restrooms", icon: "♿🚻" },
+      {
+        id: "Accessible Restrooms",
+        label: "Accessible Restrooms",
+        icon: "♿🚻",
+      },
       { id: "Accessible Parking", label: "Accessible Parking", icon: "♿🚗" },
     ],
   },
@@ -184,7 +204,11 @@ const VISITOR_FACILITY_GROUPS: FacilityGroup[] = [
     group: "Visitor Services",
     items: [
       { id: "Food Stalls", label: "Food Stalls", icon: "🍲" },
-      { id: "Public Transport Access", label: "Public Transport Access", icon: "🚌" },
+      {
+        id: "Public Transport Access",
+        label: "Public Transport Access",
+        icon: "🚌",
+      },
     ],
   },
 ];
@@ -263,14 +287,17 @@ export default function PostPlacePage() {
   const [category, setCategory] = useState<string>("");
   const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [description, setDescription] = useState("");
-  const [selectedVisitorTypes, setSelectedVisitorTypes] = useState<string[]>([]);
+  const [selectedVisitorTypes, setSelectedVisitorTypes] = useState<string[]>(
+    [],
+  );
 
   // ==========================================
   // STEP 2 STATE: LOCATION & VISITOR INFO
   // ==========================================
   const [streetQuery, setStreetQuery] = useState("");
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
-  const [selectedStreetItem, setSelectedStreetItem] = useState<StreetItem | null>(null);
+  const [selectedStreetItem, setSelectedStreetItem] =
+    useState<StreetItem | null>(null);
   const [streetArea, setStreetArea] = useState("");
   const [ward, setWard] = useState<number>(activeWard?.id || 1);
   const [latitude, setLatitude] = useState<number>(13.1169);
@@ -282,7 +309,9 @@ export default function PostPlacePage() {
   const [openingTime, setOpeningTime] = useState("9:00 AM");
   const [closingTime, setClosingTime] = useState("5:00 PM");
 
-  const [entryFeeType, setEntryFeeType] = useState<"Free Entry" | "Paid Entry">("Free Entry");
+  const [entryFeeType, setEntryFeeType] = useState<"Free Entry" | "Paid Entry">(
+    "Free Entry",
+  );
   const [entryFeeAmount, setEntryFeeAmount] = useState<string>("");
 
   const [phone, setPhone] = useState("");
@@ -296,7 +325,9 @@ export default function PostPlacePage() {
   const additionalFileInputRef = useRef<HTMLInputElement>(null);
 
   const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(null);
+  const [coverImagePreview, setCoverImagePreview] = useState<string | null>(
+    null,
+  );
 
   const [additionalFiles, setAdditionalFiles] = useState<File[]>([]);
   const [additionalPreviews, setAdditionalPreviews] = useState<string[]>([]);
@@ -345,14 +376,18 @@ export default function PostPlacePage() {
     }
     // Filter out activities not supported by new category
     const validActivities = CATEGORY_ACTIVITIES[catId] || [];
-    setSelectedActivities((prev) => prev.filter((act) => validActivities.includes(act)));
+    setSelectedActivities((prev) =>
+      prev.filter((act) => validActivities.includes(act)),
+    );
   };
 
   // Toggle activity selection (multi-select chip)
   const toggleActivity = (activity: string) => {
     setSelectedActivities((prev) => {
       const exists = prev.includes(activity);
-      const updated = exists ? prev.filter((a) => a !== activity) : [...prev, activity];
+      const updated = exists
+        ? prev.filter((a) => a !== activity)
+        : [...prev, activity];
       if (fieldErrors.activities && updated.length > 0) {
         setFieldErrors((p) => ({ ...p, activities: "" }));
       }
@@ -363,14 +398,18 @@ export default function PostPlacePage() {
   // Toggle visitor type (multi-select chip)
   const toggleVisitorType = (vType: string) => {
     setSelectedVisitorTypes((prev) =>
-      prev.includes(vType) ? prev.filter((item) => item !== vType) : [...prev, vType]
+      prev.includes(vType)
+        ? prev.filter((item) => item !== vType)
+        : [...prev, vType],
     );
   };
 
   // Toggle facility (multi-select chip)
   const toggleFacility = (facilityId: string) => {
     setSelectedFacilities((prev) =>
-      prev.includes(facilityId) ? prev.filter((f) => f !== facilityId) : [...prev, facilityId]
+      prev.includes(facilityId)
+        ? prev.filter((f) => f !== facilityId)
+        : [...prev, facilityId],
     );
   };
 
@@ -386,7 +425,7 @@ export default function PostPlacePage() {
     }
 
     const matches = ALL_AVADI_STREETS.filter((item) =>
-      item.streetName.toLowerCase().includes(searchTerm.toLowerCase())
+      item.streetName.toLowerCase().includes(searchTerm.toLowerCase()),
     );
     setStreetResults(matches.slice(0, 15));
   };
@@ -446,7 +485,9 @@ export default function PostPlacePage() {
   };
 
   // Additional images handler
-  const handleAdditionalImagesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAdditionalImagesChange = (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
 
@@ -474,7 +515,8 @@ export default function PostPlacePage() {
 
     setAdditionalFiles((prev) => [...prev, ...validNewFiles]);
     setAdditionalPreviews((prev) => [...prev, ...validNewPreviews]);
-    if (additionalFileInputRef.current) additionalFileInputRef.current.value = "";
+    if (additionalFileInputRef.current)
+      additionalFileInputRef.current.value = "";
   };
 
   const handleRemoveAdditionalImage = (index: number) => {
@@ -556,7 +598,8 @@ export default function PostPlacePage() {
     if (entryFeeType === "Paid Entry") {
       const numVal = parseFloat(entryFeeAmount);
       if (isNaN(numVal) || numVal <= 0) {
-        errors.entryFeeAmount = "Please enter a valid admission fee amount (greater than 0).";
+        errors.entryFeeAmount =
+          "Please enter a valid admission fee amount (greater than 0).";
       }
     }
 
@@ -590,7 +633,9 @@ export default function PostPlacePage() {
     if (validateStep2()) {
       goToStep(3);
     } else {
-      toast.error("Please fill in all required location & visitor information.");
+      toast.error(
+        "Please fill in all required location & visitor information.",
+      );
     }
   };
 
@@ -672,7 +717,8 @@ export default function PostPlacePage() {
 
       if (phone.trim()) formData.append("phone", phone.trim());
       if (website.trim()) formData.append("website", website.trim());
-      if (officialUrl.trim()) formData.append("officialUrl", officialUrl.trim());
+      if (officialUrl.trim())
+        formData.append("officialUrl", officialUrl.trim());
 
       if (coverImageFile) {
         formData.append("image", coverImageFile);
@@ -703,7 +749,9 @@ export default function PostPlacePage() {
       const result = await response.json();
 
       if (!response.ok || !result.success) {
-        toast.error(result.message || "Unable to submit your place. Please try again.");
+        toast.error(
+          result.message || "Unable to submit your place. Please try again.",
+        );
         if (result.errors) {
           const mappedErrors: Record<string, string> = {};
           for (const key of Object.keys(result.errors)) {
@@ -718,7 +766,9 @@ export default function PostPlacePage() {
 
       setShowSuccessModal(true);
     } catch {
-      toast.error("Unable to submit place. Please check your connection and try again.");
+      toast.error(
+        "Unable to submit place. Please check your connection and try again.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -728,20 +778,21 @@ export default function PostPlacePage() {
     name.trim().length >= 2 &&
     category &&
     selectedActivities.length > 0 &&
-    description.trim().length >= 10
+    description.trim().length >= 10,
   );
 
   const isStep2Ready = Boolean(
     (streetArea || streetQuery).trim() &&
     address.trim().length >= 3 &&
     (isOpen24Hours || (openingTime && closingTime)) &&
-    (entryFeeType === "Free Entry" || (entryFeeType === "Paid Entry" && parseFloat(entryFeeAmount) > 0))
+    (entryFeeType === "Free Entry" ||
+      (entryFeeType === "Paid Entry" && parseFloat(entryFeeAmount) > 0)),
   );
 
   const isStep3Ready = Boolean(coverImageFile && termsAccepted);
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-3xl lg:max-w-full  mx-auto space-y-6">
       {/* 1. Back to Explore Places Link */}
       <div>
         <Link
@@ -824,7 +875,8 @@ export default function PostPlacePage() {
                   value={name}
                   onChange={(e) => {
                     setName(e.target.value);
-                    if (fieldErrors.name) setFieldErrors((p) => ({ ...p, name: "" }));
+                    if (fieldErrors.name)
+                      setFieldErrors((p) => ({ ...p, name: "" }));
                   }}
                   placeholder="e.g. Paruthipattu Lake Park, Local Heritage Landmark"
                   className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -841,7 +893,10 @@ export default function PostPlacePage() {
               </div>
 
               {/* Place Category (Selectable cards, single selection) */}
-              <div ref={categoryRef} className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div
+                ref={categoryRef}
+                className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800"
+              >
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                   Place Category <span className="text-rose-500">*</span>
                   <span className="text-xs font-normal text-slate-400 ml-1.5">
@@ -864,7 +919,9 @@ export default function PostPlacePage() {
                         }`}
                       >
                         <span className="text-xl shrink-0">{cat.icon}</span>
-                        <span className="text-xs sm:text-sm leading-tight">{cat.name}</span>
+                        <span className="text-xs sm:text-sm leading-tight">
+                          {cat.name}
+                        </span>
                       </button>
                     );
                   })}
@@ -878,9 +935,13 @@ export default function PostPlacePage() {
               </div>
 
               {/* Dynamic Activities & Attractions (Based on selected category) */}
-              <div ref={activitiesRef} className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div
+                ref={activitiesRef}
+                className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800"
+              >
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
-                  What Can Visitors Do Here? <span className="text-rose-500">*</span>
+                  What Can Visitors Do Here?{" "}
+                  <span className="text-rose-500">*</span>
                   <span className="text-xs font-normal text-slate-400 ml-1.5">
                     {category
                       ? `(Select activities applicable to ${category})`
@@ -891,7 +952,8 @@ export default function PostPlacePage() {
                 {!category ? (
                   <div className="p-4 rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-center">
                     <p className="text-xs text-slate-400">
-                      Select a Place Category above to view available activities and attractions.
+                      Select a Place Category above to view available activities
+                      and attractions.
                     </p>
                   </div>
                 ) : (
@@ -909,7 +971,9 @@ export default function PostPlacePage() {
                               : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 dark:hover:border-slate-700 font-medium"
                           }`}
                         >
-                          <span className="text-xs leading-snug">{activity}</span>
+                          <span className="text-xs leading-snug">
+                            {activity}
+                          </span>
                         </button>
                       );
                     })}
@@ -938,7 +1002,8 @@ export default function PostPlacePage() {
                   value={description}
                   onChange={(e) => {
                     setDescription(e.target.value);
-                    if (fieldErrors.description) setFieldErrors((p) => ({ ...p, description: "" }));
+                    if (fieldErrors.description)
+                      setFieldErrors((p) => ({ ...p, description: "" }));
                   }}
                   placeholder="Describe what this place is, what makes it interesting, key highlights, and useful advice for visitors..."
                   className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary resize-y min-h-24 ${
@@ -1014,7 +1079,8 @@ export default function PostPlacePage() {
                   htmlFor="place-street-input"
                   className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                 >
-                  Area / Street Location in Avadi <span className="text-rose-500">*</span>
+                  Area / Street Location in Avadi{" "}
+                  <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
                   <input
@@ -1063,13 +1129,16 @@ export default function PostPlacePage() {
                   </ul>
                 )}
 
-                {streetQuery.trim() && streetResults.length === 0 && !selectedStreetItem && (
-                  <div className="p-3 mt-1 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
-                    <p className="text-xs font-medium text-slate-500">
-                      No matching street found in Avadi. You can still pinpoint the location on the map below.
-                    </p>
-                  </div>
-                )}
+                {streetQuery.trim() &&
+                  streetResults.length === 0 &&
+                  !selectedStreetItem && (
+                    <div className="p-3 mt-1 text-center rounded-2xl border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                      <p className="text-xs font-medium text-slate-500">
+                        No matching street found in Avadi. You can still
+                        pinpoint the location on the map below.
+                      </p>
+                    </div>
+                  )}
 
                 {fieldErrors.streetArea && (
                   <p className="mt-1.5 text-xs font-semibold text-rose-500 flex items-center gap-1">
@@ -1084,7 +1153,8 @@ export default function PostPlacePage() {
                   <MapPin size={16} className="text-primary" />
                   <span>Pinpoint Place on Map</span>
                   <span className="text-[11px] font-normal text-slate-400">
-                    (Click or drag marker to set exact attraction entrance or spot in Avadi)
+                    (Click or drag marker to set exact attraction entrance or
+                    spot in Avadi)
                   </span>
                 </label>
 
@@ -1112,7 +1182,9 @@ export default function PostPlacePage() {
                       {latitude.toFixed(5)}, {longitude.toFixed(5)}
                     </span>
                     {ward ? (
-                      <span className="ml-2 font-bold text-primary">(Ward {ward})</span>
+                      <span className="ml-2 font-bold text-primary">
+                        (Ward {ward})
+                      </span>
                     ) : null}
                   </p>
                 )}
@@ -1133,7 +1205,8 @@ export default function PostPlacePage() {
                   value={address}
                   onChange={(e) => {
                     setAddress(e.target.value);
-                    if (fieldErrors.address) setFieldErrors((p) => ({ ...p, address: "" }));
+                    if (fieldErrors.address)
+                      setFieldErrors((p) => ({ ...p, address: "" }));
                   }}
                   placeholder="e.g. Lake View Road, Paruthipattu, Near Checkpost, Avadi - 600071"
                   className={`w-full px-4 py-3 rounded-2xl border text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -1150,7 +1223,10 @@ export default function PostPlacePage() {
               </div>
 
               {/* Visiting Hours (Open 24 Hours or 12h AM/PM Pickers) */}
-              <div ref={hoursRef} className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div
+                ref={hoursRef}
+                className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800"
+              >
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                     Visiting Hours <span className="text-rose-500">*</span>
@@ -1164,7 +1240,11 @@ export default function PostPlacePage() {
                       onChange={(e) => {
                         setIsOpen24Hours(e.target.checked);
                         if (e.target.checked && fieldErrors.openingTime) {
-                          setFieldErrors((p) => ({ ...p, openingTime: "", closingTime: "" }));
+                          setFieldErrors((p) => ({
+                            ...p,
+                            openingTime: "",
+                            closingTime: "",
+                          }));
                         }
                       }}
                       className="w-4 h-4 rounded text-primary border-slate-300 focus:ring-primary accent-primary"
@@ -1234,7 +1314,10 @@ export default function PostPlacePage() {
               </div>
 
               {/* Entry Fee (Free Entry vs Paid Entry) */}
-              <div ref={feeRef} className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div
+                ref={feeRef}
+                className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800"
+              >
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                   Entry Fee <span className="text-rose-500">*</span>
                 </label>
@@ -1293,7 +1376,10 @@ export default function PostPlacePage() {
                         onChange={(e) => {
                           setEntryFeeAmount(e.target.value);
                           if (fieldErrors.entryFeeAmount) {
-                            setFieldErrors((p) => ({ ...p, entryFeeAmount: "" }));
+                            setFieldErrors((p) => ({
+                              ...p,
+                              entryFeeAmount: "",
+                            }));
                           }
                         }}
                         placeholder="e.g. 20 (Adult ticket / Entry ticket)"
@@ -1338,7 +1424,8 @@ export default function PostPlacePage() {
                         value={phone}
                         onChange={(e) => {
                           setPhone(e.target.value);
-                          if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" }));
+                          if (fieldErrors.phone)
+                            setFieldErrors((p) => ({ ...p, phone: "" }));
                         }}
                         placeholder="e.g. 044-26551234"
                         className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1369,7 +1456,8 @@ export default function PostPlacePage() {
                         value={website}
                         onChange={(e) => {
                           setWebsite(e.target.value);
-                          if (fieldErrors.website) setFieldErrors((p) => ({ ...p, website: "" }));
+                          if (fieldErrors.website)
+                            setFieldErrors((p) => ({ ...p, website: "" }));
                         }}
                         placeholder="https://example.org"
                         className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1401,7 +1489,8 @@ export default function PostPlacePage() {
                       value={officialUrl}
                       onChange={(e) => {
                         setOfficialUrl(e.target.value);
-                        if (fieldErrors.officialUrl) setFieldErrors((p) => ({ ...p, officialUrl: "" }));
+                        if (fieldErrors.officialUrl)
+                          setFieldErrors((p) => ({ ...p, officialUrl: "" }));
                       }}
                       placeholder="https://tn.gov.in/attraction or wikipedia link"
                       className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm font-medium bg-white dark:bg-slate-950 text-slate-900 dark:text-white transition focus:outline-none focus:ring-2 focus:ring-primary"
@@ -1529,7 +1618,8 @@ export default function PostPlacePage() {
                       </span>
                     </label>
                     <p className="text-[11px] text-slate-400">
-                      Show entrance, landscape, attractions, amenities or scenic views.
+                      Show entrance, landscape, attractions, amenities or scenic
+                      views.
                     </p>
                   </div>
 
@@ -1589,7 +1679,8 @@ export default function PostPlacePage() {
                     Visitor Facilities &amp; Accessibility
                   </label>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    Select the facilities and accessibility amenities actually available at this place.
+                    Select the facilities and accessibility amenities actually
+                    available at this place.
                   </p>
                 </div>
 
@@ -1601,7 +1692,9 @@ export default function PostPlacePage() {
                       </span>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {group.items.map((fac) => {
-                          const isSelected = selectedFacilities.includes(fac.id);
+                          const isSelected = selectedFacilities.includes(
+                            fac.id,
+                          );
                           return (
                             <button
                               key={fac.id}
@@ -1613,7 +1706,9 @@ export default function PostPlacePage() {
                                   : "bg-slate-50/50 dark:bg-slate-950/50 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300 font-medium"
                               }`}
                             >
-                              <span className="text-base shrink-0">{fac.icon}</span>
+                              <span className="text-base shrink-0">
+                                {fac.icon}
+                              </span>
                               <span className="truncate">{fac.label}</span>
                             </button>
                           );
@@ -1628,7 +1723,9 @@ export default function PostPlacePage() {
               <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <label className="block text-xs font-bold text-slate-700 dark:text-slate-200">
                   Best Time to Visit{" "}
-                  <span className="text-xs font-normal text-slate-400">(Optional)</span>
+                  <span className="text-xs font-normal text-slate-400">
+                    (Optional)
+                  </span>
                 </label>
 
                 <div className="flex flex-wrap gap-2">
@@ -1639,7 +1736,9 @@ export default function PostPlacePage() {
                         key={timeOption}
                         type="button"
                         onClick={() =>
-                          setBestTimeToVisit((prev) => (prev === timeOption ? "" : timeOption))
+                          setBestTimeToVisit((prev) =>
+                            prev === timeOption ? "" : timeOption,
+                          )
                         }
                         className={`px-4 py-2 rounded-xl border text-xs font-semibold transition cursor-pointer ${
                           isSelected
@@ -1661,7 +1760,9 @@ export default function PostPlacePage() {
                   className="block text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5"
                 >
                   Visitor Guidelines &amp; Additional Information{" "}
-                  <span className="text-xs font-normal text-slate-400">(Optional)</span>
+                  <span className="text-xs font-normal text-slate-400">
+                    (Optional)
+                  </span>
                 </label>
                 <textarea
                   id="place-guidelines-input"
@@ -1682,36 +1783,54 @@ export default function PostPlacePage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Place Name &amp; Category:</span>
+                    <span className="text-slate-400 text-[11px] block">
+                      Place Name &amp; Category:
+                    </span>
                     <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {name || "—"} <span className="font-semibold text-primary">({category || "—"})</span>
+                      {name || "—"}{" "}
+                      <span className="font-semibold text-primary">
+                        ({category || "—"})
+                      </span>
                     </p>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Location &amp; Ward:</span>
+                    <span className="text-slate-400 text-[11px] block">
+                      Location &amp; Ward:
+                    </span>
                     <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {(streetArea || streetQuery) || "—"} {ward ? `(Ward ${ward})` : ""}
+                      {streetArea || streetQuery || "—"}{" "}
+                      {ward ? `(Ward ${ward})` : ""}
                     </p>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Visiting Hours:</span>
+                    <span className="text-slate-400 text-[11px] block">
+                      Visiting Hours:
+                    </span>
                     <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {isOpen24Hours ? "Open 24 Hours" : `${openingTime} – ${closingTime}`}
+                      {isOpen24Hours
+                        ? "Open 24 Hours"
+                        : `${openingTime} – ${closingTime}`}
                     </p>
                   </div>
 
                   <div>
-                    <span className="text-slate-400 text-[11px] block">Entry Fee:</span>
+                    <span className="text-slate-400 text-[11px] block">
+                      Entry Fee:
+                    </span>
                     <p className="font-bold text-slate-800 dark:text-slate-200">
-                      {entryFeeType === "Free Entry" ? "Free Entry" : `₹${entryFeeAmount || 0}`}
+                      {entryFeeType === "Free Entry"
+                        ? "Free Entry"
+                        : `₹${entryFeeAmount || 0}`}
                     </p>
                   </div>
 
                   {selectedActivities.length > 0 && (
                     <div className="sm:col-span-2">
-                      <span className="text-slate-400 text-[11px] block">Activities:</span>
+                      <span className="text-slate-400 text-[11px] block">
+                        Activities:
+                      </span>
                       <p className="font-semibold text-slate-700 dark:text-slate-300">
                         {selectedActivities.join(" · ")}
                       </p>
@@ -1720,7 +1839,9 @@ export default function PostPlacePage() {
 
                   {selectedFacilities.length > 0 && (
                     <div className="sm:col-span-2">
-                      <span className="text-slate-400 text-[11px] block">Facilities:</span>
+                      <span className="text-slate-400 text-[11px] block">
+                        Facilities:
+                      </span>
                       <p className="font-semibold text-slate-700 dark:text-slate-300">
                         {selectedFacilities.join(", ")}
                       </p>
@@ -1749,7 +1870,8 @@ export default function PostPlacePage() {
                     htmlFor="terms-checkbox"
                     className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed cursor-pointer select-none font-medium"
                   >
-                    I confirm that the information, location details, timings, and images provided by me for this place are accurate.
+                    I confirm that the information, location details, timings,
+                    and images provided by me for this place are accurate.
                   </label>
                 </div>
 
@@ -1760,7 +1882,9 @@ export default function PostPlacePage() {
                 )}
 
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 pl-8 leading-relaxed">
-                  By submitting this place, you agree that your submission will be reviewed by administrators before being made publicly visible on Avadi Connect Explore.
+                  By submitting this place, you agree that your submission will
+                  be reviewed by administrators before being made publicly
+                  visible on Avadi Connect Explore.
                 </p>
               </div>
 

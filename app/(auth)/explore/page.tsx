@@ -1,5 +1,4 @@
 import React, { Suspense } from "react";
-import { initialPlaces } from "@/data/places";
 import { SkeletonLoader } from "@/components/shared-components";
 import { ExploreClient, Place } from "./ExploreClient";
 import { prisma } from "@/lib/prisma";
@@ -50,8 +49,8 @@ export default async function ExplorePage() {
       const timingsStr = p.is24x7
         ? "Open 24 Hours"
         : p.openingTime && p.closingTime
-        ? `${p.openingTime} – ${p.closingTime}`
-        : "Timings vary";
+          ? `${p.openingTime} – ${p.closingTime}`
+          : "Timings vary";
 
       return {
         id: p.id,
@@ -83,7 +82,7 @@ export default async function ExplorePage() {
   }
 
   // Combined places list (Database approved places prioritized first, then initialPlaces)
-  const places = [...dbPlaces, ...initialPlaces];
+  const places = [...dbPlaces];
 
   return (
     <Suspense
@@ -94,7 +93,10 @@ export default async function ExplorePage() {
         </div>
       }
     >
-      <ExploreClient initialPlaces={places} initialReviewStats={reviewStatsMap} />
+      <ExploreClient
+        initialPlaces={places}
+        initialReviewStats={reviewStatsMap}
+      />
     </Suspense>
   );
 }

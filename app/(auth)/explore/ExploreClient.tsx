@@ -140,7 +140,9 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedPlace, setSelectedPlace] = useState<Place | null>(null);
-  const [isImageLoading, setIsImageLoading] = useState<Record<string | number, boolean>>({});
+  const [isImageLoading, setIsImageLoading] = useState<
+    Record<string | number, boolean>
+  >({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Feature 7: Ratings & Reviews state
@@ -227,19 +229,19 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
       if (res.ok && json.success) {
         toast.success(
           json.message ||
-            "Your review has been submitted successfully. Thank you for sharing your experience!"
+            "Your review has been submitted successfully. Thank you for sharing your experience!",
         );
         setInputRating(0);
         setInputReviewText("");
         await fetchReviewsForPlace(selectedPlace.id);
       } else {
         toast.error(
-          json.message || "Unable to submit your review. Please try again."
+          json.message || "Unable to submit your review. Please try again.",
         );
       }
     } catch {
       toast.error(
-        "Unable to submit your review. Please check your network and try again."
+        "Unable to submit your review. Please check your network and try again.",
       );
     } finally {
       setIsSubmittingReview(false);
@@ -263,7 +265,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
     if (!selectedPlace?.facilities || !Array.isArray(selectedPlace.facilities))
       return [];
     return selectedPlace.facilities.filter(
-      (f) => !ACCESSIBILITY_FACILITIES.has(f)
+      (f) => !ACCESSIBILITY_FACILITIES.has(f),
     );
   }, [selectedPlace]);
 
@@ -271,7 +273,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
     if (!selectedPlace?.facilities || !Array.isArray(selectedPlace.facilities))
       return [];
     return selectedPlace.facilities.filter((f) =>
-      ACCESSIBILITY_FACILITIES.has(f)
+      ACCESSIBILITY_FACILITIES.has(f),
     );
   }, [selectedPlace]);
 
@@ -295,9 +297,22 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
     if (selectedCategory !== "All") {
       list = list.filter((place) => {
         if (place.category === selectedCategory) return true;
-        if (selectedCategory === "Parks & Gardens" && (place.category === "Parks" || place.category === "Parks & Gardens")) return true;
-        if (selectedCategory === "Parks" && (place.category === "Parks" || place.category === "Parks & Gardens")) return true;
-        if (selectedCategory === "Historical Places" && (place.category === "Historical Places" || place.category === "Famous Spots")) return true;
+        if (
+          selectedCategory === "Parks & Gardens" &&
+          (place.category === "Parks" || place.category === "Parks & Gardens")
+        )
+          return true;
+        if (
+          selectedCategory === "Parks" &&
+          (place.category === "Parks" || place.category === "Parks & Gardens")
+        )
+          return true;
+        if (
+          selectedCategory === "Historical Places" &&
+          (place.category === "Historical Places" ||
+            place.category === "Famous Spots")
+        )
+          return true;
         return false;
       });
     }
@@ -311,7 +326,8 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
           place.description.toLowerCase().includes(q) ||
           place.address.toLowerCase().includes(q) ||
           (place.category && place.category.toLowerCase().includes(q)) ||
-          (place.activities && place.activities.some((a) => a.toLowerCase().includes(q)))
+          (place.activities &&
+            place.activities.some((a) => a.toLowerCase().includes(q))),
       );
     }
 
@@ -325,7 +341,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl lg:max-w-full mx-auto space-y-6">
       {/* Header title & Post Place Button */}
       <div className="flex items-center justify-between gap-4">
         <div>
@@ -386,8 +402,8 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                 isSelected
                   ? "bg-primary border-primary text-white shadow-sm"
                   : cat.isHighlighted
-                  ? `${cat.color} font-black animate-pulse-subtle`
-                  : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
+                    ? `${cat.color} font-black animate-pulse-subtle`
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
               }`}
             >
               <Icon size={14} />
@@ -454,12 +470,16 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                     {/* Entry Fee Badge and/or Real Review Rating (Top-Right) */}
                     <div className="absolute top-3 right-3 flex items-center gap-1.5">
                       {place.entryFeeType && (
-                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-black shadow-md backdrop-blur-md ${
-                          place.entryFeeType === "Free Entry"
-                            ? "bg-emerald-600 text-white"
-                            : "bg-amber-500 text-slate-950"
-                        }`}>
-                          {place.entryFeeType === "Free Entry" ? "Free Entry" : `₹${place.entryFeeAmount || 0}`}
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[11px] font-black shadow-md backdrop-blur-md ${
+                            place.entryFeeType === "Free Entry"
+                              ? "bg-emerald-600 text-white"
+                              : "bg-amber-500 text-slate-950"
+                          }`}
+                        >
+                          {place.entryFeeType === "Free Entry"
+                            ? "Free Entry"
+                            : `₹${place.entryFeeAmount || 0}`}
                         </span>
                       )}
 
@@ -505,7 +525,9 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                       {/* Activities Display (if available) */}
                       {place.activities && place.activities.length > 0 && (
                         <div className="pt-1 flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                          <span className="text-slate-400 font-semibold shrink-0">Activities:</span>
+                          <span className="text-slate-400 font-semibold shrink-0">
+                            Activities:
+                          </span>
                           <span className="truncate text-teal-700 dark:text-teal-300">
                             {place.activities.slice(0, 3).join(" · ")}
                             {place.activities.length > 3 ? "..." : ""}
@@ -527,7 +549,9 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                                     : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
                                 }`}
                               >
-                                {isAccess && <span className="text-[10px]">♿</span>}
+                                {isAccess && (
+                                  <span className="text-[10px]">♿</span>
+                                )}
                                 <span>{fac}</span>
                               </span>
                             );
@@ -633,12 +657,16 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                 </div>
               )}
               {selectedPlace.entryFeeType && (
-                <div className={`absolute top-3 right-3 text-xs font-black px-3 py-1 rounded-full shadow-lg ${
-                  selectedPlace.entryFeeType === "Free Entry"
-                    ? "bg-emerald-600 text-white"
-                    : "bg-amber-500 text-slate-950"
-                }`}>
-                  {selectedPlace.entryFeeType === "Free Entry" ? "Free Entry" : `₹${selectedPlace.entryFeeAmount || 0} Entry Fee`}
+                <div
+                  className={`absolute top-3 right-3 text-xs font-black px-3 py-1 rounded-full shadow-lg ${
+                    selectedPlace.entryFeeType === "Free Entry"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-amber-500 text-slate-950"
+                  }`}
+                >
+                  {selectedPlace.entryFeeType === "Free Entry"
+                    ? "Free Entry"
+                    : `₹${selectedPlace.entryFeeAmount || 0} Entry Fee`}
                 </div>
               )}
             </div>
@@ -661,9 +689,13 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
               )}
               {currentPlaceStats && currentPlaceStats.reviewCount > 0 ? (
                 <span className="text-[11px] font-black text-amber-600 dark:text-amber-400 flex items-center bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-800/60">
-                  <Star size={11} className="fill-amber-400 text-amber-400 mr-1" />
+                  <Star
+                    size={11}
+                    className="fill-amber-400 text-amber-400 mr-1"
+                  />
                   <span>
-                    {currentPlaceStats.averageRating?.toFixed(1)}/5 · {currentPlaceStats.reviewCount}{" "}
+                    {currentPlaceStats.averageRating?.toFixed(1)}/5 ·{" "}
+                    {currentPlaceStats.reviewCount}{" "}
                     {currentPlaceStats.reviewCount === 1 ? "Review" : "Reviews"}
                   </span>
                 </span>
@@ -679,75 +711,80 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
             </p>
 
             {/* Activities Section in Modal */}
-            {selectedPlace.activities && selectedPlace.activities.length > 0 && (
-              <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                  Activities &amp; Attractions:
-                </h4>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedPlace.activities.map((act) => (
-                    <span
-                      key={act}
-                      className="px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/60 text-xs font-medium"
-                    >
-                      {act}
-                    </span>
-                  ))}
+            {selectedPlace.activities &&
+              selectedPlace.activities.length > 0 && (
+                <div className="space-y-1.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                    Activities &amp; Attractions:
+                  </h4>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedPlace.activities.map((act) => (
+                      <span
+                        key={act}
+                        className="px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-300 border border-teal-200/60 dark:border-teal-800/60 text-xs font-medium"
+                      >
+                        {act}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* FEATURE 8: Visitor Facilities & Accessibility */}
-            {selectedPlace.facilities && selectedPlace.facilities.length > 0 && (
-              <div className="space-y-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center space-x-1.5">
-                  <Sparkles size={14} className="text-teal-600 dark:text-teal-400" />
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
-                    Visitor Facilities &amp; Accessibility
-                  </h4>
+            {selectedPlace.facilities &&
+              selectedPlace.facilities.length > 0 && (
+                <div className="space-y-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center space-x-1.5">
+                    <Sparkles
+                      size={14}
+                      className="text-teal-600 dark:text-teal-400"
+                    />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
+                      Visitor Facilities &amp; Accessibility
+                    </h4>
+                  </div>
+
+                  {/* Available Facilities subsection */}
+                  {availableFacilities.length > 0 && (
+                    <div className="space-y-1.5 pl-1">
+                      <h5 className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                        Available Facilities
+                      </h5>
+                      <div className="flex flex-wrap gap-1.5">
+                        {availableFacilities.map((fac) => (
+                          <span
+                            key={fac}
+                            className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200/60 dark:border-slate-700/60"
+                          >
+                            {fac}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Accessibility subsection */}
+                  {accessibilityFacilities.length > 0 && (
+                    <div className="space-y-1.5 pl-1">
+                      <h5 className="text-[11px] font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
+                        <span>♿</span>
+                        <span>Accessibility</span>
+                      </h5>
+                      <div className="flex flex-wrap gap-1.5">
+                        {accessibilityFacilities.map((fac) => (
+                          <span
+                            key={fac}
+                            className="px-2.5 py-1 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 text-xs font-semibold border border-teal-200 dark:border-teal-800 flex items-center gap-1.5"
+                          >
+                            <span>♿</span>
+                            <span>{fac}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-
-                {/* Available Facilities subsection */}
-                {availableFacilities.length > 0 && (
-                  <div className="space-y-1.5 pl-1">
-                    <h5 className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                      Available Facilities
-                    </h5>
-                    <div className="flex flex-wrap gap-1.5">
-                      {availableFacilities.map((fac) => (
-                        <span
-                          key={fac}
-                          className="px-2.5 py-1 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium border border-slate-200/60 dark:border-slate-700/60"
-                        >
-                          {fac}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Accessibility subsection */}
-                {accessibilityFacilities.length > 0 && (
-                  <div className="space-y-1.5 pl-1">
-                    <h5 className="text-[11px] font-bold text-teal-700 dark:text-teal-400 flex items-center gap-1">
-                      <span>♿</span>
-                      <span>Accessibility</span>
-                    </h5>
-                    <div className="flex flex-wrap gap-1.5">
-                      {accessibilityFacilities.map((fac) => (
-                        <span
-                          key={fac}
-                          className="px-2.5 py-1 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 text-xs font-semibold border border-teal-200 dark:border-teal-800 flex items-center gap-1.5"
-                        >
-                          <span>♿</span>
-                          <span>{fac}</span>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+              )}
 
             {/* Visitor Guidelines */}
             {selectedPlace.guidelines && (
@@ -798,7 +835,9 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                 target="_blank"
                 rel="noopener noreferrer"
                 className={`py-3 bg-primary hover:bg-orange-600 text-white rounded-xl font-bold transition text-xs flex items-center justify-center space-x-1.5 shadow-sm ${
-                  !selectedPlace.phone && !selectedPlace.website ? "col-span-full" : ""
+                  !selectedPlace.phone && !selectedPlace.website
+                    ? "col-span-full"
+                    : ""
                 }`}
               >
                 <Navigation size={14} />
@@ -818,10 +857,16 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                 <div>
                   {currentPlaceStats && currentPlaceStats.reviewCount > 0 ? (
                     <span className="text-xs font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                      <Star size={13} className="fill-amber-400 text-amber-400" />
+                      <Star
+                        size={13}
+                        className="fill-amber-400 text-amber-400"
+                      />
                       <span>
-                        {currentPlaceStats.averageRating?.toFixed(1)}/5 · {currentPlaceStats.reviewCount}{" "}
-                        {currentPlaceStats.reviewCount === 1 ? "Review" : "Reviews"}
+                        {currentPlaceStats.averageRating?.toFixed(1)}/5 ·{" "}
+                        {currentPlaceStats.reviewCount}{" "}
+                        {currentPlaceStats.reviewCount === 1
+                          ? "Review"
+                          : "Reviews"}
                       </span>
                     </span>
                   ) : (
@@ -848,13 +893,17 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                 </div>
               ) : userExistingReview ? (
                 <div className="p-3.5 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 flex items-start space-x-3">
-                  <CheckCircle2 size={16} className="text-teal-600 dark:text-teal-400 shrink-0 mt-0.5" />
+                  <CheckCircle2
+                    size={16}
+                    className="text-teal-600 dark:text-teal-400 shrink-0 mt-0.5"
+                  />
                   <div className="space-y-0.5">
                     <p className="text-xs font-bold text-teal-900 dark:text-teal-200">
                       You have already reviewed this place.
                     </p>
                     <p className="text-[11px] text-teal-700 dark:text-teal-400">
-                      Thank you for sharing your experience with the Avadi community!
+                      Thank you for sharing your experience with the Avadi
+                      community!
                     </p>
                   </div>
                 </div>
@@ -926,7 +975,9 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                   >
                     <Send size={13} />
                     <span>
-                      {isSubmittingReview ? "Submitting Review..." : "Submit Review"}
+                      {isSubmittingReview
+                        ? "Submitting Review..."
+                        : "Submit Review"}
                     </span>
                   </button>
                 </form>
@@ -963,11 +1014,14 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                             </p>
                             <p className="text-[10px] text-slate-400">
                               Reviewed on:{" "}
-                              {new Date(rev.createdAt).toLocaleDateString("en-IN", {
-                                day: "numeric",
-                                month: "short",
-                                year: "numeric",
-                              })}
+                              {new Date(rev.createdAt).toLocaleDateString(
+                                "en-IN",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                },
+                              )}
                             </p>
                           </div>
                         </div>
