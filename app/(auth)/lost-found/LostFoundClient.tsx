@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, {
+  useState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   PackageSearch,
@@ -30,6 +36,8 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
+import dynamic from "next/dynamic";
+
 import {
   Card,
   Badge,
@@ -38,6 +46,29 @@ import {
   Modal,
 } from "@/components/shared-components";
 import { useWard } from "@/context/wardContext";
+import LostReportForm from "./LostReportForm";
+
+export const CATEGORIES = [
+  "Wallet",
+  "Phone",
+  "Keys",
+  "Pet",
+  "Bag",
+  "Documents",
+  "Jewellery",
+  "Other",
+] as const;
+
+export const CATEGORY_ICONS: Record<string, string> = {
+  Wallet: "💳",
+  Phone: "📱",
+  Keys: "🔑",
+  Pet: "🐾",
+  Bag: "👜",
+  Documents: "📄",
+  Jewellery: "💍",
+  Other: "📦",
+};
 
 // --- TYPES ---
 interface LostFoundItem {
@@ -67,34 +98,21 @@ interface LostFoundClaim {
   id: string;
   lostFoundItemId: string;
   message: string;
+  imageUrl?: string | null;
   status: "PENDING" | "ACCEPTED" | "REJECTED";
   createdAt: string;
   requester: { id: string; name: string };
   owner: { id: string; name: string };
-  item: { id: string; itemId: string; title: string; type: string; category: string; imageUrl?: string | null; status: string };
+  item: {
+    id: string;
+    itemId: string;
+    title: string;
+    type: string;
+    category: string;
+    imageUrl?: string | null;
+    status: string;
+  };
 }
-
-const CATEGORIES = [
-  "Wallet",
-  "Phone",
-  "Keys",
-  "Pet",
-  "Bag",
-  "Documents",
-  "Jewellery",
-  "Other",
-] as const;
-
-const CATEGORY_ICONS: Record<string, string> = {
-  Wallet: "💳",
-  Phone: "📱",
-  Keys: "🔑",
-  Pet: "🐾",
-  Bag: "👜",
-  Documents: "📄",
-  Jewellery: "💍",
-  Other: "📦",
-};
 
 // --- 12-HOUR (NORMAL TIME) HELPERS & PICKER ---
 export function parse12Hour(timeStr?: string | null): {
@@ -144,137 +162,158 @@ export function formatTo12Hour(timeStr?: string | null): string {
   return `${parsed.hour}:${parsed.minute} ${parsed.period}`;
 }
 
-function Time12Picker({
-  value,
-  onChange,
-  label,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-  label?: string;
-}) {
-  const parsed = parse12Hour(value);
-  const [hour, setHour] = useState(parsed.hour);
-  const [minute, setMinute] = useState(parsed.minute);
-  const [period, setPeriod] = useState<"AM" | "PM">(parsed.period);
+// function Time12Picker({
+//   value,
+//   onChange,
+//   label,
+// }: {
+//   value: string;
+//   onChange: (val: string) => void;
+//   label?: string;
+// }) {
+//   const parsed = parse12Hour(value);
+//   const [hour, setHour] = useState(parsed.hour);
+//   const [minute, setMinute] = useState(parsed.minute);
+//   const [period, setPeriod] = useState<"AM" | "PM">(parsed.period);
 
-  useEffect(() => {
-    const p = parse12Hour(value);
-    setHour(p.hour);
-    setMinute(p.minute);
-    setPeriod(p.period);
-  }, [value]);
+//   useEffect(() => {
+//     const p = parse12Hour(value);
+//     setHour(p.hour);
+//     setMinute(p.minute);
+//     setPeriod(p.period);
+//   }, [value]);
 
-  const update = (h: string, m: string, p: "AM" | "PM") => {
-    if (!h) {
-      onChange("");
-      return;
-    }
-    const cleanHour = String(parseInt(h, 10)).padStart(2, "0");
-    const cleanMin = m || "00";
-    onChange(`${cleanHour}:${cleanMin} ${p}`);
-  };
+//   const update = (h: string, m: string, p: "AM" | "PM") => {
+//     if (!h) {
+//       onChange("");
+//       return;
+//     }
+//     const cleanHour = String(parseInt(h, 10)).padStart(2, "0");
+//     const cleanMin = m || "00";
+//     onChange(`${cleanHour}:${cleanMin} ${p}`);
+//   };
 
-  const selectCls =
-    "px-2.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 cursor-pointer";
+//   const selectCls =
+//     "px-2.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs sm:text-sm font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-orange-500/50 cursor-pointer";
 
-  return (
-    <div>
-      {label && (
-        <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5 block">
-          {label}{" "}
-          <span className="font-normal text-slate-400">(12-Hour)</span>
-        </label>
-      )}
-      <div className="flex items-center gap-1.5">
-        <select
-          value={hour}
-          onChange={(e) => {
-            const newH = e.target.value;
-            setHour(newH);
-            update(newH, minute, period);
-          }}
-          className={`flex-1 min-w-[64px] ${selectCls}`}
-        >
-          <option value="">Hour</option>
-          {["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"].map(
-            (h) => (
-              <option key={h} value={h}>
-                {h}
-              </option>
-            ),
-          )}
-        </select>
+//   return (
+//     <div>
+//       {label && (
+//         <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5 block">
+//           {label} <span className="font-normal text-slate-400">(12-Hour)</span>
+//         </label>
+//       )}
+//       <div className="flex items-center gap-1.5">
+//         <select
+//           value={hour}
+//           onChange={(e) => {
+//             const newH = e.target.value;
+//             setHour(newH);
+//             update(newH, minute, period);
+//           }}
+//           className={`flex-1 min-w-16 ${selectCls}`}
+//         >
+//           <option value="">Hour</option>
+//           {[
+//             "01",
+//             "02",
+//             "03",
+//             "04",
+//             "05",
+//             "06",
+//             "07",
+//             "08",
+//             "09",
+//             "10",
+//             "11",
+//             "12",
+//           ].map((h) => (
+//             <option key={h} value={h}>
+//               {h}
+//             </option>
+//           ))}
+//         </select>
 
-        <span className="text-slate-400 font-black text-sm">:</span>
+//         <span className="text-slate-400 font-black text-sm">:</span>
 
-        <select
-          value={minute}
-          onChange={(e) => {
-            const newM = e.target.value;
-            setMinute(newM);
-            update(hour, newM, period);
-          }}
-          className={`flex-1 min-w-[64px] ${selectCls}`}
-        >
-          {["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"].map(
-            (m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ),
-          )}
-        </select>
+//         <select
+//           value={minute}
+//           onChange={(e) => {
+//             const newM = e.target.value;
+//             setMinute(newM);
+//             update(hour, newM, period);
+//           }}
+//           className={`flex-1 min-w-16 ${selectCls}`}
+//         >
+//           {[
+//             "00",
+//             "05",
+//             "10",
+//             "15",
+//             "20",
+//             "25",
+//             "30",
+//             "35",
+//             "40",
+//             "45",
+//             "50",
+//             "55",
+//           ].map((m) => (
+//             <option key={m} value={m}>
+//               {m}
+//             </option>
+//           ))}
+//         </select>
 
-        <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 p-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              setPeriod("AM");
-              if (hour) update(hour, minute, "AM");
-            }}
-            className={`px-2.5 py-1.5 text-[11px] font-black rounded-lg transition cursor-pointer ${
-              period === "AM"
-                ? "bg-orange-500 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            AM
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setPeriod("PM");
-              if (hour) update(hour, minute, "PM");
-            }}
-            className={`px-2.5 py-1.5 text-[11px] font-black rounded-lg transition cursor-pointer ${
-              period === "PM"
-                ? "bg-orange-500 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
-            }`}
-          >
-            PM
-          </button>
-        </div>
+//         <div className="flex rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden shrink-0 bg-slate-100 dark:bg-slate-800 p-0.5">
+//           <button
+//             type="button"
+//             onClick={() => {
+//               setPeriod("AM");
+//               if (hour) update(hour, minute, "AM");
+//             }}
+//             className={`px-2.5 py-1.5 text-[11px] font-black rounded-lg transition cursor-pointer ${
+//               period === "AM"
+//                 ? "bg-orange-500 text-white shadow-xs"
+//                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+//             }`}
+//           >
+//             AM
+//           </button>
+//           <button
+//             type="button"
+//             onClick={() => {
+//               setPeriod("PM");
+//               if (hour) update(hour, minute, "PM");
+//             }}
+//             className={`px-2.5 py-1.5 text-[11px] font-black rounded-lg transition cursor-pointer ${
+//               period === "PM"
+//                 ? "bg-orange-500 text-white shadow-xs"
+//                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+//             }`}
+//           >
+//             PM
+//           </button>
+//         </div>
 
-        {hour && (
-          <button
-            type="button"
-            onClick={() => {
-              setHour("");
-              setMinute("00");
-              onChange("");
-            }}
-            title="Clear time"
-            className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer shrink-0"
-          >
-            <X size={14} />
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
+//         {hour && (
+//           <button
+//             type="button"
+//             onClick={() => {
+//               setHour("");
+//               setMinute("00");
+//               onChange("");
+//             }}
+//             title="Clear time"
+//             className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer shrink-0"
+//           >
+//             <X size={14} />
+//           </button>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
 
 // --- ITEM CARD ---
 function LostFoundCard({
@@ -383,460 +422,6 @@ function LostFoundCard({
 }
 
 // --- REPORT FORM ---
-function ReportForm({
-  type,
-  wards,
-  activeWardId,
-  defaultPhone,
-  onSuccess,
-  onClose,
-}: {
-  type: "lost" | "found";
-  wards: { id: number; name: string }[];
-  activeWardId: number;
-  defaultPhone?: string;
-  onSuccess: () => void;
-  onClose: () => void;
-}) {
-  const isLost = type === "lost";
-  const [form, setForm] = useState({
-    category: "" as (typeof CATEGORIES)[number] | "",
-    title: "",
-    description: "",
-    ward: String(activeWardId),
-    location: "",
-    lostFoundDate: new Date().toISOString().split("T")[0],
-    lostFoundTime: "",
-    contactPhone: defaultPhone || "",
-  });
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationGpsStatus, setLocationGpsStatus] = useState<"idle" | "success" | "error">("idle");
-
-  const queryClient = useQueryClient();
-
-  const handleAutoDetect = async () => {
-    if (!navigator.geolocation) {
-      setLocationGpsStatus("error");
-      return;
-    }
-    setIsLocating(true);
-    setLocationGpsStatus("idle");
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        try {
-          const { latitude: lat, longitude: lon } = pos.coords;
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1`,
-            { headers: { "Accept-Language": "en" } },
-          );
-          const data = await res.json();
-          const addr = data.address || {};
-          const parts = [
-            addr.road || addr.pedestrian || addr.footway,
-            addr.suburb || addr.neighbourhood || addr.quarter,
-            addr.city_district || addr.county,
-            addr.city || addr.town || addr.village,
-          ].filter(Boolean);
-          const locationStr = parts.length > 0 ? parts.join(", ") : data.display_name || `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
-          setForm((prev) => ({ ...prev, location: locationStr }));
-          setErrors((prev) => ({ ...prev, location: "" }));
-          setLocationGpsStatus("success");
-        } catch {
-          // Fallback to raw coordinates if reverse geocoding fails
-          const { latitude: lat, longitude: lon } = pos.coords;
-          setForm((prev) => ({ ...prev, location: `${lat.toFixed(5)}, ${lon.toFixed(5)}` }));
-          setLocationGpsStatus("success");
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      () => {
-        setIsLocating(false);
-        setLocationGpsStatus("error");
-      },
-      { timeout: 10000, maximumAge: 30000 },
-    );
-  };
-
-  const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
-  };
-
-  const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) return;
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (ev) => setImagePreview(ev.target?.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!form.category) newErrors.category = "Please select a category";
-    if (form.title.trim().length < 5)
-      newErrors.title = "Title must be at least 5 characters";
-    if (form.description.trim().length < 10)
-      newErrors.description = "Description must be at least 10 characters";
-
-    if (form.location.trim().length < 3)
-      newErrors.location = "Location is required";
-    if (!form.lostFoundDate) newErrors.lostFoundDate = "Date is required";
-    if (form.contactPhone.trim().length < 10)
-      newErrors.contactPhone = "Enter a valid phone number (min 10 digits)";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
-
-    setIsSubmitting(true);
-    setApiError(null);
-
-    try {
-      const formData = new FormData();
-      formData.append("type", type);
-      formData.append("category", form.category);
-      formData.append("title", form.title.trim());
-      formData.append("description", form.description.trim());
-      formData.append("ward", form.ward);
-      formData.append("location", form.location.trim());
-      formData.append("lostFoundDate", form.lostFoundDate);
-      if (form.lostFoundTime) formData.append("lostFoundTime", form.lostFoundTime);
-      formData.append("contactPhone", form.contactPhone.trim());
-      if (imageFile) formData.append("image", imageFile);
-
-      const res = await fetch("/api/lost-found", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || "Submission failed");
-
-      queryClient.invalidateQueries({ queryKey: ["lost-found"] });
-      queryClient.invalidateQueries({ queryKey: ["lost-found-my"] });
-      onSuccess();
-      onClose();
-    } catch (err: any) {
-      setApiError(err.message || "Failed to submit report. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const inputCls =
-    "w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all";
-  const labelCls = "text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5 block";
-  const errorCls = "text-[11px] text-red-500 font-semibold mt-1";
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Type Badge */}
-      <div
-        className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-black ${
-          isLost
-            ? "bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900/50"
-            : "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50"
-        }`}
-      >
-        <PackageSearch size={14} />
-        <span>Reporting a {isLost ? "Lost" : "Found"} Item</span>
-      </div>
-
-      {/* Category */}
-      <div>
-        <label className={labelCls}>Category *</label>
-        <select
-          name="category"
-          value={form.category}
-          onChange={handleChange}
-          className={inputCls}
-        >
-          <option value="">Select category</option>
-          {CATEGORIES.map((c) => (
-            <option key={c} value={c}>
-              {CATEGORY_ICONS[c]} {c}
-            </option>
-          ))}
-        </select>
-        {errors.category && <p className={errorCls}>{errors.category}</p>}
-      </div>
-
-      {/* Title */}
-      <div>
-        <label className={labelCls}>
-          {isLost ? "Lost Item" : "Found Item"} Title *
-        </label>
-        <input
-          type="text"
-          name="title"
-          value={form.title}
-          onChange={handleChange}
-          placeholder={
-            isLost
-              ? "e.g., Blue leather wallet with ID cards"
-              : "e.g., Black phone found near bus stop"
-          }
-          className={inputCls}
-          maxLength={100}
-        />
-        {errors.title && <p className={errorCls}>{errors.title}</p>}
-      </div>
-
-      {/* Description */}
-      <div>
-        <label className={labelCls}>Description *</label>
-        <textarea
-          name="description"
-          value={form.description}
-          onChange={handleChange}
-          placeholder={
-            isLost
-              ? "Describe the item in detail — color, brand, distinguishing features..."
-              : "Describe the item you found — where, condition, any identifiers..."
-          }
-          rows={3}
-          className={`${inputCls} resize-none`}
-          maxLength={500}
-        />
-        {errors.description && (
-          <p className={errorCls}>{errors.description}</p>
-        )}
-      </div>
-
-
-
-      {/* Location */}
-      <div>
-        <label className={labelCls}>
-          {isLost ? "Lost Location" : "Found Location"} *
-        </label>
-        <div className="relative flex items-center gap-2">
-          <div className="relative flex-1">
-            <MapPin
-              size={15}
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
-            />
-            <input
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={(e) => {
-                handleChange(e);
-                setLocationGpsStatus("idle");
-              }}
-              placeholder="Type location or use GPS →"
-              className={`${inputCls} pl-9 pr-3`}
-              maxLength={150}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={handleAutoDetect}
-            disabled={isLocating}
-            title="Auto-detect my current location"
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer border disabled:cursor-not-allowed ${
-              locationGpsStatus === "success"
-                ? "bg-emerald-500 border-emerald-500 text-white shadow-md shadow-emerald-500/25"
-                : locationGpsStatus === "error"
-                  ? "bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800 text-red-600 dark:text-red-400"
-                  : "bg-orange-50 dark:bg-orange-950/20 border-orange-200 dark:border-orange-800 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-950/40"
-            }`}
-          >
-            {isLocating ? (
-              <>
-                <Loader2 size={14} className="animate-spin" />
-                <span className="hidden sm:inline">Locating…</span>
-              </>
-            ) : locationGpsStatus === "success" ? (
-              <>
-                <CheckCircle2 size={14} />
-                <span className="hidden sm:inline">GPS Set</span>
-              </>
-            ) : locationGpsStatus === "error" ? (
-              <>
-                <LocateFixed size={14} />
-                <span className="hidden sm:inline">Retry GPS</span>
-              </>
-            ) : (
-              <>
-                <LocateFixed size={14} />
-                <span className="hidden sm:inline">Use GPS</span>
-              </>
-            )}
-          </button>
-        </div>
-        {locationGpsStatus === "error" && (
-          <p className="text-[11px] text-red-500 font-semibold mt-1">
-            ⚠️ Location access denied. Please type your location manually.
-          </p>
-        )}
-        {locationGpsStatus === "success" && (
-          <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
-            ✅ Location auto-detected! You can edit it if needed.
-          </p>
-        )}
-        {errors.location && locationGpsStatus !== "error" && (
-          <p className={errorCls}>{errors.location}</p>
-        )}
-      </div>
-
-      {/* Date & Time */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className={labelCls}>
-            {isLost ? "Lost Date" : "Found Date"} *
-          </label>
-          <input
-            type="date"
-            name="lostFoundDate"
-            value={form.lostFoundDate}
-            onChange={handleChange}
-            max={new Date().toISOString().split("T")[0]}
-            className={inputCls}
-          />
-          {errors.lostFoundDate && (
-            <p className={errorCls}>{errors.lostFoundDate}</p>
-          )}
-        </div>
-        <div>
-          <Time12Picker
-            value={form.lostFoundTime}
-            onChange={(val) =>
-              setForm((prev) => ({ ...prev, lostFoundTime: val }))
-            }
-            label={isLost ? "Lost Time" : "Found Time"}
-          />
-        </div>
-      </div>
-
-      {/* Contact Phone */}
-      <div>
-        <label className={labelCls}>
-          Your Contact Phone *{" "}
-          <span className="text-slate-400 font-medium">
-            (shown only to logged-in users who request it)
-          </span>
-        </label>
-        <input
-          type="tel"
-          name="contactPhone"
-          value={form.contactPhone}
-          onChange={handleChange}
-          placeholder="e.g., 9876543210"
-          className={inputCls}
-          maxLength={15}
-        />
-        {errors.contactPhone && (
-          <p className={errorCls}>{errors.contactPhone}</p>
-        )}
-      </div>
-
-      {/* Image Upload */}
-      <div>
-        <div className="flex items-center justify-between mb-2">
-          <label className={`${labelCls} mb-0`}>
-            {isLost ? "🔍 Missing Item Photo" : "📸 Found Item Photo"}
-          </label>
-          <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-full">
-            Optional
-          </span>
-        </div>
-        {imagePreview ? (
-          <div className="relative rounded-2xl overflow-hidden border-2 border-orange-400/40 dark:border-orange-500/30 shadow-lg shadow-orange-500/10">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="w-full h-44 object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-            <div className="absolute bottom-3 left-3 flex items-center gap-1.5">
-              <CheckCircle2 size={14} className="text-emerald-400" />
-              <span className="text-xs font-bold text-white">Photo added</span>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                setImageFile(null);
-                setImagePreview(null);
-              }}
-              className="absolute top-2.5 right-2.5 w-8 h-8 bg-slate-900/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white cursor-pointer hover:bg-red-600/80 transition-colors"
-            >
-              <X size={15} />
-            </button>
-          </div>
-        ) : (
-          <label className="group flex flex-col items-center justify-center gap-3 h-36 rounded-2xl cursor-pointer transition-all border-2 border-dashed border-slate-300 dark:border-slate-600 hover:border-orange-500/70 bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800/60 dark:to-slate-900/60 hover:from-orange-50/60 hover:to-amber-50/40 dark:hover:from-orange-950/20 dark:hover:to-amber-950/10">
-            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${
-              isLost
-                ? "bg-red-100 dark:bg-red-950/40 group-hover:bg-orange-100 dark:group-hover:bg-orange-950/40"
-                : "bg-emerald-100 dark:bg-emerald-950/40 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-950/40"
-            }`}>
-              <Camera size={22} className={isLost ? "text-red-500 dark:text-red-400" : "text-emerald-600 dark:text-emerald-400"} />
-            </div>
-            <div className="text-center">
-              <p className="text-sm font-black text-slate-700 dark:text-slate-200 group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors">
-                {isLost ? "Upload Missing Item Photo" : "Upload Found Item Photo"}
-              </p>
-              <p className="text-[11px] font-medium text-slate-400 dark:text-slate-500 mt-0.5">
-                Clear photos help others recognise the item faster
-              </p>
-            </div>
-            <span className="text-[10px] font-bold text-slate-400 dark:text-slate-600 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1">
-              JPG, PNG, WEBP · Max 5MB
-            </span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImage}
-              className="hidden"
-            />
-          </label>
-        )}
-      </div>
-
-      {apiError && (
-        <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-100 dark:border-red-900/50 rounded-xl text-xs font-bold text-red-700 dark:text-red-400">
-          {apiError}
-        </div>
-      )}
-
-      <div className="flex gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onClose}
-          className="flex-1 py-3 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition cursor-pointer"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="flex-1 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-60 disabled:cursor-not-allowed text-white text-xs font-black transition cursor-pointer shadow-md shadow-orange-500/25"
-        >
-          {isSubmitting ? "Submitting…" : "Submit Report"}
-        </button>
-      </div>
-    </form>
-  );
-}
 
 // --- CLAIM REQUEST MODAL (inline — shown inside the detail modal) ---
 function ClaimRequestModal({
@@ -849,26 +434,43 @@ function ClaimRequestModal({
   onSent: (claimId: string) => void;
 }) {
   const [message, setMessage] = useState("");
+  const [claimImage, setClaimImage] = useState<File | null>(null);
+  const [claimImagePreview, setClaimImagePreview] = useState<string | null>(
+    null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (message.trim().length < 10) {
-      setError("Please write at least 10 characters describing how you identify this item.");
+      setError(
+        "Please write at least 10 characters describing how you identify this item.",
+      );
       return;
     }
+    if (!claimImage) {
+      setError(
+        "A clear proof photo is mandatory so the owner can verify your claim.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     try {
+      const formData = new FormData();
+      formData.append("lostFoundItemId", item.id);
+      formData.append("message", message.trim());
+      formData.append("image", claimImage);
+
       const res = await fetch("/api/lost-found/claims", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lostFoundItemId: item.id, message: message.trim() }),
+        body: formData,
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
+      if (!res.ok) throw new Error(data.message || "Failed to send claim");
       onSent(data.claim.id);
     } catch (err: any) {
       setError(err.message || "Failed to send request");
@@ -883,17 +485,20 @@ function ClaimRequestModal({
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: 40 }}
-        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden"
+        className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
       >
         {/* Header */}
-        <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+        <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0">
           <div>
             <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
               <MessageSquare size={15} className="text-orange-500" />
               Send Contact Request
             </h3>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-              For: <span className="font-bold text-slate-700 dark:text-slate-300">{item.title}</span>
+              For:{" "}
+              <span className="font-bold text-slate-700 dark:text-slate-300">
+                {item.title}
+              </span>
             </p>
           </div>
           <button
@@ -905,24 +510,33 @@ function ClaimRequestModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-4 overflow-y-auto">
           {/* Info box */}
           <div className="flex items-start gap-2 p-3 rounded-xl bg-orange-50 dark:bg-orange-950/20 border border-orange-100 dark:border-orange-900/50">
-            <ShieldCheck size={13} className="text-orange-500 shrink-0 mt-0.5" />
+            <ShieldCheck
+              size={13}
+              className="text-orange-500 shrink-0 mt-0.5"
+            />
             <p className="text-[11px] text-orange-700 dark:text-orange-400 leading-relaxed font-medium">
-              Your message will be sent to the item owner for review. Phone numbers are only shared after <span className="font-black">mutual consent</span>.
+              Your message and proof photo will be sent to the item owner for
+              review. Phone numbers are only shared after{" "}
+              <span className="font-black">mutual consent</span>.
             </p>
           </div>
 
           {/* Mandatory message */}
           <div>
             <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300 mb-1.5 block">
-              Identification Proof / Description <span className="text-red-500">*</span>
+              Identification Proof / Description{" "}
+              <span className="text-red-500">*</span>
             </label>
             <textarea
               value={message}
-              onChange={(e) => { setMessage(e.target.value); setError(null); }}
-              rows={4}
+              onChange={(e) => {
+                setMessage(e.target.value);
+                setError(null);
+              }}
+              rows={3}
               maxLength={500}
               placeholder={
                 item.type === "lost"
@@ -932,14 +546,82 @@ function ClaimRequestModal({
               className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-950 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500 transition-all resize-none"
             />
             <div className="flex justify-between mt-1">
-              {error ? (
-                <p className="text-[11px] text-red-500 font-semibold">{error}</p>
-              ) : (
-                <p className="text-[11px] text-slate-400">Minimum 10 characters required</p>
-              )}
-              <span className="text-[11px] text-slate-400">{message.length}/500</span>
+              <span className="text-[10px] text-slate-400">
+                Minimum 10 characters
+              </span>
+              <span className="text-[10px] text-slate-400">
+                {message.length}/500
+              </span>
             </div>
           </div>
+
+          {/* Mandatory Proof Photo */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-extrabold text-slate-700 dark:text-slate-300">
+                Proof Photo <span className="text-red-500">*</span>
+              </label>
+              <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded-full border border-rose-200 dark:border-rose-900/50">
+                Mandatory
+              </span>
+            </div>
+
+            {claimImagePreview ? (
+              <div className="relative rounded-2xl overflow-hidden border-2 border-orange-400/50 dark:border-orange-500/40 shadow-xs">
+                <img
+                  src={claimImagePreview}
+                  alt="Proof Preview"
+                  className="w-full h-36 object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClaimImage(null);
+                    setClaimImagePreview(null);
+                  }}
+                  className="absolute top-2 right-2 w-7 h-7 bg-slate-900/80 backdrop-blur-sm rounded-full flex items-center justify-center text-white hover:bg-red-600 transition cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center gap-2 h-28 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-orange-500/60 bg-slate-50 dark:bg-slate-950/60 cursor-pointer transition">
+                <div className="w-9 h-9 rounded-xl bg-orange-100 dark:bg-orange-950/40 flex items-center justify-center text-orange-600">
+                  <Camera size={18} />
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                    Take or Upload Proof Photo
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    Photo showing you have this item
+                  </p>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file && file.type.startsWith("image/")) {
+                      setClaimImage(file);
+                      const reader = new FileReader();
+                      reader.onload = (ev) =>
+                        setClaimImagePreview(ev.target?.result as string);
+                      reader.readAsDataURL(file);
+                      setError(null);
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          {error && (
+            <p className="text-[11px] text-red-500 font-semibold bg-red-50 dark:bg-red-950/30 p-2.5 rounded-xl border border-red-200 dark:border-red-900/50">
+              ⚠️ {error}
+            </p>
+          )}
 
           <div className="flex gap-3 pt-1">
             <button
@@ -951,13 +633,19 @@ function ClaimRequestModal({
             </button>
             <button
               type="submit"
-              disabled={isSubmitting || message.trim().length < 10}
+              disabled={
+                isSubmitting || message.trim().length < 10 || !claimImage
+              }
               className="flex-1 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-black transition cursor-pointer shadow-md shadow-orange-500/25 flex items-center justify-center gap-2"
             >
               {isSubmitting ? (
-                <><Loader2 size={13} className="animate-spin" /> Sending…</>
+                <>
+                  <Loader2 size={13} className="animate-spin" /> Sending…
+                </>
               ) : (
-                <><MessageSquare size={13} /> Send Request</>
+                <>
+                  <MessageSquare size={13} /> Send Request
+                </>
               )}
             </button>
           </div>
@@ -977,9 +665,16 @@ function IncomingClaimsPanel({
 }) {
   const queryClient = useQueryClient();
   const [actioningId, setActioningId] = useState<string | null>(null);
-  const [expandedPhone, setExpandedPhone] = useState<Record<string, { name: string; phone: string }>>({});
+  const [expandedPhone, setExpandedPhone] = useState<
+    Record<string, { name: string; phone: string }>
+  >({});
+  const [previewProof, setPreviewProof] = useState<string | null>(null);
 
-  const { data: claims = [], isLoading, refetch } = useQuery<LostFoundClaim[]>({
+  const {
+    data: claims = [],
+    isLoading,
+    refetch,
+  } = useQuery<LostFoundClaim[]>({
     queryKey: ["lost-found-claims-owner", item.id],
     queryFn: async () => {
       const res = await fetch(
@@ -995,7 +690,10 @@ function IncomingClaimsPanel({
   const pendingClaims = claims.filter((c) => c.status === "PENDING");
   const resolvedClaims = claims.filter((c) => c.status !== "PENDING");
 
-  const handleAction = async (claimId: string, action: "ACCEPTED" | "REJECTED") => {
+  const handleAction = async (
+    claimId: string,
+    action: "ACCEPTED" | "REJECTED",
+  ) => {
     setActioningId(claimId);
     try {
       const res = await fetch(`/api/lost-found/claims/${claimId}`, {
@@ -1014,7 +712,9 @@ function IncomingClaimsPanel({
         }));
       }
 
-      queryClient.invalidateQueries({ queryKey: ["lost-found-claims-owner", item.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["lost-found-claims-owner", item.id],
+      });
       queryClient.invalidateQueries({ queryKey: ["lost-found-claims-badge"] });
       refetch();
       onClaimActioned();
@@ -1049,7 +749,8 @@ function IncomingClaimsPanel({
       {pendingClaims.length > 0 && (
         <p className="text-[10px] font-black text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
           <Bell size={10} className="animate-pulse" />
-          {pendingClaims.length} Pending Request{pendingClaims.length > 1 ? "s" : ""}
+          {pendingClaims.length} Pending Request
+          {pendingClaims.length > 1 ? "s" : ""}
         </p>
       )}
       {claims.map((claim) => (
@@ -1059,8 +760,8 @@ function IncomingClaimsPanel({
             claim.status === "PENDING"
               ? "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/50"
               : claim.status === "ACCEPTED"
-              ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50"
-              : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60"
+                ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/50"
+                : "bg-slate-50 dark:bg-slate-800/60 border-slate-200 dark:border-slate-700/60"
           }`}
         >
           <div className="flex items-start justify-between gap-2">
@@ -1074,29 +775,58 @@ function IncomingClaimsPanel({
                 </p>
                 <p className="text-[10px] text-slate-400 font-medium">
                   {new Date(claim.createdAt).toLocaleDateString("en-IN", {
-                    day: "numeric", month: "short", year: "numeric",
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
                   })}
                 </p>
               </div>
             </div>
-            <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
-              claim.status === "PENDING"
-                ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
-                : claim.status === "ACCEPTED"
-                ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
-                : "bg-slate-200 dark:bg-slate-700 text-slate-500"
-            }`}>
+            <span
+              className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                claim.status === "PENDING"
+                  ? "bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400"
+                  : claim.status === "ACCEPTED"
+                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400"
+                    : "bg-slate-200 dark:bg-slate-700 text-slate-500"
+              }`}
+            >
               {claim.status}
             </span>
           </div>
 
           {/* Their identification message */}
           <div className="p-2 rounded-lg bg-white dark:bg-slate-900/60">
-            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">Their Message</p>
+            <p className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-1">
+              Their Message
+            </p>
             <p className="text-xs text-slate-700 dark:text-slate-200 font-medium leading-relaxed">
               {claim.message}
             </p>
           </div>
+
+          {/* Claimant Proof Photo */}
+          {claim.imageUrl && (
+            <div className="p-2 rounded-lg bg-white dark:bg-slate-900/60">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-1 flex items-center justify-between">
+                <span>Proof Photo</span>
+                <span className="text-[9px] text-orange-500 font-bold">
+                  Tap to view
+                </span>
+              </p>
+              <button
+                type="button"
+                onClick={() => setPreviewProof(claim.imageUrl || null)}
+                className="group relative w-32 h-20 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 block cursor-pointer hover:ring-2 hover:ring-orange-500 transition"
+              >
+                <img
+                  src={claim.imageUrl}
+                  alt="Proof"
+                  className="w-full h-full object-cover group-hover:scale-105 transition"
+                />
+              </button>
+            </div>
+          )}
 
           {/* Phone unlocked after accept */}
           {(claim.status === "ACCEPTED" || expandedPhone[claim.id]) && (
@@ -1143,6 +873,40 @@ function IncomingClaimsPanel({
           )}
         </div>
       ))}
+
+      {/* Zoom preview modal for proof photo */}
+      {previewProof && (
+        <div
+          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          onClick={() => setPreviewProof(null)}
+        >
+          <div
+            className="relative max-w-lg w-full bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl p-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-3 border-b border-slate-100 dark:border-slate-800">
+              <span className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5">
+                <ShieldCheck size={14} className="text-orange-500" />
+                Claimant's Uploaded Proof Photo
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewProof(null)}
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <div className="p-2 flex items-center justify-center max-h-[70vh] overflow-hidden rounded-2xl bg-black/5">
+              <img
+                src={previewProof}
+                alt="Proof Photo Full"
+                className="max-h-[65vh] w-auto object-contain rounded-xl"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1172,8 +936,13 @@ function ItemDetailModal({
 
   // For requester: track their existing claim on this item
   const [myClaimId, setMyClaimId] = useState<string | null>(null);
-  const [myClaimStatus, setMyClaimStatus] = useState<"PENDING" | "ACCEPTED" | "REJECTED" | null>(null);
-  const [unlockedContact, setUnlockedContact] = useState<{ name: string; phone: string } | null>(null);
+  const [myClaimStatus, setMyClaimStatus] = useState<
+    "PENDING" | "ACCEPTED" | "REJECTED" | null
+  >(null);
+  const [unlockedContact, setUnlockedContact] = useState<{
+    name: string;
+    phone: string;
+  } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -1194,13 +963,15 @@ function ItemDetailModal({
           setMyClaimStatus(c.status);
           if (c.status === "ACCEPTED") {
             // Fetch unlocked phone
-            const phoneRes = await fetch(
-              `/api/lost-found/${item.id}/contact`,
-              { credentials: "include" },
-            );
+            const phoneRes = await fetch(`/api/lost-found/${item.id}/contact`, {
+              credentials: "include",
+            });
             if (phoneRes.ok) {
               const phoneData = await phoneRes.json();
-              setUnlockedContact({ name: phoneData.contactName, phone: phoneData.contactPhone });
+              setUnlockedContact({
+                name: phoneData.contactName,
+                phone: phoneData.contactPhone,
+              });
             }
           }
         }
@@ -1368,7 +1139,8 @@ function ItemDetailModal({
                 </span>
               </div>
               <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
-                📞 You can now contact the owner directly. Please coordinate for safe handover.
+                📞 You can now contact the owner directly. Please coordinate for
+                safe handover.
               </p>
             </div>
           )}
@@ -1377,13 +1149,17 @@ function ItemDetailModal({
           {myClaimStatus === "PENDING" && (
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 space-y-1">
               <div className="flex items-center gap-2">
-                <Bell size={14} className="text-amber-600 shrink-0 animate-pulse" />
+                <Bell
+                  size={14}
+                  className="text-amber-600 shrink-0 animate-pulse"
+                />
                 <p className="text-[11px] font-black text-amber-700 dark:text-amber-400">
                   Request Sent — Waiting for Owner
                 </p>
               </div>
               <p className="text-[11px] text-amber-600 dark:text-amber-500 font-medium">
-                Your claim request is under review. Once the owner accepts, you will see their contact number here.
+                Your claim request is under review. Once the owner accepts, you
+                will see their contact number here.
               </p>
             </div>
           )}
@@ -1398,11 +1174,15 @@ function ItemDetailModal({
                 </p>
               </div>
               <p className="text-[11px] text-red-600 dark:text-red-500 font-medium">
-                The owner reviewed your request and did not accept it. No contact information was shared.
+                The owner reviewed your request and did not accept it. No
+                contact information was shared.
               </p>
               <button
                 type="button"
-                onClick={() => { setMyClaimStatus(null); setMyClaimId(null); }}
+                onClick={() => {
+                  setMyClaimStatus(null);
+                  setMyClaimId(null);
+                }}
                 className="text-[11px] font-bold text-red-600 dark:text-red-400 underline mt-1 cursor-pointer"
               >
                 Send a new request with more details
@@ -1415,9 +1195,14 @@ function ItemDetailModal({
             <>
               {/* Privacy notice */}
               <div className="flex items-start gap-2 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/50">
-                <ShieldCheck size={13} className="text-blue-500 shrink-0 mt-0.5" />
+                <ShieldCheck
+                  size={13}
+                  className="text-blue-500 shrink-0 mt-0.5"
+                />
                 <p className="text-[11px] text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
-                  <span className="font-black">Privacy Protected.</span> Contact info is never shown directly. Send a request with proof — the owner will review and accept to unlock mutual contact.
+                  <span className="font-black">Privacy Protected.</span> Contact
+                  info is never shown directly. Send a request with proof — the
+                  owner will review and accept to unlock mutual contact.
                 </p>
               </div>
 
@@ -1427,7 +1212,9 @@ function ItemDetailModal({
                 className="w-full py-3.5 rounded-xl bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white text-xs font-black transition shadow-md shadow-orange-500/20 cursor-pointer flex items-center justify-center gap-2 active:scale-95"
               >
                 <MessageSquare size={14} />
-                {isLost ? "I Found This Item — Contact Owner" : "This Is My Item — Contact Finder"}
+                {isLost
+                  ? "I Found This Item — Contact Owner"
+                  : "This Is My Item — Contact Finder"}
               </button>
             </>
           )}
@@ -1452,10 +1239,7 @@ function ItemDetailModal({
               <Bell size={10} />
               Contact Requests
             </p>
-            <IncomingClaimsPanel
-              item={item}
-              onClaimActioned={() => {}}
-            />
+            <IncomingClaimsPanel item={item} onClaimActioned={() => {}} />
           </div>
 
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -1644,9 +1428,7 @@ function EditForm({
         <div>
           <Time12Picker
             value={form.lostFoundTime}
-            onChange={(val) =>
-              setForm((p) => ({ ...p, lostFoundTime: val }))
-            }
+            onChange={(val) => setForm((p) => ({ ...p, lostFoundTime: val }))}
             label="Time"
           />
         </div>
@@ -1709,7 +1491,14 @@ export default function LostFoundClient() {
 
   // Public listing query
   const { data: items = [], isLoading } = useQuery<LostFoundItem[]>({
-    queryKey: ["lost-found", activeTab, filterWard, filterCategory, filterStatus, search],
+    queryKey: [
+      "lost-found",
+      activeTab,
+      filterWard,
+      filterCategory,
+      filterStatus,
+      search,
+    ],
     queryFn: async () => {
       if (activeTab === "my") return [];
       const params = new URLSearchParams();
@@ -1727,8 +1516,12 @@ export default function LostFoundClient() {
     enabled: activeTab !== "my",
   });
 
+  const modalScrollRef = useRef<HTMLDivElement>(null);
+
   // My Reports query
-  const { data: myItems = [], isLoading: isLoadingMy } = useQuery<LostFoundItem[]>({
+  const { data: myItems = [], isLoading: isLoadingMy } = useQuery<
+    LostFoundItem[]
+  >({
     queryKey: ["lost-found-my", filterStatus],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -1770,9 +1563,12 @@ export default function LostFoundClient() {
   const { data: pendingClaimsCount = 0 } = useQuery<number>({
     queryKey: ["lost-found-claims-badge"],
     queryFn: async () => {
-      const res = await fetch("/api/lost-found/claims?role=owner&status=PENDING", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        "/api/lost-found/claims?role=owner&status=PENDING",
+        {
+          credentials: "include",
+        },
+      );
       if (!res.ok) return 0;
       const data: LostFoundClaim[] = await res.json();
       return data.length;
@@ -1786,7 +1582,12 @@ export default function LostFoundClient() {
   const tabs = [
     { key: "lost" as const, label: "Lost Items", emoji: "🔴", badge: 0 },
     { key: "found" as const, label: "Found Items", emoji: "🟢", badge: 0 },
-    { key: "my" as const, label: "My Reports", emoji: "📋", badge: pendingClaimsCount },
+    {
+      key: "my" as const,
+      label: "My Reports",
+      emoji: "📋",
+      badge: pendingClaimsCount,
+    },
   ];
 
   return (
@@ -1872,7 +1673,7 @@ export default function LostFoundClient() {
               <span>{tab.emoji}</span>
               <span>{tab.label}</span>
               {tab.badge > 0 && (
-                <span className="px-1.5 py-0.5 min-w-[18px] h-[18px] rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-sm animate-pulse">
+                <span className="px-1.5 py-0.5 min-w-4.5 h-4.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center shadow-sm animate-pulse">
                   {tab.badge}
                 </span>
               )}
@@ -2040,14 +1841,14 @@ export default function LostFoundClient() {
         isOpen={!!reportModal}
         onClose={() => setReportModal(null)}
         title={
-          reportModal === "lost"
-            ? "Report a Lost Item"
-            : "Report a Found Item"
+          reportModal === "lost" ? "Report a Lost Item" : "Report a Found Item"
         }
         maxWidth="sm:max-w-lg"
+        contentRef={modalScrollRef}
       >
         {reportModal && (
-          <ReportForm
+          <LostReportForm
+            scrollRef={modalScrollRef}
             type={reportModal}
             wards={wards}
             activeWardId={activeWard.id}

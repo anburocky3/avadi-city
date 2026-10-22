@@ -1,5 +1,6 @@
 // src/lib/wards.ts
 import wardData from "@/data/avadi-wards.json";
+import { WARD_MAP } from "@/data/wards";
 
 export interface StreetItem {
   id: string;
@@ -52,55 +53,167 @@ export const ALL_AVADI_STREETS: StreetItem[] = (() => {
   return streetsList;
 })();
 
-export const AVADI_AREA_WARD_MAPPINGS: { regex: RegExp; ward: number; name: string }[] = [
+export const AVADI_AREA_WARD_MAPPINGS: {
+  regex: RegExp;
+  ward: number;
+  name: string;
+}[] = [
   // Specific areas and sub-localities first
-  { regex: /j\.?b\.?\s*estate|shankarar\s*nagar|saraswathi\s*nagar/i, ward: 42, name: "JB Estate / Shankarar Nagar" },
+  {
+    regex: /j\.?b\.?\s*estate|shankarar\s*nagar|saraswathi\s*nagar/i,
+    ward: 42,
+    name: "JB Estate / Shankarar Nagar",
+  },
   { regex: /mittanamallee|mittanamalli/i, ward: 3, name: "Mittanamallee" },
-  { regex: /muthapudupet|muthapudhupet|karimedu/i, ward: 1, name: "Muthapudupet / Karimedu" },
-  { regex: /defence\s*enclave|uzhaipalar\s*nagar/i, ward: 2, name: "Defence Enclave" },
+  {
+    regex: /muthapudupet|muthapudhupet|karimedu/i,
+    ward: 1,
+    name: "Muthapudupet / Karimedu",
+  },
+  {
+    regex: /defence\s*enclave|uzhaipalar\s*nagar/i,
+    ward: 2,
+    name: "Defence Enclave",
+  },
   { regex: /crpf\s*nagar|c\.?r\.?p\.?f/i, ward: 4, name: "CRPF Nagar" },
-  { regex: /brindhavan\s*nagar|eswari\s*avenue/i, ward: 5, name: "Brindhavan Nagar" },
-  { regex: /ashok\s*nagar|balaji\s*nagar/i, ward: 6, name: "Ashok Nagar / Balaji Nagar" },
-  { regex: /masilamanishwar|ettiamman\s*nagar|lalithambal/i, ward: 8, name: "Masilamanishwar Nagar" },
+  {
+    regex: /brindhavan\s*nagar|eswari\s*avenue/i,
+    ward: 5,
+    name: "Brindhavan Nagar",
+  },
+  {
+    regex: /ashok\s*nagar|balaji\s*nagar/i,
+    ward: 6,
+    name: "Ashok Nagar / Balaji Nagar",
+  },
+  {
+    regex: /masilamanishwar|ettiamman\s*nagar|lalithambal/i,
+    ward: 8,
+    name: "Masilamanishwar Nagar",
+  },
   { regex: /thendral\s*nagar/i, ward: 9, name: "Thendral Nagar" },
   { regex: /jak\s*nagar|pachaiamman\s*nagar/i, ward: 10, name: "JAK Nagar" },
   { regex: /poompozhil|poompuzhlil/i, ward: 11, name: "Poompozhil Nagar" },
   { regex: /kovilpadagai|koilpadagai/i, ward: 12, name: "Kovilpadagai" },
   { regex: /murugappa|hvf\s*road/i, ward: 13, name: "HVF Road / Murugappa" },
-  { regex: /kakkanji\s*nagar|sastry\s*nagar/i, ward: 15, name: "Kakkanji Nagar / Sastry Nagar" },
-  { regex: /chattiram|bharathiyar\s*nagar/i, ward: 16, name: "Chattiram / Bharathiyar Nagar" },
+  {
+    regex: /kakkanji\s*nagar|sastry\s*nagar/i,
+    ward: 15,
+    name: "Kakkanji Nagar / Sastry Nagar",
+  },
+  {
+    regex: /chattiram|bharathiyar\s*nagar/i,
+    ward: 16,
+    name: "Chattiram / Bharathiyar Nagar",
+  },
   { regex: /kamarajapuram|agd\s*nagar/i, ward: 17, name: "Kamarajapuram" },
-  { regex: /charles\s*nagar|cholan\s*nagar/i, ward: 18, name: "Charles Nagar / Cholan Nagar" },
+  {
+    regex: /charles\s*nagar|cholan\s*nagar/i,
+    ward: 18,
+    name: "Charles Nagar / Cholan Nagar",
+  },
   { regex: /thandurai/i, ward: 19, name: "Thandurai" },
-  { regex: /dhanalakshmi\s*nagar|senthamil\s*nagar/i, ward: 21, name: "Senthamil Nagar" },
-  { regex: /sindhu\s*nagar|kavarapalayam/i, ward: 22, name: "Sindhu Nagar / Kavarapalayam" },
+  {
+    regex: /dhanalakshmi\s*nagar|senthamil\s*nagar/i,
+    ward: 21,
+    name: "Senthamil Nagar",
+  },
+  {
+    regex: /sindhu\s*nagar|kavarapalayam/i,
+    ward: 22,
+    name: "Sindhu Nagar / Kavarapalayam",
+  },
   { regex: /bakthavachalapuram/i, ward: 23, name: "Bakthavachalapuram" },
-  { regex: /nagammai\s*nagar|jyothi\s*nagar/i, ward: 24, name: "Nagammai Nagar" },
-  { regex: /devi\s*nagar|vaishnavi\s*nagar/i, ward: 25, name: "Devi Nagar / Vaishnavi Nagar" },
+  {
+    regex: /nagammai\s*nagar|jyothi\s*nagar/i,
+    ward: 24,
+    name: "Nagammai Nagar",
+  },
+  {
+    regex: /devi\s*nagar|vaishnavi\s*nagar/i,
+    ward: 25,
+    name: "Devi Nagar / Vaishnavi Nagar",
+  },
   { regex: /shanthipuram|nethaji\s*nagar/i, ward: 26, name: "Shanthipuram" },
-  { regex: /cholambedu|cholabedu|k\.k\.\s*nagar/i, ward: 27, name: "Cholambedu / KK Nagar" },
-  { regex: /manikandapuram|cholapuram/i, ward: 28, name: "Manikandapuram / Cholapuram" },
-  { regex: /hanuman\s*nagar|vivekananda\s*nagar/i, ward: 29, name: "Hanuman Nagar" },
-  { regex: /senthil\s*nagar|sri\s*nagar\s*colony/i, ward: 30, name: "Senthil Nagar" },
-  { regex: /new\s*anna\s*nagar|annai\s*sathya/i, ward: 31, name: "New Anna Nagar" },
-  { regex: /sri\s*sakthi\s*nagar|siva\s*sakthi/i, ward: 32, name: "Sri Sakthi Nagar" },
-  { regex: /reddypalayam|annanoor|konambedu/i, ward: 33, name: "Reddypalayam / Annanoor" },
+  {
+    regex: /cholambedu|cholabedu|k\.k\.\s*nagar/i,
+    ward: 27,
+    name: "Cholambedu / KK Nagar",
+  },
+  {
+    regex: /manikandapuram|cholapuram/i,
+    ward: 28,
+    name: "Manikandapuram / Cholapuram",
+  },
+  {
+    regex: /hanuman\s*nagar|vivekananda\s*nagar/i,
+    ward: 29,
+    name: "Hanuman Nagar",
+  },
+  {
+    regex: /senthil\s*nagar|sri\s*nagar\s*colony/i,
+    ward: 30,
+    name: "Senthil Nagar",
+  },
+  {
+    regex: /new\s*anna\s*nagar|annai\s*sathya/i,
+    ward: 31,
+    name: "New Anna Nagar",
+  },
+  {
+    regex: /sri\s*sakthi\s*nagar|siva\s*sakthi/i,
+    ward: 32,
+    name: "Sri Sakthi Nagar",
+  },
+  {
+    regex: /reddypalayam|annanoor|konambedu/i,
+    ward: 33,
+    name: "Reddypalayam / Annanoor",
+  },
   { regex: /jeeva\s*nagar|aadhiparasakthi/i, ward: 34, name: "Jeeva Nagar" },
-  { regex: /kannigapuram|nehru\s*bazar|gowripettai/i, ward: 35, name: "Kannigapuram / Nehru Bazar" },
-  { regex: /nandavanamettur|modern\s*city/i, ward: 36, name: "Nandavanamettur" },
+  {
+    regex: /kannigapuram|nehru\s*bazar|gowripettai/i,
+    ward: 35,
+    name: "Kannigapuram / Nehru Bazar",
+  },
+  {
+    regex: /nandavanamettur|modern\s*city/i,
+    ward: 36,
+    name: "Nandavanamettur",
+  },
   { regex: /sekkadu/i, ward: 37, name: "Sekkadu" },
   { regex: /sri\s*devi\s*nagar/i, ward: 38, name: "Sri Devi Nagar" },
   { regex: /ramaliingapuram/i, ward: 39, name: "Ramalingapuram" },
   { regex: /tnhb/i, ward: 41, name: "TNHB Colony" },
-  { regex: /vasantham\s*nagar|thillai\s*nagar/i, ward: 43, name: "Vasantham Nagar" },
+  {
+    regex: /vasantham\s*nagar|thillai\s*nagar/i,
+    ward: 43,
+    name: "Vasantham Nagar",
+  },
   { regex: /kumran\s*nagar/i, ward: 44, name: "Kumran Nagar" },
   { regex: /ayyappan\s*nagar/i, ward: 45, name: "Ayyappan Nagar" },
-  { regex: /ananda\s*nagar|pudu\s*nagar|lazar\s*nagar/i, ward: 46, name: "Ananda Nagar" },
-  { regex: /paruthipattu|sapthagiri\s*nagar|lakshmipuram/i, ward: 47, name: "Paruthipattu" },
-  { regex: /govarthanagiri|govardhanagiri|srinivasa\s*nagar|aravind\s*nagar/i, ward: 48, name: "Govarthanagiri" },
+  {
+    regex: /ananda\s*nagar|pudu\s*nagar|lazar\s*nagar/i,
+    ward: 46,
+    name: "Ananda Nagar",
+  },
+  {
+    regex: /paruthipattu|sapthagiri\s*nagar|lakshmipuram/i,
+    ward: 47,
+    name: "Paruthipattu",
+  },
+  {
+    regex: /govarthanagiri|govardhanagiri|srinivasa\s*nagar|aravind\s*nagar/i,
+    ward: 48,
+    name: "Govarthanagiri",
+  },
   // Broader regional landmarks
   { regex: /pattabiram/i, ward: 16, name: "Pattabiram" },
-  { regex: /thirumullaivoyal|t\.?m\.?\s*voyal/i, ward: 7, name: "Thirumullaivoyal" },
+  {
+    regex: /thirumullaivoyal|t\.?m\.?\s*voyal/i,
+    ward: 7,
+    name: "Thirumullaivoyal",
+  },
   { regex: /kamaraj\s*nagar/i, ward: 44, name: "Kamaraj Nagar" },
   { regex: /gandhi\s*nagar/i, ward: 22, name: "Gandhi Nagar" },
   { regex: /anna\s*nagar/i, ward: 14, name: "Anna Nagar" },
@@ -116,7 +229,8 @@ export function detectAvadiWard(
   lat?: number,
   lng?: number,
 ): { wardNo: number; matchedReason: string } {
-  const combined = `${road || ""} ${suburb || ""} ${displayName || ""}`.toLowerCase();
+  const combined =
+    `${road || ""} ${suburb || ""} ${displayName || ""}`.toLowerCase();
 
   // 1. Direct Street lookup in ALL_AVADI_STREETS if road has a specific name
   if (road && road.trim().length >= 4) {
@@ -249,7 +363,10 @@ export async function reverseGeocodeAvadi(
 }
 
 // Official Avadi Ward Geographic Center Coordinates (Wards 1 to 48)
-export const AVADI_WARD_COORDINATES: Record<number, { lat: number; lng: number }> = {
+export const AVADI_WARD_COORDINATES: Record<
+  number,
+  { lat: number; lng: number }
+> = {
   1: { lat: 13.1245, lng: 80.0582 },
   2: { lat: 13.1218, lng: 80.0635 },
   3: { lat: 13.1158, lng: 80.0631 },
@@ -278,7 +395,7 @@ export const AVADI_WARD_COORDINATES: Record<number, { lat: number; lng: number }
   26: { lat: 13.1342, lng: 80.1365 },
   27: { lat: 13.1305, lng: 80.1412 },
   28: { lat: 13.1268, lng: 80.1458 },
-  29: { lat: 13.1197, lng: 80.1500 },
+  29: { lat: 13.1197, lng: 80.15 },
   30: { lat: 13.1252, lng: 80.1548 },
   31: { lat: 13.1215, lng: 80.1605 },
   32: { lat: 13.1145, lng: 80.1545 },
@@ -304,7 +421,10 @@ export const AVADI_WARD_COORDINATES: Record<number, { lat: number; lng: number }
  * Computes deterministic, unique, and geographically accurate coordinates for a given Avadi street.
  * Ensures that different streets have distinct coordinates within their ward boundaries.
  */
-export function getAvadiStreetCoordinates(street: StreetItem): { lat: number; lng: number } {
+export function getAvadiStreetCoordinates(street: StreetItem): {
+  lat: number;
+  lng: number;
+} {
   const wardBase = AVADI_WARD_COORDINATES[street.wardNo] || {
     lat: 13.1169,
     lng: 80.0972,
@@ -340,3 +460,59 @@ export function getAvadiStreetCoordinates(street: StreetItem): { lat: number; ln
   };
 }
 
+/**
+ * Place names that are NOT within Avadi Corporation limits.
+ * When Nominatim reverse-geocoding returns these, we suppress them
+ * and fall back to Avadi-local area names.
+ */
+const NON_AVADI_LOCALITIES = [
+  "poonamallee",
+  "porur",
+  "ambattur",
+  "anna nagar",
+  "koyambedu",
+  "mogappair",
+  "redhills",
+  "tiruvallur",
+  "tindivanam",
+  "sriperumbudur",
+  "perumbakkam",
+];
+
+/**
+ * Given a Nominatim reverse-geocode address object, returns a clean
+ * Avadi-local location string. Filters out non-Avadi suburb/district names.
+ */
+export function sanitiseReverseGeocodedAddress(
+  addr: Record<string, string>,
+  wardNo?: number,
+): string {
+  const road = addr.road || addr.pedestrian || addr.footway || "";
+  const suburb = addr.suburb || addr.neighbourhood || "";
+  const district = addr.city_district || addr.county || "";
+
+  // Check if suburb or district is a known non-Avadi place
+  const isSuburbAvadi = !NON_AVADI_LOCALITIES.some((p) =>
+    suburb.toLowerCase().includes(p),
+  );
+  const isDistrictAvadi = !NON_AVADI_LOCALITIES.some((p) =>
+    district.toLowerCase().includes(p),
+  );
+
+  const parts: string[] = [];
+  if (road) parts.push(road);
+  if (suburb && isSuburbAvadi) parts.push(suburb);
+  else if (district && isDistrictAvadi) parts.push(district);
+
+  // If we couldn't build a meaningful Avadi name, fall back to ward area name
+  if (parts.length === 0 && wardNo) {
+    return WARD_MAP[wardNo]?.hints?.split(",")[0] ?? `Avadi Ward ${wardNo}`;
+  }
+
+  // Append ", Avadi" if not already present
+  const joined = parts.join(", ");
+  if (joined && !joined.toLowerCase().includes("avadi")) {
+    return `${joined}, Avadi`;
+  }
+  return joined || "Avadi";
+}

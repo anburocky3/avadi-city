@@ -149,7 +149,7 @@ export async function GET(
           select: { name: true, phone: true },
         },
         requester: {
-          select: { id: true },
+          select: { id: true, name: true, phone: true },
         },
       },
     });
@@ -185,11 +185,12 @@ export async function GET(
         { status: 200 },
       );
     } else {
-      // Owner gets the requester's phone (already returned on PATCH, but available here too)
+      // Owner gets the requester's phone
       return NextResponse.json(
         {
           status: "ACCEPTED",
-          contactName: claim.requester.id, // returns id since requester select doesn't include name here
+          contactName: claim.requester.name,
+          contactPhone: claim.requester.phone,
         },
         { status: 200 },
       );
