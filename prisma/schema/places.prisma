@@ -32,7 +32,7 @@ model ExplorePlace {
   additionalDetails String?  @db.Text
 
   // Moderation & Ownership
-  status            String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
+  status          ApprovalStatus @default(PENDING)
   ownerId           String
   user              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 

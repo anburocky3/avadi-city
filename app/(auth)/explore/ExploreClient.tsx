@@ -41,6 +41,7 @@ import {
   SkeletonLoader,
 } from "@/components/shared-components";
 import { useTranslations } from "next-intl";
+import { timeAgo } from "@/utils/helper";
 
 export interface Place {
   id: number | string;
@@ -513,29 +514,30 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
             <div className="w-60 sm:w-72 max-w-full mb-4 mx-auto flex items-center justify-center">
               {/* Light mode: original transparent image (untouched) */}
               <img
-                src="/img/empty-places.png"
+                src="/img/no-data.svg"
                 alt="Illustration showing a person exploring information"
-                className="w-full h-auto object-contain mx-auto drop-shadow-sm dark:hidden"
+                className="w-full h-auto object-contain mx-auto drop-shadow-xs"
               />
               {/* Dark mode: tailored border & contrast-adjusted illustration */}
-              <img
+              {/* <img
                 src="/img/empty-places-dark.png"
                 alt="Illustration showing a person exploring information"
                 className="w-full h-auto object-contain mx-auto drop-shadow-sm hidden dark:block"
-              />
+              /> */}
             </div>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mb-2">
               No Places to Explore Yet
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mb-6 leading-relaxed font-medium">
-              Discover exciting places around Avadi. New places will appear here as they become available.
+              Discover exciting places around Avadi. New places will appear here
+              as they become available.
             </p>
             <Link
               href="/explore/create"
               className="px-5 py-2.5 bg-primary hover:bg-orange-600 text-white font-black rounded-2xl text-xs sm:text-sm shadow-md transition inline-flex items-center gap-1.5 cursor-pointer active:scale-98"
             >
               <Plus size={16} />
-              <span>Post Place</span>
+              <span>Add a place you know</span>
             </Link>
           </motion.div>
         ) : filteredPlaces.length > 0 ? (
@@ -1143,7 +1145,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                               className="w-7 h-7 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                             />
                           ) : (
-                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-black text-xs flex items-center justify-center uppercase shadow-2xs">
+                            <div className="w-7 h-7 rounded-full bg-linear-to-br from-teal-500 to-emerald-600 text-white font-black text-xs flex items-center justify-center uppercase shadow-2xs">
                               {(rev.userName || "U").charAt(0)}
                             </div>
                           )}
@@ -1152,15 +1154,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                               {rev.userName} {rev.isOwn && "(You)"}
                             </p>
                             <p className="text-[10px] text-slate-400">
-                              Reviewed on:{" "}
-                              {new Date(rev.createdAt).toLocaleDateString(
-                                "en-IN",
-                                {
-                                  day: "numeric",
-                                  month: "short",
-                                  year: "numeric",
-                                },
-                              )}
+                              Reviewed on: {timeAgo(rev.createdAt)}
                             </p>
                           </div>
                         </div>

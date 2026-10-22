@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -222,27 +221,77 @@ const BEST_TIME_GROUPS: BestTimeGroup[] = [
   {
     group: "Times of Day",
     items: [
-      { id: "Early Morning", label: "Early Morning", icon: "🌅", desc: "5:00 AM – 8:00 AM" },
-      { id: "Morning", label: "Morning", icon: "☀️", desc: "8:00 AM – 12:00 PM" },
-      { id: "Afternoon", label: "Afternoon", icon: "🌤️", desc: "12:00 PM – 4:00 PM" },
-      { id: "Evening", label: "Evening", icon: "🌇", desc: "4:00 PM – 8:00 PM" },
+      {
+        id: "Early Morning",
+        label: "Early Morning",
+        icon: "🌅",
+        desc: "5:00 AM – 8:00 AM",
+      },
+      {
+        id: "Morning",
+        label: "Morning",
+        icon: "☀️",
+        desc: "8:00 AM – 12:00 PM",
+      },
+      {
+        id: "Afternoon",
+        label: "Afternoon",
+        icon: "🌤️",
+        desc: "12:00 PM – 4:00 PM",
+      },
+      {
+        id: "Evening",
+        label: "Evening",
+        icon: "🌇",
+        desc: "4:00 PM – 8:00 PM",
+      },
       { id: "Night", label: "Night", icon: "🌙", desc: "After 8:00 PM" },
     ],
   },
   {
     group: "Days of Week",
     items: [
-      { id: "Weekdays", label: "Weekdays", icon: "💼", desc: "Monday – Friday" },
-      { id: "Weekends", label: "Weekends", icon: "🎉", desc: "Saturday – Sunday" },
+      {
+        id: "Weekdays",
+        label: "Weekdays",
+        icon: "💼",
+        desc: "Monday – Friday",
+      },
+      {
+        id: "Weekends",
+        label: "Weekends",
+        icon: "🎉",
+        desc: "Saturday – Sunday",
+      },
     ],
   },
   {
     group: "Seasons & Occasions",
     items: [
-      { id: "Winter (Nov–Feb)", label: "Winter / Cooler Months", icon: "❄️", desc: "Nov – Feb" },
-      { id: "Monsoon Season", label: "Monsoon Season", icon: "🌧️", desc: "Rainy & scenic" },
-      { id: "Festivals & Events", label: "Festivals & Special Events", icon: "🎊", desc: "Celebrations" },
-      { id: "Any Time / All Year", label: "Any Time / All Year", icon: "🕒", desc: "Open throughout" },
+      {
+        id: "Winter (Nov–Feb)",
+        label: "Winter / Cooler Months",
+        icon: "❄️",
+        desc: "Nov – Feb",
+      },
+      {
+        id: "Monsoon Season",
+        label: "Monsoon Season",
+        icon: "🌧️",
+        desc: "Rainy & scenic",
+      },
+      {
+        id: "Festivals & Events",
+        label: "Festivals & Special Events",
+        icon: "🎊",
+        desc: "Celebrations",
+      },
+      {
+        id: "Any Time / All Year",
+        label: "Any Time / All Year",
+        icon: "🕒",
+        desc: "Open throughout",
+      },
     ],
   },
 ];
@@ -269,6 +318,7 @@ export default function PostPlacePage() {
 
   // Authentication Guard
   useEffect(() => {
+    document.title = "Add your Place to Avadi City";
     if (!isLoadingAuth && !isAuthenticated) {
       router.replace("/login?redirect=/explore/create");
     }
@@ -906,7 +956,7 @@ export default function PostPlacePage() {
                   STEP {currentStep} OF 3
                 </span>
                 <h2 className="text-sm sm:text-base md:text-lg font-black text-slate-900 dark:text-white leading-tight">
-                  {currentStep === 1 && "Place Profile & Activities"}
+                  {currentStep === 1 && "Basic Information"}
                   {currentStep === 2 && "Location & Visitor Information"}
                   {currentStep === 3 && "Photos & Confirmation"}
                 </h2>
@@ -1793,7 +1843,8 @@ export default function PostPlacePage() {
                       </span>
                     </label>
                     <p className="text-[11px] text-slate-400 mt-0.5">
-                      Help visitors know the ideal hours, days, or seasons to visit this place.
+                      Help visitors know the ideal hours, days, or seasons to
+                      visit this place.
                     </p>
                   </div>
                   {selectedBestTimes.length > 0 && (
@@ -1815,7 +1866,9 @@ export default function PostPlacePage() {
                       </span>
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                         {group.items.map((item) => {
-                          const isSelected = selectedBestTimes.includes(item.id);
+                          const isSelected = selectedBestTimes.includes(
+                            item.id,
+                          );
                           return (
                             <button
                               key={item.id}
@@ -1828,9 +1881,13 @@ export default function PostPlacePage() {
                               }`}
                             >
                               <div className="flex items-center space-x-2 min-w-0 pr-1">
-                                <span className="text-base shrink-0">{item.icon}</span>
+                                <span className="text-base shrink-0">
+                                  {item.icon}
+                                </span>
                                 <div className="truncate">
-                                  <p className="font-bold text-xs truncate leading-snug">{item.label}</p>
+                                  <p className="font-bold text-xs truncate leading-snug">
+                                    {item.label}
+                                  </p>
                                   {item.desc && (
                                     <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate leading-tight">
                                       {item.desc}
@@ -1845,7 +1902,9 @@ export default function PostPlacePage() {
                                     : "border-slate-300 dark:border-slate-700"
                                 }`}
                               >
-                                {isSelected && <Check size={11} strokeWidth={3} />}
+                                {isSelected && (
+                                  <Check size={11} strokeWidth={3} />
+                                )}
                               </div>
                             </button>
                           );
@@ -1884,12 +1943,18 @@ export default function PostPlacePage() {
 
                   {/* Display any user-added custom tags */}
                   {selectedBestTimes.filter(
-                    (t) => !BEST_TIME_GROUPS.some((g) => g.items.some((i) => i.id === t)),
+                    (t) =>
+                      !BEST_TIME_GROUPS.some((g) =>
+                        g.items.some((i) => i.id === t),
+                      ),
                   ).length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-2">
                       {selectedBestTimes
                         .filter(
-                          (t) => !BEST_TIME_GROUPS.some((g) => g.items.some((i) => i.id === t)),
+                          (t) =>
+                            !BEST_TIME_GROUPS.some((g) =>
+                              g.items.some((i) => i.id === t),
+                            ),
                         )
                         .map((customTag) => (
                           <span
@@ -2053,7 +2118,7 @@ export default function PostPlacePage() {
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 pl-8 leading-relaxed">
                   By submitting this place, you agree that your submission will
                   be reviewed by administrators before being made publicly
-                  visible on Avadi Connect Explore.
+                  visible on Avadi City Explore.
                 </p>
               </div>
 

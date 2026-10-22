@@ -2,8 +2,14 @@ import React, { Suspense } from "react";
 import { SkeletonLoader } from "@/components/shared-components";
 import { ExploreClient, Place } from "./ExploreClient";
 import { prisma } from "@/lib/prisma";
+import Head from "next/head";
+import { Metadata } from "next";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Explore Places",
+};
 
 export default async function ExplorePage() {
   let dbPlaces: Place[] = [];
@@ -95,6 +101,9 @@ export default async function ExplorePage() {
         </div>
       }
     >
+      <Head>
+        <title>Explore Places</title>
+      </Head>
       <ExploreClient
         initialPlaces={places}
         initialReviewStats={reviewStatsMap}

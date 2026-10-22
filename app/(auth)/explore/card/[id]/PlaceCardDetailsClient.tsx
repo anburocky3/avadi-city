@@ -25,6 +25,7 @@ import {
 
 import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
+import { timeAgo } from "@/utils/helper";
 
 export interface PlaceDetails {
   id: string;
@@ -101,7 +102,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
 
   const [activeImage, setActiveImage] = useState<string>(
     place.imageUrl ||
-      "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format&fit=crop&q=70"
+      "https://images.unsplash.com/photo-1502082553048-f009c37129b9?w=800&auto=format&fit=crop&q=70",
   );
   const [isImageLoading, setIsImageLoading] = useState(true);
 
@@ -110,11 +111,12 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
     initialReviewStats || {
       averageRating: null,
       reviewCount: 0,
-    }
+    },
   );
   const [placeReviews, setPlaceReviews] = useState<ReviewItem[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
-  const [userExistingReview, setUserExistingReview] = useState<ReviewItem | null>(null);
+  const [userExistingReview, setUserExistingReview] =
+    useState<ReviewItem | null>(null);
   const [inputRating, setInputRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [inputReviewText, setInputReviewText] = useState<string>("");
@@ -273,20 +275,19 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
       const json = await res.json();
       if (res.ok && json.success) {
         toast.success(
-          json.message ||
-            "Your review has been submitted successfully. Thank you for sharing your experience!"
+          json.message || "Your review has been submitted successfully.",
         );
         setInputRating(0);
         setInputReviewText("");
         await fetchReviews();
       } else {
         toast.error(
-          json.message || "Unable to submit your review. Please try again."
+          json.message || "Unable to submit your review. Please try again.",
         );
       }
     } catch {
       toast.error(
-        "Unable to submit your review. Please check your network and try again."
+        "Unable to submit your review. Please check your network and try again.",
       );
     } finally {
       setIsSubmittingReview(false);
@@ -363,7 +364,10 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
 
             {reviewStats && reviewStats.reviewCount > 0 && (
               <span className="bg-amber-500 text-slate-950 px-3 py-1.5 rounded-full text-xs font-black flex items-center shadow-lg">
-                <Star size={13} className="fill-slate-950 text-slate-950 mr-1" />
+                <Star
+                  size={13}
+                  className="fill-slate-950 text-slate-950 mr-1"
+                />
                 <span>{reviewStats.averageRating?.toFixed(1)}</span>
                 <span className="ml-1 text-[10px] font-bold opacity-80">
                   ({reviewStats.reviewCount})
@@ -660,7 +664,8 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
               <span className="text-xs sm:text-sm font-black text-amber-600 dark:text-amber-400 flex items-center gap-1">
                 <Star size={15} className="fill-amber-400 text-amber-400" />
                 <span>
-                  {reviewStats.averageRating?.toFixed(1)}/5 · {reviewStats.reviewCount}{" "}
+                  {reviewStats.averageRating?.toFixed(1)}/5 ·{" "}
+                  {reviewStats.reviewCount}{" "}
                   {reviewStats.reviewCount === 1 ? "Review" : "Reviews"}
                 </span>
               </span>
@@ -680,7 +685,9 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
             </span>
             <button
               type="button"
-              onClick={() => router.push(`/login?redirect=/explore/card/${place.id}`)}
+              onClick={() =>
+                router.push(`/login?redirect=/explore/card/${place.id}`)
+              }
               className="px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-orange-600 transition cursor-pointer"
             >
               Sign In
@@ -697,7 +704,8 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
                 You have already reviewed this place.
               </p>
               <p className="text-[11px] text-teal-700 dark:text-teal-400">
-                Thank you for contributing your experience for the Avadi community!
+                Thank you for contributing your experience for the Avadi
+                community!
               </p>
             </div>
           </div>
@@ -735,9 +743,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
                   {(hoverRating || inputRating) > 0
                     ? `${hoverRating || inputRating} star${
                         (hoverRating || inputRating) > 1 ? "s" : ""
-                      } — ${
-                        RATING_INTERPRETATIONS[hoverRating || inputRating]
-                      }`
+                      } — ${RATING_INTERPRETATIONS[hoverRating || inputRating]}`
                     : "Select rating (1 to 5 stars)"}
                 </span>
               </div>
@@ -796,7 +802,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
                         className="w-8 h-8 rounded-full object-cover border border-slate-200 dark:border-slate-700"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-600 text-white font-black text-xs flex items-center justify-center uppercase shadow-2xs">
+                      <div className="w-8 h-8 rounded-full bg-linear-to-br from-teal-500 to-emerald-600 text-white font-black text-xs flex items-center justify-center uppercase shadow-2xs">
                         {(rev.userName || "U").charAt(0)}
                       </div>
                     )}
@@ -805,12 +811,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
                         {rev.userName} {rev.isOwn && "(You)"}
                       </p>
                       <p className="text-[10px] text-slate-400">
-                        Reviewed on:{" "}
-                        {new Date(rev.createdAt).toLocaleDateString("en-IN", {
-                          day: "numeric",
-                          month: "short",
-                          year: "numeric",
-                        })}
+                        Reviewed on: {timeAgo(rev.createdAt)}
                       </p>
                     </div>
                   </div>

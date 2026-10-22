@@ -12,7 +12,9 @@ async function getAuthenticatedUser() {
   return session;
 }
 
-async function isUserAdmin(session: { userId?: string; email?: string } | null): Promise<boolean> {
+async function isUserAdmin(
+  session: { userId?: string; email?: string } | null,
+): Promise<boolean> {
   try {
     const cookieStore = await cookies();
     const adminSession =
@@ -36,7 +38,7 @@ async function isUserAdmin(session: { userId?: string; email?: string } | null):
     const adminRows: any = await prisma.$queryRawUnsafe(
       `SELECT id FROM admins WHERE LOWER(email) = LOWER(?) OR id = ? LIMIT 1`,
       email || "",
-      session.userId || ""
+      session.userId || "",
     );
     if (Array.isArray(adminRows) && adminRows.length > 0) {
       return true;
@@ -56,7 +58,7 @@ export async function GET(request: Request) {
     if (!placeId) {
       return NextResponse.json(
         { success: false, message: "placeId is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -129,7 +131,7 @@ export async function GET(request: Request) {
   } catch (error) {
     return NextResponse.json(
       { success: false, message: "Unable to load reviews. Please try again." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -140,7 +142,7 @@ export async function POST(request: Request) {
     if (!session?.userId) {
       return NextResponse.json(
         { success: false, message: "Please sign in to submit a review." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -148,16 +150,19 @@ export async function POST(request: Request) {
     if (!body) {
       return NextResponse.json(
         { success: false, message: "Invalid review data." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const { placeId, rating, reviewText } = body;
 
-    if (!placeId || (typeof placeId !== "string" && typeof placeId !== "number")) {
+    if (
+      !placeId ||
+      (typeof placeId !== "string" && typeof placeId !== "number")
+    ) {
       return NextResponse.json(
         { success: false, message: "Place ID is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -167,7 +172,7 @@ export async function POST(request: Request) {
     if (isNaN(numRating) || numRating < 1 || numRating > 5) {
       return NextResponse.json(
         { success: false, message: "Rating must be between 1 and 5 stars." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -176,8 +181,11 @@ export async function POST(request: Request) {
 
     if (cleanReviewText && cleanReviewText.length > 2000) {
       return NextResponse.json(
-        { success: false, message: "Review text must not exceed 2000 characters." },
-        { status: 400 }
+        {
+          success: false,
+          message: "Review text must not exceed 2000 characters.",
+        },
+        { status: 400 },
       );
     }
 
@@ -197,7 +205,7 @@ export async function POST(request: Request) {
           success: false,
           message: "You have already reviewed this place.",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -235,7 +243,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: "Your review has been submitted successfully. Thank you for sharing your experience!",
+      message: "Your review has been submitted successfully.",
       data: {
         review: {
           id: review.id,
@@ -257,8 +265,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     return NextResponse.json(
-      { success: false, message: "Unable to submit your review. Please try again." },
-      { status: 500 }
+      {
+        success: false,
+        message: "Unable to submit your review. Please try again.",
+      },
+      { status: 500 },
     );
   }
 }
@@ -273,7 +284,7 @@ export async function PUT(request: Request) {
           success: false,
           message: "Forbidden. Only administrators can edit reviews.",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -281,7 +292,7 @@ export async function PUT(request: Request) {
     if (!body) {
       return NextResponse.json(
         { success: false, message: "Invalid request payload." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -289,7 +300,7 @@ export async function PUT(request: Request) {
     if (!reviewId) {
       return NextResponse.json(
         { success: false, message: "reviewId is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -301,7 +312,8 @@ export async function PUT(request: Request) {
       }
     }
     if (reviewText !== undefined) {
-      updateData.reviewText = typeof reviewText === "string" ? reviewText.trim() : null;
+      updateData.reviewText =
+        typeof reviewText === "string" ? reviewText.trim() : null;
     }
 
     const updated = await prisma.placeReview.update({
@@ -321,7 +333,10 @@ export async function PUT(request: Request) {
       data: {
         review: updated,
         stats: {
-          averageRating: stats._count.id > 0 && stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : null,
+          averageRating:
+            stats._count.id > 0 && stats._avg.rating
+              ? Number(stats._avg.rating.toFixed(1))
+              : null,
           reviewCount: stats._count.id || 0,
         },
       },
@@ -329,7 +344,7 @@ export async function PUT(request: Request) {
   } catch {
     return NextResponse.json(
       { success: false, message: "Unable to update review." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -346,7 +361,7 @@ export async function DELETE(request: Request) {
           success: false,
           message: "Forbidden. Only administrators can delete reviews.",
         },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -356,7 +371,7 @@ export async function DELETE(request: Request) {
     if (!reviewId) {
       return NextResponse.json(
         { success: false, message: "reviewId is required." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -367,7 +382,7 @@ export async function DELETE(request: Request) {
     if (!targetReview) {
       return NextResponse.json(
         { success: false, message: "Review not found." },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -386,7 +401,10 @@ export async function DELETE(request: Request) {
       message: "Review removed successfully by administrator.",
       data: {
         stats: {
-          averageRating: stats._count.id > 0 && stats._avg.rating ? Number(stats._avg.rating.toFixed(1)) : null,
+          averageRating:
+            stats._count.id > 0 && stats._avg.rating
+              ? Number(stats._avg.rating.toFixed(1))
+              : null,
           reviewCount: stats._count.id || 0,
         },
       },
@@ -394,7 +412,7 @@ export async function DELETE(request: Request) {
   } catch {
     return NextResponse.json(
       { success: false, message: "Unable to delete review." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
