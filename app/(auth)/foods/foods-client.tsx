@@ -742,7 +742,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto md:max-w-full space-y-5">
       {/* 1. Header & New Listing Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
@@ -1107,7 +1107,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 gap-4 sm:gap-5 max-w-2xl mx-auto"
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5 max-w-2xl md:max-w-full mx-auto"
             >
               {filteredSpots.map((spot) => {
                 const isFavorited = favoritedShopIds.has(String(spot.id));

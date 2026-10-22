@@ -109,7 +109,7 @@ export default async function JobDetailPage({ params }: PageProps) {
 
   if (!job) {
     return (
-      <div className="p-4 md:p-6 max-w-lg mx-auto text-center space-y-4 pt-16">
+      <div className="p-4 md:p-6 max-w-lg mx-auto md:max-w-full text-center space-y-4 pt-16">
         <h1 className="text-xl font-black text-slate-900 dark:text-white">
           Job Vacancy Not Found
         </h1>
@@ -165,7 +165,7 @@ export default async function JobDetailPage({ params }: PageProps) {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6 pb-24">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto md:max-w-full space-y-6 pb-24">
       {/* Back button */}
       <div>
         <Link
@@ -199,7 +199,10 @@ export default async function JobDetailPage({ params }: PageProps) {
               <div className="flex flex-wrap items-center gap-2">
                 {job.featured && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 shadow-2xs">
-                    <Sparkles size={11} className="mr-1 text-amber-500 shrink-0" />
+                    <Sparkles
+                      size={11}
+                      className="mr-1 text-amber-500 shrink-0"
+                    />
                     SPONSORED
                   </span>
                 )}
@@ -255,7 +258,10 @@ export default async function JobDetailPage({ params }: PageProps) {
                 className="px-5 py-2.5 rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-black flex items-center gap-2 select-none"
                 title="You have already submitted an application to this company"
               >
-                <CheckCircle2 size={15} className="shrink-0 text-emerald-600 dark:text-emerald-400" />
+                <CheckCircle2
+                  size={15}
+                  className="shrink-0 text-emerald-600 dark:text-emerald-400"
+                />
                 <span>Already Applied</span>
               </div>
             ) : (
@@ -278,7 +284,9 @@ export default async function JobDetailPage({ params }: PageProps) {
               <span className="text-[10px] font-bold text-emerald-600/80 uppercase tracking-wider block">
                 Offered Pay
               </span>
-              <span className="text-sm font-black">{job.salary?.replace(/\$/g, "₹")}</span>
+              <span className="text-sm font-black">
+                {job.salary?.replace(/\$/g, "₹")}
+              </span>
             </div>
           </div>
           <a
@@ -288,7 +296,10 @@ export default async function JobDetailPage({ params }: PageProps) {
             className="flex items-center gap-2 text-slate-700 dark:text-slate-300 hover:text-orange-500 transition group cursor-pointer"
             title="Click to view location on Map"
           >
-            <MapPin size={18} className="shrink-0 text-slate-400 group-hover:text-orange-500 transition-colors" />
+            <MapPin
+              size={18}
+              className="shrink-0 text-slate-400 group-hover:text-orange-500 transition-colors"
+            />
             <div>
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Location (Click to View on Map)

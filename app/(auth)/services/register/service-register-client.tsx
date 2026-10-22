@@ -938,7 +938,7 @@ export function ServiceRegisterClient() {
   return (
     <div
       ref={topRef}
-      className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-2xl mx-auto space-y-4"
+      className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-2xl mx-auto md:max-w-full space-y-4"
     >
       {/* Top Navigation Bar */}
       <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">

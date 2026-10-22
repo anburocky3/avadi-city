@@ -958,7 +958,7 @@ export default function PostJobVacancyPage() {
     >
       {/* Top Header Sticky Bar */}
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className="max-w-4xl mx-auto md:max-w-full px-4 py-3.5 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button
               type="button"
@@ -994,7 +994,7 @@ export default function PostJobVacancyPage() {
       </header>
 
       {/* Main Single Card Container */}
-      <main className="max-w-4xl mx-auto px-4 py-6 sm:py-8">
+      <main className="max-w-4xl mx-auto md:max-w-full px-4 py-6 sm:py-8">
         <form onSubmit={handleSubmitJob} noValidate>
           <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-4xl border border-slate-200/90 dark:border-slate-800/90 shadow-xl sm:shadow-2xl overflow-hidden transition-all">
             {/* ======================================================== */}
@@ -1041,7 +1041,7 @@ export default function PostJobVacancyPage() {
                         isCompleted
                           ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
                           : isCurrent
-                            ? "bg-gradient-to-r from-orange-500 to-amber-500 shadow-sm shadow-orange-500/50"
+                            ? "bg-linear-to-r from-orange-500 to-amber-500 shadow-sm shadow-orange-500/50"
                             : "bg-slate-800 hover:bg-slate-700/80"
                       }`}
                       aria-label={`Step ${step} ${isCompleted ? "(Completed)" : isCurrent ? "(Current)" : ""}`}

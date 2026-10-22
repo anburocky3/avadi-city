@@ -48,20 +48,11 @@ export interface Complaint {
 }
 
 export type FeedMode =
-  | "all-avadi"
-  | "general"
-  | "news"
-  | "complaints"
-  | "blood-feed"
-  | "my-ward";
+  "all-avadi" | "general" | "news" | "complaints" | "blood-feed" | "my-ward";
 
 export type FeedVisibility = "within-ward" | "entire-avadi";
 export type FeedCategory =
-  | "General"
-  | "News"
-  | "Complaint"
-  | "Blood Request"
-  | "Announcement";
+  "General" | "News" | "Complaint" | "Blood Request" | "Announcement";
 
 const validateAndCompressImage = async (
   file: File,
@@ -464,7 +455,7 @@ export const FeedPage: React.FC = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6 pb-24 sm:pb-12 relative">
+    <div className="p-4 md:p-6 max-w-2xl md:max-w-full mx-auto space-y-6 pb-24 sm:pb-12 relative">
       {/* 1. Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>

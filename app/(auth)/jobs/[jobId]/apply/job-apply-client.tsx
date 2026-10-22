@@ -51,7 +51,10 @@ const QUALIFICATION_CHOICES = [
   "Other",
 ];
 
-export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProfile }) => {
+export const JobApplyClient: React.FC<JobApplyClientProps> = ({
+  job,
+  initialProfile,
+}) => {
   const router = useRouter();
   const toast = useToast();
   const { authUser, userProfile } = useWard();
@@ -61,13 +64,13 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
 
   // Form State (Auto-populated from authenticated profile if available - FIX 4)
   const [fullName, setFullName] = useState(
-    initialProfile?.name || authUser?.name || userProfile?.name || ""
+    initialProfile?.name || authUser?.name || userProfile?.name || "",
   );
   const [email, setEmail] = useState(
-    initialProfile?.email || authUser?.email || ""
+    initialProfile?.email || authUser?.email || "",
   );
   const [phone, setPhone] = useState(
-    initialProfile?.phone || authUser?.phone || ""
+    initialProfile?.phone || authUser?.phone || "",
   );
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [coverLetter, setCoverLetter] = useState("");
@@ -82,8 +85,12 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
-  const [submittedApplicationId, setSubmittedApplicationId] = useState<string | null>(null);
-  const [alreadyAppliedMessage, setAlreadyAppliedMessage] = useState<string | null>(null);
+  const [submittedApplicationId, setSubmittedApplicationId] = useState<
+    string | null
+  >(null);
+  const [alreadyAppliedMessage, setAlreadyAppliedMessage] = useState<
+    string | null
+  >(null);
 
   // Prefill user profile details when loaded
   useEffect(() => {
@@ -123,7 +130,9 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const fileExt = file.name.substring(file.name.lastIndexOf(".")).toLowerCase();
+    const fileExt = file.name
+      .substring(file.name.lastIndexOf("."))
+      .toLowerCase();
 
     if (fileExt !== ".pdf" && file.type !== "application/pdf") {
       setFieldErrors((prev) => ({
@@ -174,7 +183,9 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
     const el = document.getElementById(targetId);
     if (el) {
       el.scrollIntoView({ behavior: "smooth", block: "center" });
-      const input = el.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea");
+      const input = el.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        "input, textarea",
+      );
       if (input) {
         setTimeout(() => input.focus(), 250);
       }
@@ -218,7 +229,9 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
 
     // Resume / CV is Optional, but if provided must be PDF (FIX 5)
     if (resumeFile) {
-      const ext = resumeFile.name.substring(resumeFile.name.lastIndexOf(".")).toLowerCase();
+      const ext = resumeFile.name
+        .substring(resumeFile.name.lastIndexOf("."))
+        .toLowerCase();
       if (ext !== ".pdf" && resumeFile.type !== "application/pdf") {
         errors.resume = "Please upload your resume in PDF format.";
         errorKeys.push("resume");
@@ -226,7 +239,10 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
     }
 
     if (portfolioUrl.trim()) {
-      if (!portfolioUrl.startsWith("http://") && !portfolioUrl.startsWith("https://")) {
+      if (
+        !portfolioUrl.startsWith("http://") &&
+        !portfolioUrl.startsWith("https://")
+      ) {
         errors.portfolioUrl = "URL must start with http:// or https://";
         errorKeys.push("portfolioUrl");
       }
@@ -255,11 +271,15 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
       formData.append("email", email.trim());
       formData.append("phone", phone.replace(/[^0-9]/g, ""));
       if (resumeFile) formData.append("resume", resumeFile);
-      if (coverLetter.trim()) formData.append("coverLetter", coverLetter.trim());
-      if (highestQualification) formData.append("qualification", highestQualification);
-      if (experienceText.trim()) formData.append("experience", experienceText.trim());
+      if (coverLetter.trim())
+        formData.append("coverLetter", coverLetter.trim());
+      if (highestQualification)
+        formData.append("qualification", highestQualification);
+      if (experienceText.trim())
+        formData.append("experience", experienceText.trim());
       if (skills.length > 0) formData.append("skills", skills.join(", "));
-      if (portfolioUrl.trim()) formData.append("portfolioUrl", portfolioUrl.trim());
+      if (portfolioUrl.trim())
+        formData.append("portfolioUrl", portfolioUrl.trim());
 
       const res = await fetch(`/api/jobs/${job.id}/apply`, {
         method: "POST",
@@ -272,11 +292,11 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
         if (res.status === 409 || data.alreadyApplied) {
           setAlreadyAppliedMessage(
             data.message ||
-              "You have already applied to a vacancy at this company. You can track your existing application under My Applications."
+              "You have already applied to a vacancy at this company. You can track your existing application under My Applications.",
           );
           toast.error(
             data.message ||
-              "You have already applied to a vacancy at this company."
+              "You have already applied to a vacancy at this company.",
           );
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
@@ -307,7 +327,7 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
   if (alreadyAppliedMessage) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-12 px-4 transition-colors">
-        <div className="max-w-xl mx-auto">
+        <div className="max-w-xl mx-auto md:max-w-full">
           <div className="bg-white dark:bg-slate-900 rounded-3xl sm:rounded-4xl border border-slate-200/90 dark:border-slate-800 shadow-2xl p-6 sm:p-10 text-center space-y-6">
             <div className="w-20 h-20 mx-auto rounded-3xl bg-amber-500/10 text-amber-500 flex items-center justify-center ring-8 ring-amber-500/5">
               <AlertCircle size={44} className="stroke-2" />
@@ -366,8 +386,15 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
                 Application Sent Successfully!
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed max-w-md mx-auto">
-                Your application for <span className="font-bold text-slate-800 dark:text-slate-200">{job.role}</span> at{" "}
-                <span className="font-bold text-slate-800 dark:text-slate-200">{job.businessName}</span> has been received.
+                Your application for{" "}
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {job.role}
+                </span>{" "}
+                at{" "}
+                <span className="font-bold text-slate-800 dark:text-slate-200">
+                  {job.businessName}
+                </span>{" "}
+                has been received.
               </p>
             </div>
 
@@ -375,15 +402,21 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200/70 dark:border-slate-800/80 text-left space-y-2.5 text-xs">
               <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
                 <span>Applicant:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{fullName}</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {fullName}
+                </span>
               </div>
               <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
                 <span>Contact Email:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{email}</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {email}
+                </span>
               </div>
               <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
                 <span>Contact Phone:</span>
-                <span className="font-bold text-slate-900 dark:text-white">{phone}</span>
+                <span className="font-bold text-slate-900 dark:text-white">
+                  {phone}
+                </span>
               </div>
               {resumeFile && (
                 <div className="flex justify-between items-center text-slate-500 dark:text-slate-400">
@@ -397,7 +430,9 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
               {submittedApplicationId && (
                 <div className="flex justify-between items-center text-slate-400 dark:text-slate-500 pt-1 border-t border-slate-200 dark:border-slate-800 text-[11px]">
                   <span>Application Reference:</span>
-                  <span className="font-mono">{submittedApplicationId.substring(0, 12)}...</span>
+                  <span className="font-mono">
+                    {submittedApplicationId.substring(0, 12)}...
+                  </span>
                 </div>
               )}
             </div>
@@ -432,7 +467,7 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
     >
       {/* Top Navigation Bar */}
       <header className="sticky top-0 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs">
-        <div className="max-w-3xl mx-auto px-4 py-3.5 flex items-center justify-between">
+        <div className="max-w-3xl mx-auto md:max-w-full px-4 py-3.5 flex items-center justify-between">
           <button
             type="button"
             onClick={() => router.push("/jobs")}
@@ -507,10 +542,13 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
               <div className="space-y-1">
                 <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <span>Candidate Details</span>
-                  <span className="text-xs font-semibold text-rose-500">* Required</span>
+                  <span className="text-xs font-semibold text-rose-500">
+                    * Required
+                  </span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Provide your contact information so the employer can reach you directly.
+                  Provide your contact information so the employer can reach you
+                  directly.
                 </p>
               </div>
 
@@ -676,7 +714,8 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
                           {resumeFile.name}
                         </p>
                         <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                          {(resumeFile.size / 1024).toFixed(0)} KB · Ready to submit
+                          {(resumeFile.size / 1024).toFixed(0)} KB · Ready to
+                          submit
                         </p>
                       </div>
                     </div>
@@ -715,10 +754,13 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({ job, initialProf
                 <h2 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Sparkles size={16} className="text-orange-500" />
                   <span>Additional Details</span>
-                  <span className="text-xs font-medium text-slate-400">(Optional)</span>
+                  <span className="text-xs font-medium text-slate-400">
+                    (Optional)
+                  </span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Highlight your qualifications, experience, and skills to help the employer evaluate your profile.
+                  Highlight your qualifications, experience, and skills to help
+                  the employer evaluate your profile.
                 </p>
               </div>
 

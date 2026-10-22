@@ -276,7 +276,7 @@ export const ServicesClient: React.FC<{}> = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto md:max-w-full space-y-6">
       {/* Header Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-linear-to-r from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900 text-white p-5 rounded-2xl shadow-sm">
         <div>
@@ -380,7 +380,7 @@ export const ServicesClient: React.FC<{}> = () => {
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           {filteredProviders.length > 0 ? (
             filteredProviders.map((provider) => (
               <Card
@@ -458,6 +458,7 @@ export const ServicesClient: React.FC<{}> = () => {
                           {t("rateLabel")}:
                         </span>
                         <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                          ₹
                           {provider.rate ||
                             provider.serviceCharge ||
                             (locale === "ta"

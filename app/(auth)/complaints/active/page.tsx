@@ -1,6 +1,5 @@
 "use client";
 
-import React from "react";
 import { Complaint, useWard } from "@/context/wardContext";
 import ComplaintList from "@/components/ui/complaints/ComplaintList";
 

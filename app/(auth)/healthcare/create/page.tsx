@@ -898,7 +898,7 @@ export default function CreateFacilityPage() {
   return (
     <div
       ref={wizardTopRef}
-      className="max-w-3xl mx-auto px-4 py-6 sm:py-10 space-y-6"
+      className="max-w-3xl mx-auto md:max-w-full px-4 py-6 sm:py-10 space-y-6"
     >
       {/* Main Title */}
       <div className="space-y-1.5">

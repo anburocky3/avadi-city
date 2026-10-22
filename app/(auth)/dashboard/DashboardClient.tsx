@@ -211,12 +211,12 @@ const WARD_SERVICES = [
     icon: Train,
     bg: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
   },
-  {
-    name: "Volunteers",
-    path: "/volunteers",
-    icon: HeartHandshake,
-    bg: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
-  },
+  // {
+  //   name: "Volunteers",
+  //   path: "/volunteers",
+  //   icon: HeartHandshake,
+  //   bg: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
+  // },
   {
     name: "Local Alerts",
     path: "/notifications",
@@ -719,7 +719,7 @@ export const DashboardClient: React.FC = () => {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-4xl lg:max-w-full mx-auto space-y-6">
       {/* 1. Greeting Hero Card with Integrated Civic Status, Refresh & Weather Overlay */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-orange-500 bg-linear-to-r from-orange-500/5 via-teal-500/5 to-transparent p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
         {/* Animated Background Overlay */}
@@ -813,7 +813,7 @@ export const DashboardClient: React.FC = () => {
             <span className="text-lg sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight drop-shadow-sm">
               {weather ? weather.temp : "--"}°C
             </span>
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:mt-0.5 max-w-[150px] truncate">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-500 dark:text-slate-400 sm:mt-0.5 max-w-37.5 truncate">
               {weather
                 ? `${weather.desc}${weather.isHumid ? " • HUMID" : ""}`
                 : "LOADING..."}

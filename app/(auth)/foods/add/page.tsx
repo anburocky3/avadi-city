@@ -788,7 +788,7 @@ export default function NewListingWizardPage() {
   };
 
   return (
-    <div className="p-4 md:p-8 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 md:p-8 max-w-3xl mx-auto md:max-w-full space-y-6">
       {/* 1. Back to Food & Dining Button */}
       <div>
         <Link

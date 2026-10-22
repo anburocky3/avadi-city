@@ -455,7 +455,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
   ]);
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 pb-28 sm:pb-32">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto md:max-w-full space-y-6 pb-28 sm:pb-32">
       {/* Title Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -504,7 +504,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
             {emergencyFacilities.slice(0, 3).map((facility) => {
               const openStatus = checkFacilityOpenStatus(facility);
               const dist = getFacilityDistance(facility);
@@ -624,7 +624,7 @@ export const HealthcareClient: React.FC<HealthcareClientProps> = ({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="grid grid-cols-1 gap-4 w-full"
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full"
             >
               {filteredFacilities.map((facility) => {
                 const openStatus = checkFacilityOpenStatus(facility);

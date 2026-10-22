@@ -7,12 +7,14 @@ const MapLocationPicker = ({
   zoom = 14,
   onLocationSelect,
   onError,
+  onReverseGeocode,
 }: {
   defaultLat?: number;
   defaultLng?: number;
   zoom?: number;
   onLocationSelect: (lat: number, lng: number) => void;
   onError: (msg: string | null) => void;
+  onReverseGeocode: (lat: number, lng: number) => void;
 }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -65,6 +67,7 @@ const MapLocationPicker = ({
           marker.setLatLng(latlng);
           onLocationSelect(latlng.lat, latlng.lng);
           onError(null);
+          onReverseGeocode(latlng.lat, latlng.lng);
         } else {
           // Snap back to Avadi center if dragged outside limits
           marker.setLatLng([defaultLat, defaultLng]);

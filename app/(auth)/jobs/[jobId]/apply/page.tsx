@@ -19,7 +19,8 @@ export default async function JobApplyPage({ params }: PageProps) {
   // 1. Fetch authenticated user profile to auto-populate email and phone (FIX 4)
   const cookieStore = await cookies();
   const token = cookieStore.get("avadi_session")?.value;
-  let userProfile: { name?: string; email?: string; phone?: string } | null = null;
+  let userProfile: { name?: string; email?: string; phone?: string } | null =
+    null;
   let currentUserId: string | null = null;
 
   if (token) {
@@ -40,7 +41,10 @@ export default async function JobApplyPage({ params }: PageProps) {
         }
       }
     } catch (authErr) {
-      console.warn("Could not retrieve logged in user for application form:", authErr);
+      console.warn(
+        "Could not retrieve logged in user for application form:",
+        authErr,
+      );
     }
   }
 
@@ -100,7 +104,7 @@ export default async function JobApplyPage({ params }: PageProps) {
   if (!job) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-16 px-4">
-        <div className="max-w-md mx-auto text-center space-y-5 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div className="max-w-md mx-auto md:max-w-full text-center space-y-5 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
             <AlertCircle size={32} />
           </div>
@@ -108,7 +112,8 @@ export default async function JobApplyPage({ params }: PageProps) {
             Job Vacancy Unavailable
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            This job vacancy is no longer accepting applications or the link has expired.
+            This job vacancy is no longer accepting applications or the link has
+            expired.
           </p>
           <div className="pt-2">
             <Link
@@ -127,13 +132,16 @@ export default async function JobApplyPage({ params }: PageProps) {
   // Check if current user is the owner/employer who posted this job vacancy
   const isOwner = Boolean(
     (currentUserId && jobOwnerId && currentUserId === jobOwnerId) ||
-    (userProfile?.email && jobOwnerEmail && userProfile.email.trim().toLowerCase() === jobOwnerEmail.trim().toLowerCase())
+    (userProfile?.email &&
+      jobOwnerEmail &&
+      userProfile.email.trim().toLowerCase() ===
+        jobOwnerEmail.trim().toLowerCase()),
   );
 
   if (isOwner) {
     return (
       <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 py-16 px-4">
-        <div className="max-w-md mx-auto text-center space-y-5 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
+        <div className="max-w-md mx-auto md:max-w-full text-center space-y-5 bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-xl">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-400 flex items-center justify-center">
             <Users size={32} />
           </div>
@@ -141,7 +149,13 @@ export default async function JobApplyPage({ params }: PageProps) {
             Your Own Job Posting
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            You posted this job vacancy for <strong className="text-slate-800 dark:text-slate-200">{job.businessName}</strong>. Employers cannot apply to their own job vacancies. You can manage and review candidates who applied for this role under Manage Applicants.
+            You posted this job vacancy for{" "}
+            <strong className="text-slate-800 dark:text-slate-200">
+              {job.businessName}
+            </strong>
+            . Employers cannot apply to their own job vacancies. You can manage
+            and review candidates who applied for this role under Manage
+            Applicants.
           </p>
           <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
@@ -165,14 +179,20 @@ export default async function JobApplyPage({ params }: PageProps) {
   }
 
   // Check if authenticated user has already applied to this company
-  let existingCompanyApp: { id: string; role?: string; businessName?: string } | null = null;
+  let existingCompanyApp: {
+    id: string;
+    role?: string;
+    businessName?: string;
+  } | null = null;
   if (currentUserId && job?.businessName) {
     try {
       const dbApp = await prisma.jobApplication.findFirst({
         where: {
           OR: [
             { applicantId: currentUserId },
-            ...(userProfile?.email ? [{ email: userProfile.email.toLowerCase() }] : []),
+            ...(userProfile?.email
+              ? [{ email: userProfile.email.toLowerCase() }]
+              : []),
           ],
           job: {
             businessName: { equals: job.businessName.trim() },

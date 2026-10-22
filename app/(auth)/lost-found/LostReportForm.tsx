@@ -354,7 +354,8 @@ export default function LastReportForm({
               setMapError(null);
             }}
             onError={(err) => setMapError(err)}
-            selectedCoords={selectedCoords}
+            defaultLat={selectedCoords?.lat}
+            defaultLng={selectedCoords?.lng}
             onReverseGeocode={handleReverseGeocode}
           />
 

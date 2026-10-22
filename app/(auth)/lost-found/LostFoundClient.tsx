@@ -480,7 +480,7 @@ function ClaimRequestModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-200 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1426,11 +1426,11 @@ function EditForm({
           />
         </div>
         <div>
-          <Time12Picker
+          {/* <Time12Picker
             value={form.lostFoundTime}
             onChange={(val) => setForm((p) => ({ ...p, lostFoundTime: val }))}
             label="Time"
-          />
+          /> */}
         </div>
       </div>
       <div>
@@ -1591,7 +1591,7 @@ export default function LostFoundClient() {
   ];
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6 font-sans select-none">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto md:max-w-full space-y-6 font-sans select-none">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

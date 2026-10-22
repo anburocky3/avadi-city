@@ -72,32 +72,38 @@ export const STATUS_CONFIG: Record<
 > = {
   SUBMITTED: {
     label: "New",
-    badgeClass: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800",
+    badgeClass:
+      "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-800",
     dotClass: "bg-blue-500",
   },
   UNDER_REVIEW: {
     label: "Under Review",
-    badgeClass: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800",
+    badgeClass:
+      "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800",
     dotClass: "bg-amber-500",
   },
   SHORTLISTED: {
     label: "Shortlisted",
-    badgeClass: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800",
+    badgeClass:
+      "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-800",
     dotClass: "bg-purple-500",
   },
   INTERVIEW: {
     label: "Interview",
-    badgeClass: "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
+    badgeClass:
+      "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800",
     dotClass: "bg-indigo-500",
   },
   HIRED: {
     label: "Hired",
-    badgeClass: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
+    badgeClass:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
     dotClass: "bg-emerald-500",
   },
   REJECTED: {
     label: "Rejected",
-    badgeClass: "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
+    badgeClass:
+      "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200 dark:border-rose-800",
     dotClass: "bg-rose-500",
   },
 };
@@ -141,7 +147,8 @@ export default function ApplicantsClient({
   initialApplications,
 }: ApplicantsClientProps) {
   const toast = useToast();
-  const [applications, setApplications] = useState<ApplicantItem[]>(initialApplications);
+  const [applications, setApplications] =
+    useState<ApplicantItem[]>(initialApplications);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST");
@@ -150,13 +157,29 @@ export default function ApplicantsClient({
   // Status Counts
   const counts = useMemo(() => {
     const total = applications.length;
-    const newCount = applications.filter((a) => a.status === "SUBMITTED").length;
-    const underReview = applications.filter((a) => a.status === "UNDER_REVIEW").length;
-    const shortlisted = applications.filter((a) => a.status === "SHORTLISTED").length;
-    const interview = applications.filter((a) => a.status === "INTERVIEW").length;
+    const newCount = applications.filter(
+      (a) => a.status === "SUBMITTED",
+    ).length;
+    const underReview = applications.filter(
+      (a) => a.status === "UNDER_REVIEW",
+    ).length;
+    const shortlisted = applications.filter(
+      (a) => a.status === "SHORTLISTED",
+    ).length;
+    const interview = applications.filter(
+      (a) => a.status === "INTERVIEW",
+    ).length;
     const hired = applications.filter((a) => a.status === "HIRED").length;
     const rejected = applications.filter((a) => a.status === "REJECTED").length;
-    return { total, newCount, underReview, shortlisted, interview, hired, rejected };
+    return {
+      total,
+      newCount,
+      underReview,
+      shortlisted,
+      interview,
+      hired,
+      rejected,
+    };
   }, [applications]);
 
   // Filtered & Sorted Applications
@@ -193,7 +216,7 @@ export default function ApplicantsClient({
   // Handle status update (Persisted to Prisma, refreshed only after confirmation)
   const handleStatusChange = async (
     applicantId: string,
-    newStatus: ApplicationStatusType
+    newStatus: ApplicationStatusType,
   ) => {
     const currentApp = applications.find((a) => a.id === applicantId);
     if (!currentApp || currentApp.status === newStatus) return;
@@ -216,16 +239,16 @@ export default function ApplicantsClient({
       // Refresh displayed status only after server confirms success
       setApplications((prev) =>
         prev.map((app) =>
-          app.id === applicantId ? { ...app, status: newStatus } : app
-        )
+          app.id === applicantId ? { ...app, status: newStatus } : app,
+        ),
       );
       toast.success(
-        `Candidate status updated to ${STATUS_CONFIG[newStatus]?.label || newStatus}.`
+        `Candidate status updated to ${STATUS_CONFIG[newStatus]?.label || newStatus}.`,
       );
     } catch (err) {
       console.error("Status update error:", err);
       toast.error(
-        "Could not update application status. Your changes have not been saved."
+        "Could not update application status. Your changes have not been saved.",
       );
     } finally {
       setUpdatingId(null);
@@ -248,7 +271,7 @@ export default function ApplicantsClient({
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 pb-28 md:pb-16">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto md:max-w-full space-y-6 pb-28 md:pb-16">
       {/* Top Navigation & Breadcrumb */}
       <div className="flex items-center justify-between">
         <Link
@@ -304,8 +327,8 @@ export default function ApplicantsClient({
                 job.status === "APPROVED"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800"
                   : job.status === "PENDING"
-                  ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
-                  : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
+                    ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800"
+                    : "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800"
               }`}
             >
               Vacancy: {job.status}
@@ -316,20 +339,36 @@ export default function ApplicantsClient({
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
           <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-center">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total</span>
-            <p className="text-lg font-black text-slate-900 dark:text-white">{counts.total}</p>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+              Total
+            </span>
+            <p className="text-lg font-black text-slate-900 dark:text-white">
+              {counts.total}
+            </p>
           </div>
           <div className="p-3 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 text-center">
-            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">New</span>
-            <p className="text-lg font-black text-blue-700 dark:text-blue-300">{counts.newCount}</p>
+            <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">
+              New
+            </span>
+            <p className="text-lg font-black text-blue-700 dark:text-blue-300">
+              {counts.newCount}
+            </p>
           </div>
           <div className="p-3 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40 text-center">
-            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Shortlisted</span>
-            <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">{counts.shortlisted}</p>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+              Shortlisted
+            </span>
+            <p className="text-lg font-black text-emerald-700 dark:text-emerald-300">
+              {counts.shortlisted}
+            </p>
           </div>
           <div className="p-3 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-900/40 text-center">
-            <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">Interview</span>
-            <p className="text-lg font-black text-purple-700 dark:text-purple-300">{counts.interview}</p>
+            <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
+              Interview
+            </span>
+            <p className="text-lg font-black text-purple-700 dark:text-purple-300">
+              {counts.interview}
+            </p>
           </div>
         </div>
       </div>
@@ -450,7 +489,8 @@ export default function ApplicantsClient({
       <div className="space-y-4">
         {filteredApplicants.length > 0 ? (
           filteredApplicants.map((app) => {
-            const currentStatusCfg = STATUS_CONFIG[app.status] || STATUS_CONFIG.SUBMITTED;
+            const currentStatusCfg =
+              STATUS_CONFIG[app.status] || STATUS_CONFIG.SUBMITTED;
             const isUpdating = updatingId === app.id;
 
             return (
@@ -493,27 +533,48 @@ export default function ApplicantsClient({
                           value={app.status}
                           disabled={isUpdating}
                           onChange={(e) =>
-                            handleStatusChange(app.id, e.target.value as ApplicationStatusType)
+                            handleStatusChange(
+                              app.id,
+                              e.target.value as ApplicationStatusType,
+                            )
                           }
                           className="bg-transparent font-bold cursor-pointer focus:outline-none pr-5 appearance-none text-inherit"
                           aria-label="Change candidate application status"
                         >
-                          <option value="SUBMITTED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                          <option
+                            value="SUBMITTED"
+                            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                          >
                             New
                           </option>
-                          <option value="UNDER_REVIEW" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                          <option
+                            value="UNDER_REVIEW"
+                            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                          >
                             Under Review
                           </option>
-                          <option value="SHORTLISTED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                          <option
+                            value="SHORTLISTED"
+                            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                          >
                             Shortlisted
                           </option>
-                          <option value="INTERVIEW" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                          <option
+                            value="INTERVIEW"
+                            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                          >
                             Interview
                           </option>
-                          <option value="HIRED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                          <option
+                            value="HIRED"
+                            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                          >
                             Hired
                           </option>
-                          <option value="REJECTED" className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white">
+                          <option
+                            value="REJECTED"
+                            className="bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
+                          >
                             Rejected
                           </option>
                         </select>
@@ -522,7 +583,12 @@ export default function ApplicantsClient({
                           className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none opacity-60"
                         />
                       </div>
-                      {isUpdating && <Loader2 size={14} className="animate-spin text-orange-500 ml-2" />}
+                      {isUpdating && (
+                        <Loader2
+                          size={14}
+                          className="animate-spin text-orange-500 ml-2"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>
@@ -556,22 +622,37 @@ export default function ApplicantsClient({
                 </div>
 
                 {/* Experience & Qualifications (if provided) */}
-                {(app.qualification || app.experience || app.skills || app.portfolioUrl) && (
+                {(app.qualification ||
+                  app.experience ||
+                  app.skills ||
+                  app.portfolioUrl) && (
                   <div className="space-y-2 pt-1 text-xs">
                     <div className="flex flex-wrap gap-3">
                       {app.qualification && (
                         <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
-                          <GraduationCap size={14} className="text-slate-400 shrink-0" />
+                          <GraduationCap
+                            size={14}
+                            className="text-slate-400 shrink-0"
+                          />
                           <span>
-                            Qualification: <strong className="font-black">{app.qualification}</strong>
+                            Qualification:{" "}
+                            <strong className="font-black">
+                              {app.qualification}
+                            </strong>
                           </span>
                         </div>
                       )}
                       {app.experience && (
                         <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
-                          <Briefcase size={14} className="text-slate-400 shrink-0" />
+                          <Briefcase
+                            size={14}
+                            className="text-slate-400 shrink-0"
+                          />
                           <span>
-                            Experience: <strong className="font-black">{app.experience}</strong>
+                            Experience:{" "}
+                            <strong className="font-black">
+                              {app.experience}
+                            </strong>
                           </span>
                         </div>
                       )}
@@ -690,7 +771,8 @@ export default function ApplicantsClient({
               No applications have been received for this job yet.
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
-              When candidates apply for this vacancy, their profiles, cover letters, and resumes will appear here in real time.
+              When candidates apply for this vacancy, their profiles, cover
+              letters, and resumes will appear here in real time.
             </p>
           </div>
         ) : (

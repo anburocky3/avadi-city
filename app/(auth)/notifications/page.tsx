@@ -225,8 +225,7 @@ export const Notification: React.FC = () => {
 
   // Categories list with dynamic Claims counter
   const categories: Category[] = useMemo(() => {
-    const claimBadge =
-      pendingIncoming.length + acceptedOutgoing.length;
+    const claimBadge = pendingIncoming.length + acceptedOutgoing.length;
     const list: Category[] = [
       { id: "All", name: "All Alerts" },
       {
@@ -270,8 +269,7 @@ export const Notification: React.FC = () => {
   }, [alerts, dismissedAlerts, subscribeMyWard, activeCategory, activeWard.id]);
 
   // Show claims in All tab and Claims tab
-  const showClaims =
-    activeCategory === "All" || activeCategory === "Claims";
+  const showClaims = activeCategory === "All" || activeCategory === "Claims";
 
   const getSeverityStyles = (severity: string): string => {
     if (severity === "urgent")
@@ -307,10 +305,11 @@ export const Notification: React.FC = () => {
     setSelectedAlert(alert);
   };
 
-  const totalItemsCount = filteredAlerts.length + (showClaims ? totalClaimActivity : 0);
+  const totalItemsCount =
+    filteredAlerts.length + (showClaims ? totalClaimActivity : 0);
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto md:max-w-full space-y-6">
       {/* Title Header with Back to Overview Button */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -349,7 +348,8 @@ export const Notification: React.FC = () => {
         {categories.map((cat) => {
           const isSelected = activeCategory === cat.id;
           const isClaimsTab = cat.id === "Claims";
-          const hasActivity = isClaimsTab && (pendingIncoming.length + acceptedOutgoing.length) > 0;
+          const hasActivity =
+            isClaimsTab && pendingIncoming.length + acceptedOutgoing.length > 0;
           return (
             <button
               key={cat.id}
@@ -362,7 +362,9 @@ export const Notification: React.FC = () => {
                     : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-50"
               }`}
             >
-              {isClaimsTab && <PackageSearch size={13} className="text-orange-500" />}
+              {isClaimsTab && (
+                <PackageSearch size={13} className="text-orange-500" />
+              )}
               <span>{cat.name}</span>
             </button>
           );
@@ -415,7 +417,9 @@ export const Notification: React.FC = () => {
                           : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
                       }`}
                     >
-                      {claim.item.type === "lost" ? "🔴 Lost Item" : "🟢 Found Item"}
+                      {claim.item.type === "lost"
+                        ? "🔴 Lost Item"
+                        : "🟢 Found Item"}
                     </span>
                     <span className="text-xs font-black text-slate-800 dark:text-white truncate max-w-[200px] sm:max-w-xs">
                       {claim.item.title}
@@ -470,7 +474,9 @@ export const Notification: React.FC = () => {
                   <div className="mb-3">
                     <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1">
                       <span>Uploaded Proof Photo</span>
-                      <span className="text-[9px] text-orange-500 font-bold">(Tap to enlarge)</span>
+                      <span className="text-[9px] text-orange-500 font-bold">
+                        (Tap to enlarge)
+                      </span>
                     </p>
                     <button
                       type="button"
@@ -621,13 +627,17 @@ export const Notification: React.FC = () => {
                 {/* Status Banner */}
                 {isPending && (
                   <div className="flex items-center gap-2 p-2.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 mb-2.5">
-                    <Clock size={13} className="text-blue-500 shrink-0 animate-pulse" />
+                    <Clock
+                      size={13}
+                      className="text-blue-500 shrink-0 animate-pulse"
+                    />
                     <div>
                       <p className="text-[11px] font-black text-blue-700 dark:text-blue-400">
                         Claim Request Sent — Under Review
                       </p>
                       <p className="text-[10px] text-blue-600 dark:text-blue-500 font-medium">
-                        The item owner will review your request and proof photo. You will be notified here once they respond.
+                        The item owner will review your request and proof photo.
+                        You will be notified here once they respond.
                       </p>
                     </div>
                   </div>
@@ -636,13 +646,17 @@ export const Notification: React.FC = () => {
                 {isAccepted && (
                   <div className="mb-2.5 space-y-2">
                     <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/40">
-                      <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
+                      <CheckCircle2
+                        size={13}
+                        className="text-emerald-600 shrink-0"
+                      />
                       <div>
                         <p className="text-[11px] font-black text-emerald-700 dark:text-emerald-400">
                           🎉 Claim Accepted! Owner accepted your request.
                         </p>
                         <p className="text-[10px] text-emerald-600 dark:text-emerald-500 font-medium">
-                          Contact details have been unlocked below. Please arrange a safe handover.
+                          Contact details have been unlocked below. Please
+                          arrange a safe handover.
                         </p>
                       </div>
                     </div>
@@ -685,13 +699,18 @@ export const Notification: React.FC = () => {
 
                 {isRejected && (
                   <div className="flex items-start gap-2 p-2.5 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/40 mb-2.5">
-                    <XCircle size={13} className="text-red-500 shrink-0 mt-0.5" />
+                    <XCircle
+                      size={13}
+                      className="text-red-500 shrink-0 mt-0.5"
+                    />
                     <div>
                       <p className="text-[11px] font-black text-red-700 dark:text-red-400">
                         Claim Request Declined
                       </p>
                       <p className="text-[10px] text-red-600 dark:text-red-500 font-medium">
-                        The item owner reviewed your request and did not match your proof. You may try again with more specific details.
+                        The item owner reviewed your request and did not match
+                        your proof. You may try again with more specific
+                        details.
                       </p>
                     </div>
                   </div>
@@ -713,13 +732,16 @@ export const Notification: React.FC = () => {
       )}
 
       {/* ── Show empty state for Claims tab only ── */}
-      {activeCategory === "Claims" && totalClaimActivity === 0 && !isLoadingIncoming && !isLoadingOutgoing && (
-        <EmptyState
-          icon={PackageSearch}
-          title="No claim activity"
-          description="You have no incoming or outgoing claim requests. Once someone contacts you about a lost/found item, you will see it here."
-        />
-      )}
+      {activeCategory === "Claims" &&
+        totalClaimActivity === 0 &&
+        !isLoadingIncoming &&
+        !isLoadingOutgoing && (
+          <EmptyState
+            icon={PackageSearch}
+            title="No claim activity"
+            description="You have no incoming or outgoing claim requests. Once someone contacts you about a lost/found item, you will see it here."
+          />
+        )}
 
       {/* Alerts Feed */}
       <AnimatePresence mode="wait">

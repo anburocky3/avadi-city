@@ -56,7 +56,7 @@ export default async function JobApplicantsPage({ params }: PageProps) {
 
   if (!dbJob) {
     return (
-      <div className="p-4 md:p-6 max-w-lg mx-auto text-center space-y-4 pt-16">
+      <div className="p-4 md:p-6 max-w-lg mx-auto md:max-w-full text-center space-y-4 pt-16">
         <h1 className="text-xl font-black text-slate-900 dark:text-white">
           Job Vacancy Not Found
         </h1>
@@ -85,7 +85,9 @@ export default async function JobApplicantsPage({ params }: PageProps) {
           Access Denied
         </h1>
         <p className="text-xs text-slate-500 leading-relaxed">
-          You do not have permission to view or manage applicants for this job vacancy. Only the employer who posted this vacancy may manage candidate applications.
+          You do not have permission to view or manage applicants for this job
+          vacancy. Only the employer who posted this vacancy may manage
+          candidate applications.
         </p>
         <Link
           href="/jobs"
@@ -176,7 +178,8 @@ export default async function JobApplicantsPage({ params }: PageProps) {
     fullName: app.fullName,
     email: app.email,
     phone: app.phone,
-    avatar: app.user?.avatar || emailAvatarMap.get(app.email.toLowerCase()) || null,
+    avatar:
+      app.user?.avatar || emailAvatarMap.get(app.email.toLowerCase()) || null,
     hasResume: Boolean(app.resumeUrl && app.resumeUrl.trim().length > 0),
     coverLetter: app.coverLetter,
     qualification: app.qualification,
@@ -201,9 +204,6 @@ export default async function JobApplicantsPage({ params }: PageProps) {
   };
 
   return (
-    <ApplicantsClient
-      job={jobMeta}
-      initialApplications={initialApplications}
-    />
+    <ApplicantsClient job={jobMeta} initialApplications={initialApplications} />
   );
 }

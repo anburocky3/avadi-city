@@ -127,7 +127,7 @@ export const TransportContainer: React.FC = () => {
   ];
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto md:max-w-4xl space-y-6">
       {/* Header title */}
       <div>
         <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-none tracking-tight">

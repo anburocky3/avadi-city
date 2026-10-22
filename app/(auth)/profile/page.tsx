@@ -164,7 +164,7 @@ export const Profile: React.FC = () => {
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-6 pb-24 md:pb-8 font-sans">
+    <div className="p-4 md:p-6 max-w-2xl mx-auto md:max-w-4xl space-y-6 pb-24 md:pb-8 font-sans">
       {/* Title Header */}
       <div>
         <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-none">

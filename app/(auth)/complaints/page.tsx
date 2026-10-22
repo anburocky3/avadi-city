@@ -36,7 +36,7 @@ export default function ComplaintsOverview() {
     useState<OfficialAdminData | null>(null);
 
   return (
-    <div className="p-4 sm:p-6 max-w-4xl mx-auto space-y-6 font-sans select-none">
+    <div className="p-4 sm:p-6 max-w-4xl mx-auto md:max-w-full space-y-6 font-sans select-none">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}

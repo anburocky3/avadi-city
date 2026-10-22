@@ -100,10 +100,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const {
     logout,
     activeWard,
+    authUser,
     alerts = [],
     readAlerts = [],
     dismissedAlerts = [],
-  } = useWard() as unknown as WardContextType;
+  } = useWard();
 
   // Safe Guard Return AFTER all hooks have been declared
   if (!mounted) {
@@ -324,12 +325,20 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Footer Settings / Theme Toggle */}
         <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80 mt-auto flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center font-black text-xs sm:text-sm text-slate-800 dark:text-slate-200 uppercase shadow-sm">
-              {activeWard.name ? activeWard.name[0] : "A"}
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
+              {authUser?.avatar ? (
+                <img
+                  src={authUser?.avatar}
+                  alt={authUser?.name || "User Avatar"}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <span>{authUser?.name?.charAt(0)}</span>
+              )}
             </div>
             <div className="flex flex-col">
               <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-tight">
-                Avadi Resident
+                {authUser?.name || "Guest"}
               </span>
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                 Ward {activeWard.id}
@@ -340,15 +349,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           <div className="flex items-center space-x-1.5">
             <motion.button
               whileTap={{ scale: 0.9 }}
-              onClick={toggleTheme}
-              className="p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-900 transition cursor-pointer shadow-sm"
+              onClick={async () => {
+                await logout();
+                if (onClose) onClose();
+              }}
+              className="w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer text-left active:scale-95"
               aria-label="Toggle theme"
             >
-              {isDark ? (
-                <Sun size={18} className="text-amber-400" />
-              ) : (
-                <Moon size={18} />
-              )}
+              <LogOut size={18} className="shrink-0" />
             </motion.button>
           </div>
         </div>

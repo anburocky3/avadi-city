@@ -25,8 +25,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
     resolvedSearchParams?.tab === "my-applications"
       ? "my-applications"
       : resolvedSearchParams?.tab === "my-jobs"
-      ? "my-jobs"
-      : "explore";
+        ? "my-jobs"
+        : "explore";
 
   // Pre-load authenticated user application info if logged in
   const cookieStore = await cookies();
@@ -42,7 +42,9 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           where: {
             OR: [
               { applicantId: session.userId },
-              ...(session.email ? [{ email: session.email.trim().toLowerCase() }] : []),
+              ...(session.email
+                ? [{ email: session.email.trim().toLowerCase() }]
+                : []),
             ],
           },
           include: {
@@ -157,7 +159,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   return (
     <Suspense
       fallback={
-        <div className="p-4 md:p-6 max-w-2xl mx-auto space-y-5">
+        <div className="p-4 md:p-6 max-w-2xl mx-auto md:max-w-full space-y-5">
           <div className="h-10 w-full bg-slate-200 dark:bg-slate-800 rounded-2xl animate-pulse" />
           <SkeletonLoader type="card" count={2} />
         </div>

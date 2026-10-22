@@ -58,7 +58,7 @@ const MapLocationPicker = dynamic(
         Loading Avadi Map...
       </div>
     ),
-  }
+  },
 );
 import {
   TransactionType,
@@ -69,7 +69,8 @@ import {
 } from "@/types/rental";
 
 // 4 Primary categories and their respective sub-categories
-export type MainCategory = "RENT" | "COMMERCIAL" | "NON-COMMERCIAL" | "PROPERTY FOR SALE";
+export type MainCategory =
+  "RENT" | "COMMERCIAL" | "NON-COMMERCIAL" | "PROPERTY FOR SALE";
 
 interface MainCategoryOption {
   id: MainCategory;
@@ -93,31 +94,126 @@ interface SubCategoryOption {
 
 export const SUB_CATEGORIES_MAP: Record<MainCategory, SubCategoryOption[]> = {
   RENT: [
-    { id: "Apartment", name: "Apartment / Flat", icon: Building2, hint: "Gated community, standalone building flat" },
-    { id: "Independent House", name: "Independent House", icon: Home, hint: "Independent bungalow or ground/first floor" },
-    { id: "Villa", name: "Luxury Villa", icon: Home, hint: "Duplex or individual villa with private garden" },
-    { id: "Single Room", name: "Single Room / 1 RK", icon: Bed, hint: "Studio room or 1RK for individuals" },
-    { id: "Flatmate", name: "Flatmate / Shared Flat", icon: Layers, hint: "Shared 2BHK/3BHK with flatmates" },
+    {
+      id: "Apartment",
+      name: "Apartment / Flat",
+      icon: Building2,
+      hint: "Gated community, standalone building flat",
+    },
+    {
+      id: "Independent House",
+      name: "Independent House",
+      icon: Home,
+      hint: "Independent bungalow or ground/first floor",
+    },
+    {
+      id: "Villa",
+      name: "Luxury Villa",
+      icon: Home,
+      hint: "Duplex or individual villa with private garden",
+    },
+    {
+      id: "Single Room",
+      name: "Single Room / 1 RK",
+      icon: Bed,
+      hint: "Studio room or 1RK for individuals",
+    },
+    {
+      id: "Flatmate",
+      name: "Flatmate / Shared Flat",
+      icon: Layers,
+      hint: "Shared 2BHK/3BHK with flatmates",
+    },
   ],
   COMMERCIAL: [
-    { id: "Shop", name: "Commercial Shop / Retail", icon: Briefcase, hint: "Main road retail shutter shop or store" },
-    { id: "Showroom", name: "Showroom Space", icon: Building2, hint: "High frontage showroom for retail & brands" },
-    { id: "Office", name: "Office Space / Coworking", icon: Briefcase, hint: "IT office, consultancy or corporate space" },
-    { id: "Commercial Building", name: "Full Commercial Building", icon: Building2, hint: "Entire building for schools, banks, hospitals" },
-    { id: "Warehouse", name: "Warehouse / Godown", icon: Layers, hint: "Storage space with truck loading bay" },
-    { id: "Restaurant", name: "Restaurant / Kitchen", icon: Utensils, hint: "Commercial kitchen, cafe or dining hall" },
+    {
+      id: "Shop",
+      name: "Commercial Shop / Retail",
+      icon: Briefcase,
+      hint: "Main road retail shutter shop or store",
+    },
+    {
+      id: "Showroom",
+      name: "Showroom Space",
+      icon: Building2,
+      hint: "High frontage showroom for retail & brands",
+    },
+    {
+      id: "Office",
+      name: "Office Space / Coworking",
+      icon: Briefcase,
+      hint: "IT office, consultancy or corporate space",
+    },
+    {
+      id: "Commercial Building",
+      name: "Full Commercial Building",
+      icon: Building2,
+      hint: "Entire building for schools, banks, hospitals",
+    },
+    {
+      id: "Warehouse",
+      name: "Warehouse / Godown",
+      icon: Layers,
+      hint: "Storage space with truck loading bay",
+    },
+    {
+      id: "Restaurant",
+      name: "Restaurant / Kitchen",
+      icon: Utensils,
+      hint: "Commercial kitchen, cafe or dining hall",
+    },
   ],
   "NON-COMMERCIAL": [
-    { id: "Men's PG", name: "Working Men's PG", icon: Bed, hint: "Gents hostel with food & Wi-Fi" },
-    { id: "Women's PG", name: "Working Women's PG", icon: ShieldCheck, hint: "Secure ladies hostel with biometric access" },
-    { id: "Student Hostel", name: "Student Hostel", icon: Bed, hint: "College students accommodation near colleges" },
-    { id: "Co-living", name: "Co-Living Space", icon: Layers, hint: "Modern furnished shared living community" },
+    {
+      id: "Men's PG",
+      name: "Working Men's PG",
+      icon: Bed,
+      hint: "Gents hostel with food & Wi-Fi",
+    },
+    {
+      id: "Women's PG",
+      name: "Working Women's PG",
+      icon: ShieldCheck,
+      hint: "Secure ladies hostel with biometric access",
+    },
+    {
+      id: "Student Hostel",
+      name: "Student Hostel",
+      icon: Bed,
+      hint: "College students accommodation near colleges",
+    },
+    {
+      id: "Co-living",
+      name: "Co-Living Space",
+      icon: Layers,
+      hint: "Modern furnished shared living community",
+    },
   ],
   "PROPERTY FOR SALE": [
-    { id: "Plot / Land", name: "Residential / Commercial Plot", icon: Trees, hint: "CMDA/DTCP approved layout plots for sale" },
-    { id: "Apartment", name: "Apartment / Flat for Sale", icon: Building2, hint: "Ready-to-move or under-construction flat" },
-    { id: "Independent House", name: "House / Villa for Sale", icon: Home, hint: "Independent house or villa with land ownership" },
-    { id: "Commercial Building", name: "Commercial Space for Sale", icon: Briefcase, hint: "Commercial building or shop space for sale" },
+    {
+      id: "Plot / Land",
+      name: "Residential / Commercial Plot",
+      icon: Trees,
+      hint: "CMDA/DTCP approved layout plots for sale",
+    },
+    {
+      id: "Apartment",
+      name: "Apartment / Flat for Sale",
+      icon: Building2,
+      hint: "Ready-to-move or under-construction flat",
+    },
+    {
+      id: "Independent House",
+      name: "House / Villa for Sale",
+      icon: Home,
+      hint: "Independent house or villa with land ownership",
+    },
+    {
+      id: "Commercial Building",
+      name: "Commercial Space for Sale",
+      icon: Briefcase,
+      hint: "Commercial building or shop space for sale",
+    },
   ],
 };
 
@@ -233,7 +329,8 @@ export function RentalsPostClient() {
 
   // Step 1: Core Type State
   const [mainCategory, setMainCategory] = useState<MainCategory | null>(null);
-  const [transactionType, setTransactionType] = useState<TransactionType>("Rent");
+  const [transactionType, setTransactionType] =
+    useState<TransactionType>("Rent");
   const [category, setCategory] = useState<PropertyCategory | null>(null);
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
@@ -253,7 +350,9 @@ export function RentalsPostClient() {
   };
 
   // Step 2: Specs State
-  const [bhk, setBhk] = useState<"1 RK" | "1 BHK" | "2 BHK" | "3 BHK" | "4+ BHK">("2 BHK");
+  const [bhk, setBhk] = useState<
+    "1 RK" | "1 BHK" | "2 BHK" | "3 BHK" | "4+ BHK"
+  >("2 BHK");
   const [furnishing, setFurnishing] = useState<FurnishingType>("Unfurnished");
   const [builtUpArea, setBuiltUpArea] = useState<string>("950");
   const [carpetArea, setCarpetArea] = useState<string>("820");
@@ -261,9 +360,15 @@ export function RentalsPostClient() {
   const [bathrooms, setBathrooms] = useState<number>(2);
   const [balconies, setBalconies] = useState<number>(1);
   const [facing, setFacing] = useState<string>("East");
-  const [parking, setParking] = useState<"Car & Bike" | "Bike Only" | "Covered Car" | "Open Parking" | "None">("Car & Bike");
-  const [preferredTenants, setPreferredTenants] = useState<TenantPreference>("Family or Bachelors");
-  const [availability, setAvailability] = useState<"Immediate" | "Within 15 Days" | "From Next Month">("Immediate");
+  const [parking, setParking] = useState<
+    "Car & Bike" | "Bike Only" | "Covered Car" | "Open Parking" | "None"
+  >("Car & Bike");
+  const [preferredTenants, setPreferredTenants] = useState<TenantPreference>(
+    "Family or Bachelors",
+  );
+  const [availability, setAvailability] = useState<
+    "Immediate" | "Within 15 Days" | "From Next Month"
+  >("Immediate");
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([
     "24/7 Water Supply",
     "Power Backup / Inverter",
@@ -273,9 +378,13 @@ export function RentalsPostClient() {
   const [showAllAmenities, setShowAllAmenities] = useState<boolean>(false);
 
   // PG specific state
-  const [pgSharing, setPgSharing] = useState<"Single Room" | "2 Sharing" | "3 Sharing" | "4+ Sharing">("2 Sharing");
+  const [pgSharing, setPgSharing] = useState<
+    "Single Room" | "2 Sharing" | "3 Sharing" | "4+ Sharing"
+  >("2 Sharing");
   const [availableBeds, setAvailableBeds] = useState<number>(2);
-  const [pgGender, setPgGender] = useState<"Men" | "Women" | "Co-ed / Unisex">("Men");
+  const [pgGender, setPgGender] = useState<"Men" | "Women" | "Co-ed / Unisex">(
+    "Men",
+  );
   const [pgFoodIncluded, setPgFoodIncluded] = useState<boolean>(true);
   const [pgMeals, setPgMeals] = useState<string[]>(["Breakfast", "Dinner"]);
   const [pgCurfew, setPgCurfew] = useState<string>("10:30 PM");
@@ -286,18 +395,23 @@ export function RentalsPostClient() {
   const [commRoadWidth, setCommRoadWidth] = useState<string>("40");
   const [commFrontage, setCommFrontage] = useState<string>("15");
   const [commPowerLoad, setCommPowerLoad] = useState<string>("10 kW 3-Phase");
-  const [commSuitableFor, setCommSuitableFor] = useState<string>("Retail Shop, Clinic, Office, Pharmacy");
+  const [commSuitableFor, setCommSuitableFor] = useState<string>(
+    "Retail Shop, Clinic, Office, Pharmacy",
+  );
 
   // Plot / Land specific state
   const [plotApproval, setPlotApproval] = useState<string>("CMDA Approved");
   const [plotBoundary, setPlotBoundary] = useState<string>("Open Plot");
   const [plotRoadWidth, setPlotRoadWidth] = useState<string>("30");
-  const [plotOwnership, setPlotOwnership] = useState<string>("Freehold (Clear Patta)");
+  const [plotOwnership, setPlotOwnership] = useState<string>(
+    "Freehold (Clear Patta)",
+  );
 
   // Step 3: Location State
   const [ward, setWard] = useState<number>(activeWard?.id || 14);
   const [streetName, setStreetName] = useState<string>("");
-  const [isStreetWardModalOpen, setIsStreetWardModalOpen] = useState<boolean>(false);
+  const [isStreetWardModalOpen, setIsStreetWardModalOpen] =
+    useState<boolean>(false);
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
   const [distanceToStation, setDistanceToStation] = useState<string>("");
   const [distanceToBusStand, setDistanceToBusStand] = useState<string>("");
@@ -415,15 +529,23 @@ export function RentalsPostClient() {
   const [pricingConfirmed, setPricingConfirmed] = useState<boolean>(false);
 
   // Utility Pricing Configuration (Electricity & Water)
-  const [electricityApplicable, setElectricityApplicable] = useState<boolean>(true);
+  const [electricityApplicable, setElectricityApplicable] =
+    useState<boolean>(true);
   const [electricityBillingMethod, setElectricityBillingMethod] = useState<
-    "Per Unit" | "Fixed Monthly Charge" | "Included in Rent" | "No Separate Charges"
+    | "Per Unit"
+    | "Fixed Monthly Charge"
+    | "Included in Rent"
+    | "No Separate Charges"
   >("Per Unit");
-  const [electricityRatePerUnit, setElectricityRatePerUnit] = useState<string>("8");
-  const [electricityMonthlyCharge, setElectricityMonthlyCharge] = useState<string>("");
+  const [electricityRatePerUnit, setElectricityRatePerUnit] =
+    useState<string>("8");
+  const [electricityMonthlyCharge, setElectricityMonthlyCharge] =
+    useState<string>("");
 
   const [waterAvailable, setWaterAvailable] = useState<boolean>(true);
-  const [waterBillingType, setWaterBillingType] = useState<"Free" | "Included in Rent" | "Paid">("Paid");
+  const [waterBillingType, setWaterBillingType] = useState<
+    "Free" | "Included in Rent" | "Paid"
+  >("Paid");
   const [waterBillingMethod, setWaterBillingMethod] = useState<
     "Per Month" | "Per Person Per Month" | "Per Unit"
   >("Per Month");
@@ -431,7 +553,10 @@ export function RentalsPostClient() {
 
   // Dynamically updated Electricity Summary
   const electricitySummary = useMemo(() => {
-    if (!electricityApplicable || electricityBillingMethod === "No Separate Charges") {
+    if (
+      !electricityApplicable ||
+      electricityBillingMethod === "No Separate Charges"
+    ) {
       return "No separate charges";
     }
     if (electricityBillingMethod === "Included in Rent") {
@@ -445,7 +570,12 @@ export function RentalsPostClient() {
     return electricityRatePerUnit.trim()
       ? `₹${electricityRatePerUnit}/unit`
       : "Per unit";
-  }, [electricityApplicable, electricityBillingMethod, electricityMonthlyCharge, electricityRatePerUnit]);
+  }, [
+    electricityApplicable,
+    electricityBillingMethod,
+    electricityMonthlyCharge,
+    electricityRatePerUnit,
+  ]);
 
   // Dynamically updated Water Summary
   const waterSummary = useMemo(() => {
@@ -462,8 +592,8 @@ export function RentalsPostClient() {
       waterBillingMethod === "Per Person Per Month"
         ? "/person"
         : waterBillingMethod === "Per Unit"
-        ? "/KL"
-        : "/month";
+          ? "/KL"
+          : "/month";
     return waterAmount.trim() ? `₹${waterAmount}${freqLabel}` : "Paid";
   }, [waterAvailable, waterBillingType, waterBillingMethod, waterAmount]);
 
@@ -484,7 +614,13 @@ export function RentalsPostClient() {
       return rentVal + maintVal;
     }
     return rentVal + depVal + maintVal;
-  }, [monthlyRent, securityDeposit, maintenance, transactionType, mainCategory]);
+  }, [
+    monthlyRent,
+    securityDeposit,
+    maintenance,
+    transactionType,
+    mainCategory,
+  ]);
 
   // Step 4: Photos & Owner State (Compulsory: 1 to 3 photos)
   const [images, setImages] = useState<string[]>([]);
@@ -492,11 +628,19 @@ export function RentalsPostClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [ownerName, setOwnerName] = useState<string>(
-    authUser?.name || (userProfile?.name && userProfile.name !== "Guest" ? userProfile.name : "") || ""
+    authUser?.name ||
+      (userProfile?.name && userProfile.name !== "Guest"
+        ? userProfile.name
+        : "") ||
+      "",
   );
-  const [ownerType, setOwnerType] = useState<"Owner" | "Verified Broker" | "Builder" | "Property Manager">("Owner");
+  const [ownerType, setOwnerType] = useState<
+    "Owner" | "Verified Broker" | "Builder" | "Property Manager"
+  >("Owner");
   const [contactPhone, setContactPhone] = useState<string>(
-    authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : ""
+    authUser?.phone
+      ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10)
+      : "",
   );
   const [whatsappPhone, setWhatsappPhone] = useState<string>("");
   const [declarationAgreed, setDeclarationAgreed] = useState<boolean>(false);
@@ -504,13 +648,17 @@ export function RentalsPostClient() {
   // Default and auto-fill owner contact information from logged-in account
   useEffect(() => {
     const candidateName =
-      authUser?.name || (userProfile?.name && userProfile.name !== "Guest" ? userProfile.name : "");
+      authUser?.name ||
+      (userProfile?.name && userProfile.name !== "Guest"
+        ? userProfile.name
+        : "");
     if (candidateName && (!ownerName || ownerName === "Guest")) {
       setOwnerName(candidateName);
     }
     if (authUser?.phone && !contactPhone) {
       const digits = authUser.phone.replace(/^\+91/, "").replace(/\D/g, "");
-      const clean = digits.length >= 10 ? digits.slice(-10) : authUser.phone.trim();
+      const clean =
+        digits.length >= 10 ? digits.slice(-10) : authUser.phone.trim();
       setContactPhone(clean);
     }
   }, [authUser, userProfile]);
@@ -519,12 +667,15 @@ export function RentalsPostClient() {
   const isPG = mainCategory === "NON-COMMERCIAL";
   const isCommercial =
     mainCategory === "COMMERCIAL" ||
-    (mainCategory === "PROPERTY FOR SALE" && category === "Commercial Building");
+    (mainCategory === "PROPERTY FOR SALE" &&
+      category === "Commercial Building");
   const isPlot = category === "Plot / Land";
   const isResidential =
     mainCategory === "RENT" ||
     (mainCategory === "PROPERTY FOR SALE" &&
-      (category === "Apartment" || category === "Independent House" || category === "Villa"));
+      (category === "Apartment" ||
+        category === "Independent House" ||
+        category === "Villa"));
 
   // Dynamic title placeholder based on mainCategory & category
   const titlePlaceholder = useMemo(() => {
@@ -687,7 +838,9 @@ export function RentalsPostClient() {
   // Toggle amenity helper
   const handleToggleAmenity = (amenity: string) => {
     setSelectedAmenities((prev) =>
-      prev.includes(amenity) ? prev.filter((a) => a !== amenity) : [...prev, amenity],
+      prev.includes(amenity)
+        ? prev.filter((a) => a !== amenity)
+        : [...prev, amenity],
     );
   };
 
@@ -723,7 +876,9 @@ export function RentalsPostClient() {
     if (!files || files.length === 0) return;
 
     if (images.length >= 3) {
-      setFormError("Maximum 3 property photos allowed. Remove a photo to upload a new one.");
+      setFormError(
+        "Maximum 3 property photos allowed. Remove a photo to upload a new one.",
+      );
       scrollToTop();
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
@@ -733,7 +888,9 @@ export function RentalsPostClient() {
     const filesToProcess = Array.from(files).slice(0, availableSlots);
 
     if (files.length > availableSlots) {
-      setFormError(`Maximum 3 photos allowed. Only ${availableSlots} more photo(s) could be added.`);
+      setFormError(
+        `Maximum 3 photos allowed. Only ${availableSlots} more photo(s) could be added.`,
+      );
     } else {
       setFormError(null);
     }
@@ -766,7 +923,9 @@ export function RentalsPostClient() {
 
       setImages((prev) => [...prev, ...newUrls].slice(0, 3));
     } catch {
-      setFormError("Could not compress photo. Please try smaller JPEG/PNG files.");
+      setFormError(
+        "Could not compress photo. Please try smaller JPEG/PNG files.",
+      );
     } finally {
       setIsCompressing(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
@@ -782,17 +941,23 @@ export function RentalsPostClient() {
     setFormError(null);
     if (step === 1) {
       if (!mainCategory) {
-        setFormError("Please select a main category (Rent, Commercial, Non-Commercial, or Property for Sale).");
+        setFormError(
+          "Please select a main category (Rent, Commercial, Non-Commercial, or Property for Sale).",
+        );
         scrollToTop();
         return false;
       }
       if (!category) {
-        setFormError(`Please select a property category under ${mainCategory}.`);
+        setFormError(
+          `Please select a property category under ${mainCategory}.`,
+        );
         scrollToTop();
         return false;
       }
       if (!title.trim() || title.length < 5) {
-        setFormError("Please enter a descriptive property title (minimum 5 characters).");
+        setFormError(
+          "Please enter a descriptive property title (minimum 5 characters).",
+        );
         scrollToTop();
         return false;
       }
@@ -821,20 +986,25 @@ export function RentalsPostClient() {
       return true;
     }
     if (step === 4) {
-      const isSale = transactionType === "Sale" || mainCategory === "PROPERTY FOR SALE";
+      const isSale =
+        transactionType === "Sale" || mainCategory === "PROPERTY FOR SALE";
       const isLease = transactionType === "Lease";
       if (!monthlyRent || parseFloat(monthlyRent) <= 0) {
         setFormError(
           isSale
             ? "Please enter a valid total sale price amount."
             : isLease
-            ? "Please enter a valid total lease amount."
-            : "Please enter a valid monthly rent amount.",
+              ? "Please enter a valid total lease amount."
+              : "Please enter a valid monthly rent amount.",
         );
         scrollToTop();
         return false;
       }
-      if (!isSale && !isLease && (!securityDeposit || parseFloat(securityDeposit) < 0)) {
+      if (
+        !isSale &&
+        !isLease &&
+        (!securityDeposit || parseFloat(securityDeposit) < 0)
+      ) {
         setFormError("Please enter the security deposit / advance amount.");
         scrollToTop();
         return false;
@@ -843,15 +1013,26 @@ export function RentalsPostClient() {
         if (electricityApplicable && electricityBillingMethod === "Per Unit") {
           const rate = parseFloat(electricityRatePerUnit);
           if (isNaN(rate) || rate <= 0) {
-            setFormError("Please enter a valid electricity rate per unit (must be greater than ₹0).");
+            setFormError(
+              "Please enter a valid electricity rate per unit (must be greater than ₹0).",
+            );
             scrollToTop();
             return false;
           }
         }
-        if (electricityApplicable && electricityBillingMethod === "Fixed Monthly Charge") {
+        if (
+          electricityApplicable &&
+          electricityBillingMethod === "Fixed Monthly Charge"
+        ) {
           const charge = parseFloat(electricityMonthlyCharge);
-          if (isNaN(charge) || charge < 0 || electricityMonthlyCharge.trim() === "") {
-            setFormError("Please enter a valid monthly electricity charge amount.");
+          if (
+            isNaN(charge) ||
+            charge < 0 ||
+            electricityMonthlyCharge.trim() === ""
+          ) {
+            setFormError(
+              "Please enter a valid monthly electricity charge amount.",
+            );
             scrollToTop();
             return false;
           }
@@ -866,17 +1047,23 @@ export function RentalsPostClient() {
         }
       }
       if (!pricingConfirmed) {
-        setFormError("Please confirm the pricing and breakdown details by checking the confirmation box.");
+        setFormError(
+          "Please confirm the pricing and breakdown details by checking the confirmation box.",
+        );
         scrollToTop();
         return false;
       }
       if (images.length === 0) {
-        setFormError("Property photos are compulsory. Please upload at least 1 photo (maximum 3 photos).");
+        setFormError(
+          "Property photos are compulsory. Please upload at least 1 photo (maximum 3 photos).",
+        );
         scrollToTop();
         return false;
       }
       if (images.length > 3) {
-        setFormError("Maximum 3 property photos allowed. Please remove extra photos.");
+        setFormError(
+          "Maximum 3 property photos allowed. Please remove extra photos.",
+        );
         scrollToTop();
         return false;
       }
@@ -892,7 +1079,9 @@ export function RentalsPostClient() {
         return false;
       }
       if (!declarationAgreed) {
-        setFormError("Please check the verification declaration checkbox to proceed.");
+        setFormError(
+          "Please check the verification declaration checkbox to proceed.",
+        );
         scrollToTop();
         return false;
       }
@@ -936,14 +1125,15 @@ export function RentalsPostClient() {
           ? "Plot for Sale"
           : `${category || "Property"} for Sale`
         : isResidential
-        ? `${bhk} ${category || "Property"}`
-        : isPG
-        ? `${pgSharing}`
-        : isCommercial
-        ? `${category || "Commercial"}`
-        : category || "Property";
+          ? `${bhk} ${category || "Property"}`
+          : isPG
+            ? `${pgSharing}`
+            : isCommercial
+              ? `${category || "Commercial"}`
+              : category || "Property";
 
-    const isSale = transactionType === "Sale" || mainCategory === "PROPERTY FOR SALE";
+    const isSale =
+      transactionType === "Sale" || mainCategory === "PROPERTY FOR SALE";
 
     const payload = {
       title: title.trim(),
@@ -977,22 +1167,31 @@ export function RentalsPostClient() {
           : {
               electricity: {
                 applicable: electricityApplicable,
-                billingMethod: electricityApplicable ? electricityBillingMethod : "No Separate Charges",
+                billingMethod: electricityApplicable
+                  ? electricityBillingMethod
+                  : "No Separate Charges",
                 ratePerUnit:
-                  electricityApplicable && electricityBillingMethod === "Per Unit"
+                  electricityApplicable &&
+                  electricityBillingMethod === "Per Unit"
                     ? parseFloat(electricityRatePerUnit) || 0
                     : undefined,
                 monthlyCharge:
-                  electricityApplicable && electricityBillingMethod === "Fixed Monthly Charge"
+                  electricityApplicable &&
+                  electricityBillingMethod === "Fixed Monthly Charge"
                     ? parseFloat(electricityMonthlyCharge) || 0
                     : undefined,
               },
               water: {
                 available: waterAvailable,
                 billingType: waterAvailable ? waterBillingType : undefined,
-                billingMethod: waterAvailable && waterBillingType === "Paid" ? waterBillingMethod : undefined,
+                billingMethod:
+                  waterAvailable && waterBillingType === "Paid"
+                    ? waterBillingMethod
+                    : undefined,
                 amount:
-                  waterAvailable && waterBillingType === "Paid" ? parseFloat(waterAmount) || 0 : undefined,
+                  waterAvailable && waterBillingType === "Paid"
+                    ? parseFloat(waterAmount) || 0
+                    : undefined,
               },
             },
         brokerage: 0,
@@ -1038,7 +1237,10 @@ export function RentalsPostClient() {
         distanceToStation: distanceToStation.trim(),
         distanceToBusStand: distanceToBusStand.trim(),
         nearbyLandmarks: nearbyLandmarks.trim()
-          ? nearbyLandmarks.split(",").map((s) => s.trim()).filter(Boolean)
+          ? nearbyLandmarks
+              .split(",")
+              .map((s) => s.trim())
+              .filter(Boolean)
           : [],
       },
       amenities: selectedAmenities,
@@ -1052,7 +1254,10 @@ export function RentalsPostClient() {
         isPhoneVerified: true,
         isIdVerified: false,
         isPropertyVerified: true,
-        memberSince: new Date().toLocaleDateString("en-IN", { month: "short", year: "numeric" }),
+        memberSince: new Date().toLocaleDateString("en-IN", {
+          month: "short",
+          year: "numeric",
+        }),
       },
       // Legacy flat fields
       type: isCommercial ? "Commercial" : "Residential",
@@ -1080,7 +1285,8 @@ export function RentalsPostClient() {
       } else {
         console.error("[POST /api/rentals] Failed:", json.message);
         setFormError(
-          json.message || "Failed to save listing to database. Please try again."
+          json.message ||
+            "Failed to save listing to database. Please try again.",
         );
         setIsSubmitting(false);
         scrollToTop();
@@ -1089,7 +1295,7 @@ export function RentalsPostClient() {
     } catch (err) {
       console.error("[POST /api/rentals] Network error:", err);
       setFormError(
-        "Network connection error. Could not connect to the database."
+        "Network connection error. Could not connect to the database.",
       );
       setIsSubmitting(false);
       scrollToTop();
@@ -1110,7 +1316,7 @@ export function RentalsPostClient() {
       const existingList: RentalProperty[] = stored ? JSON.parse(stored) : [];
       localStorage.setItem(
         "avadi_user_rentals",
-        JSON.stringify([localProperty, ...existingList])
+        JSON.stringify([localProperty, ...existingList]),
       );
     } catch (e) {
       console.warn("Could not save to localStorage", e);
@@ -1124,7 +1330,7 @@ export function RentalsPostClient() {
   // If already successfully submitted
   if (postSubmitted) {
     return (
-      <div className="min-h-screen py-10 px-4 max-w-xl mx-auto">
+      <div className="min-h-screen py-10 px-4 max-w-xl mx-auto md:max-w-full">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 text-center space-y-5 shadow-xl">
           <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto ring-8 ring-emerald-500/5">
             <CheckCircle2 size={36} />
@@ -1135,22 +1341,30 @@ export function RentalsPostClient() {
               Property Listed Successfully!
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-              Your {category || "property"} in Ward {ward} ({streetName}) is now live on the Avadi City Property & Rental platform.
+              Your {category || "property"} in Ward {ward} ({streetName}) is now
+              live on the Avadi City Property & Rental platform.
             </p>
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800 text-left space-y-2 text-xs">
             <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
               <span className="text-slate-400">Listing ID:</span>
-              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{submittedPropertyId}</span>
+              <span className="font-mono font-bold text-slate-800 dark:text-slate-200">
+                {submittedPropertyId}
+              </span>
             </div>
             <div className="flex justify-between items-center pb-2 border-b border-slate-200 dark:border-slate-800">
               <span className="text-slate-400">Price / Rent:</span>
-              <span className="font-bold text-primary">₹{parseInt(monthlyRent, 10).toLocaleString()} {transactionType === "Rent" ? "/ mo" : ""}</span>
+              <span className="font-bold text-primary">
+                ₹{parseInt(monthlyRent, 10).toLocaleString()}{" "}
+                {transactionType === "Rent" ? "/ mo" : ""}
+              </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-slate-400">Location:</span>
-              <span className="font-semibold text-slate-700 dark:text-slate-300 truncate max-w-xs">{streetName}, Ward {ward}</span>
+              <span className="font-semibold text-slate-700 dark:text-slate-300 truncate max-w-xs">
+                {streetName}, Ward {ward}
+              </span>
             </div>
           </div>
 
@@ -1199,7 +1413,7 @@ export function RentalsPostClient() {
   return (
     <div
       ref={topRef}
-      className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-3xl mx-auto space-y-5"
+      className="min-h-screen pb-28 pt-2 sm:pt-4 px-3 sm:px-6 max-w-3xl mx-auto md:max-w-full space-y-5"
     >
       {/* Top Header */}
       <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
@@ -1221,7 +1435,8 @@ export function RentalsPostClient() {
           Post Your Property or Space
         </h1>
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-          List apartments, independent houses, PG/hostels, commercial shops, or plots for rent, lease, or sale.
+          List apartments, independent houses, PG/hostels, commercial shops, or
+          plots for rent, lease, or sale.
         </p>
       </div>
 
@@ -1242,8 +1457,8 @@ export function RentalsPostClient() {
                   isDone
                     ? "bg-emerald-500"
                     : isActive
-                    ? "bg-primary"
-                    : "bg-slate-200 dark:bg-slate-800"
+                      ? "bg-primary"
+                      : "bg-slate-200 dark:bg-slate-800"
                 }`}
               />
               <span
@@ -1251,8 +1466,8 @@ export function RentalsPostClient() {
                   isActive
                     ? "text-primary"
                     : isDone
-                    ? "text-emerald-500"
-                    : "text-slate-400"
+                      ? "text-emerald-500"
+                      : "text-slate-400"
                 }`}
               >
                 {s.label}
@@ -1314,7 +1529,11 @@ export function RentalsPostClient() {
                 <div className="grid grid-cols-2 gap-2 max-w-md">
                   <button
                     type="button"
-                    onClick={() => setTransactionType(mainCategory === "COMMERCIAL" ? "Commercial" : "Rent")}
+                    onClick={() =>
+                      setTransactionType(
+                        mainCategory === "COMMERCIAL" ? "Commercial" : "Rent",
+                      )
+                    }
                     className={`py-2 px-3 rounded-xl border text-center transition flex items-center justify-center gap-2 cursor-pointer select-none text-xs ${
                       transactionType !== "Lease"
                         ? "bg-primary/10 dark:bg-primary/20 border-primary text-primary dark:text-orange-400 ring-1 ring-primary/30 shadow-xs font-black"
@@ -1326,7 +1545,11 @@ export function RentalsPostClient() {
                     ) : (
                       <Home size={14} className="shrink-0" />
                     )}
-                    <span>{mainCategory === "COMMERCIAL" ? "Commercial Rent" : "Monthly Rent"}</span>
+                    <span>
+                      {mainCategory === "COMMERCIAL"
+                        ? "Commercial Rent"
+                        : "Monthly Rent"}
+                    </span>
                   </button>
                   <button
                     type="button"
@@ -1338,7 +1561,11 @@ export function RentalsPostClient() {
                     }`}
                   >
                     <FileText size={14} className="shrink-0" />
-                    <span>{mainCategory === "COMMERCIAL" ? "Commercial Lease" : "Long-Term Lease"}</span>
+                    <span>
+                      {mainCategory === "COMMERCIAL"
+                        ? "Commercial Lease"
+                        : "Long-Term Lease"}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1400,15 +1627,16 @@ export function RentalsPostClient() {
                 placeholder={titlePlaceholder}
                 className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-primary focus:outline-none"
               />
-              <span className="text-[10px] text-slate-400">
-                {titleHint}
-              </span>
+              <span className="text-[10px] text-slate-400">{titleHint}</span>
             </div>
 
             {/* Full Property Description */}
             <div className="space-y-1.5">
               <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
-                Detailed Description & Highlights <span className="text-slate-400 font-normal text-[11px]">(Optional)</span>
+                Detailed Description & Highlights{" "}
+                <span className="text-slate-400 font-normal text-[11px]">
+                  (Optional)
+                </span>
               </label>
               <textarea
                 rows={4}
@@ -1462,7 +1690,8 @@ export function RentalsPostClient() {
 
                   <div>
                     <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
-                      Built-Up Area (sq.ft) <span className="text-rose-500 ml-0.5">*</span>
+                      Built-Up Area (sq.ft){" "}
+                      <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <input
                       type="number"
@@ -1538,21 +1767,28 @@ export function RentalsPostClient() {
                     </select>
                   </div>
 
-                  {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" ? (
+                  {transactionType !== "Sale" &&
+                  mainCategory !== "PROPERTY FOR SALE" ? (
                     <div>
                       <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1 text-xs truncate">
                         Preferred Tenants
                       </label>
                       <select
                         value={preferredTenants}
-                        onChange={(e) => setPreferredTenants(e.target.value as any)}
+                        onChange={(e) =>
+                          setPreferredTenants(e.target.value as any)
+                        }
                         className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                       >
-                        <option value="Family or Bachelors">Family or Bachelors</option>
+                        <option value="Family or Bachelors">
+                          Family or Bachelors
+                        </option>
                         <option value="Family Only">Family Only</option>
                         <option value="Bachelors Only">Bachelors Only</option>
                         <option value="Women Only">Women&apos;s Only</option>
-                        <option value="Working Professionals">Working Professionals</option>
+                        <option value="Working Professionals">
+                          Working Professionals
+                        </option>
                         <option value="Students">Students Only</option>
                       </select>
                     </div>
@@ -1563,13 +1799,23 @@ export function RentalsPostClient() {
                       </label>
                       <select
                         value={plotOwnership}
-                        onChange={(e) => setPlotOwnership(e.target.value as any)}
+                        onChange={(e) =>
+                          setPlotOwnership(e.target.value as any)
+                        }
                         className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                       >
-                        <option value="Freehold (Clear Patta)">Freehold (Clear Patta)</option>
-                        <option value="CMDA Approved Layout">CMDA Approved Layout</option>
-                        <option value="DTCP Approved Layout">DTCP Approved Layout</option>
-                        <option value="Power of Attorney">Power of Attorney</option>
+                        <option value="Freehold (Clear Patta)">
+                          Freehold (Clear Patta)
+                        </option>
+                        <option value="CMDA Approved Layout">
+                          CMDA Approved Layout
+                        </option>
+                        <option value="DTCP Approved Layout">
+                          DTCP Approved Layout
+                        </option>
+                        <option value="Power of Attorney">
+                          Power of Attorney
+                        </option>
                       </select>
                     </div>
                   )}
@@ -1594,7 +1840,8 @@ export function RentalsPostClient() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
                   <div>
                     <label className="h-5 flex items-center text-slate-700 dark:text-slate-300 font-bold mb-1.5 text-xs truncate">
-                      Plot Area (sq.ft) <span className="text-rose-500 ml-0.5">*</span>
+                      Plot Area (sq.ft){" "}
+                      <span className="text-rose-500 ml-0.5">*</span>
                     </label>
                     <input
                       type="number"
@@ -1646,9 +1893,13 @@ export function RentalsPostClient() {
                     >
                       <option value="CMDA Approved">CMDA Approved</option>
                       <option value="DTCP Approved">DTCP Approved</option>
-                      <option value="Patta / Panchayat">Patta / Panchayat</option>
+                      <option value="Patta / Panchayat">
+                        Patta / Panchayat
+                      </option>
                       <option value="RERA Approved">RERA Approved</option>
-                      <option value="Clear Title Freehold">Clear Title Freehold</option>
+                      <option value="Clear Title Freehold">
+                        Clear Title Freehold
+                      </option>
                     </select>
                   </div>
 
@@ -1662,8 +1913,12 @@ export function RentalsPostClient() {
                       className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
                       <option value="Open Plot">Open Plot</option>
-                      <option value="Compound Wall Built">Compound Wall Built</option>
-                      <option value="Fenced / Marked">Fenced / Boundary Marked</option>
+                      <option value="Compound Wall Built">
+                        Compound Wall Built
+                      </option>
+                      <option value="Fenced / Marked">
+                        Fenced / Boundary Marked
+                      </option>
                     </select>
                   </div>
 
@@ -1676,8 +1931,12 @@ export function RentalsPostClient() {
                       onChange={(e) => setPlotOwnership(e.target.value)}
                       className="h-10 w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 font-semibold text-xs text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-primary focus:outline-none transition"
                     >
-                      <option value="Freehold (Clear Patta)">Freehold (Clear Patta)</option>
-                      <option value="Power of Attorney">Power of Attorney</option>
+                      <option value="Freehold (Clear Patta)">
+                        Freehold (Clear Patta)
+                      </option>
+                      <option value="Power of Attorney">
+                        Power of Attorney
+                      </option>
                       <option value="Joint Venture">Joint Venture</option>
                     </select>
                   </div>
@@ -1773,13 +2032,21 @@ export function RentalsPostClient() {
                         onChange={(e) => setPgFoodIncluded(e.target.checked)}
                         className="rounded accent-primary"
                       />
-                      <span className="font-semibold text-xs">Food Included in Rent</span>
+                      <span className="font-semibold text-xs">
+                        Food Included in Rent
+                      </span>
                     </label>
                   </div>
 
                   {pgFoodIncluded && (
                     <div className="flex flex-wrap gap-2 pt-1">
-                      {["Breakfast", "Lunch", "Dinner", "Tea & Snacks", "Sunday Special"].map((meal) => (
+                      {[
+                        "Breakfast",
+                        "Lunch",
+                        "Dinner",
+                        "Tea & Snacks",
+                        "Sunday Special",
+                      ].map((meal) => (
                         <button
                           key={meal}
                           type="button"
@@ -1889,14 +2156,19 @@ export function RentalsPostClient() {
                 const baseList = isPG
                   ? PG_AMENITIES
                   : isCommercial
-                  ? COMMERCIAL_AMENITIES
-                  : isPlot
-                  ? PLOT_AMENITIES
-                  : RESIDENTIAL_AMENITIES;
+                    ? COMMERCIAL_AMENITIES
+                    : isPlot
+                      ? PLOT_AMENITIES
+                      : RESIDENTIAL_AMENITIES;
 
                 // Two lines = 6 items by default in 3 columns
-                const visibleStandard = showAllAmenities ? baseList : baseList.slice(0, 6);
-                const allVisible = [...visibleStandard, ...customAmenities.filter((c) => !baseList.includes(c))];
+                const visibleStandard = showAllAmenities
+                  ? baseList
+                  : baseList.slice(0, 6);
+                const allVisible = [
+                  ...visibleStandard,
+                  ...customAmenities.filter((c) => !baseList.includes(c)),
+                ];
                 const hasMore = baseList.length > 6;
 
                 return (
@@ -1923,7 +2195,9 @@ export function RentalsPostClient() {
                                     : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
                                 }`}
                               >
-                                {isChecked && <Check size={11} className="stroke-3" />}
+                                {isChecked && (
+                                  <Check size={11} className="stroke-3" />
+                                )}
                               </div>
                               <span className="truncate">{amenity}</span>
                             </div>
@@ -1955,7 +2229,9 @@ export function RentalsPostClient() {
                         {showAllAmenities ? (
                           <span>Show fewer amenities</span>
                         ) : (
-                          <span>+ View {baseList.length - 6} more standard amenities</span>
+                          <span>
+                            + View {baseList.length - 6} more standard amenities
+                          </span>
                         )}
                       </button>
                     )}
@@ -2108,9 +2384,7 @@ export function RentalsPostClient() {
                 </div>
                 <span className="text-primary font-bold text-xs flex items-center gap-1 group-hover:underline shrink-0">
                   <Search size={13} />
-                  <span>
-                    {streetName?.trim() ? "Change" : "Find"}
-                  </span>
+                  <span>{streetName?.trim() ? "Change" : "Find"}</span>
                 </span>
               </div>
               <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 flex items-start gap-1.5 leading-normal">
@@ -2119,7 +2393,8 @@ export function RentalsPostClient() {
                   className="text-slate-400 dark:text-slate-500 mt-0.5 shrink-0"
                 />
                 <span>
-                  We use your property ward to show this listing to verified tenants searching in this area.
+                  We use your property ward to show this listing to verified
+                  tenants searching in this area.
                 </span>
               </p>
             </div>
@@ -2168,16 +2443,25 @@ export function RentalsPostClient() {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
                   <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[200px] sm:max-w-xs">
-                    📍 {streetName?.trim() ? streetName.trim() : `Ward ${ward}, Avadi`}
+                    📍{" "}
+                    {streetName?.trim()
+                      ? streetName.trim()
+                      : `Ward ${ward}, Avadi`}
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2 ml-auto shrink-0">
                   <div className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-800 shadow-2xs">
-                    <span className="text-[10px] font-bold text-slate-400 font-sans">Lat</span>
+                    <span className="text-[10px] font-bold text-slate-400 font-sans">
+                      Lat
+                    </span>
                     <span className="font-bold">{latitude.toFixed(5)}</span>
-                    <span className="text-slate-300 dark:text-slate-700">·</span>
-                    <span className="text-[10px] font-bold text-slate-400 font-sans">Lng</span>
+                    <span className="text-slate-300 dark:text-slate-700">
+                      ·
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-400 font-sans">
+                      Lng
+                    </span>
                     <span className="font-bold">{longitude.toFixed(5)}</span>
                   </div>
 
@@ -2199,16 +2483,18 @@ export function RentalsPostClient() {
               </div>
             </div>
 
-
             {/* Transit Distances */}
             <div className="space-y-3 pt-2 border-t border-slate-100 dark:border-slate-800">
               <h3 className="font-extrabold text-slate-800 dark:text-slate-200 text-xs sm:text-sm flex items-center gap-1.5">
                 <Compass size={16} />
                 <span>Locality & Commute Distance Intel</span>
-                <span className="text-slate-400 font-normal text-[11px]">(Optional)</span>
+                <span className="text-slate-400 font-normal text-[11px]">
+                  (Optional)
+                </span>
               </h3>
               <p className="text-[11px] text-slate-400">
-                Helps tenants know exact walking / driving distance to vital transit hubs.
+                Helps tenants know exact walking / driving distance to vital
+                transit hubs.
               </p>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -2262,7 +2548,11 @@ export function RentalsPostClient() {
               {/* Row 1 - Left: Monthly Rent / Total Price / Total Lease */}
               <div>
                 <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
-                  {transactionType === "Sale" ? "Total Sale Price (₹)" : transactionType === "Lease" ? "Total Lease Amount (₹)" : "Monthly Rent (₹)"}{" "}
+                  {transactionType === "Sale"
+                    ? "Total Sale Price (₹)"
+                    : transactionType === "Lease"
+                      ? "Total Lease Amount (₹)"
+                      : "Monthly Rent (₹)"}{" "}
                   <span className="text-rose-500">*</span>
                 </label>
                 <div className="relative">
@@ -2277,7 +2567,13 @@ export function RentalsPostClient() {
                       setPricingConfirmed(false);
                       setFormError(null);
                     }}
-                    placeholder={transactionType === "Sale" ? "e.g. 4500000" : transactionType === "Lease" ? "e.g. 800000" : "e.g. 12000"}
+                    placeholder={
+                      transactionType === "Sale"
+                        ? "e.g. 4500000"
+                        : transactionType === "Lease"
+                          ? "e.g. 800000"
+                          : "e.g. 12000"
+                    }
                     className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
@@ -2292,7 +2588,8 @@ export function RentalsPostClient() {
                     "Token Advance (₹) (Optional)"
                   ) : (
                     <>
-                      Security Deposit / Advance (₹) <span className="text-rose-500">*</span>
+                      Security Deposit / Advance (₹){" "}
+                      <span className="text-rose-500">*</span>
                     </>
                   )}
                 </label>
@@ -2308,7 +2605,13 @@ export function RentalsPostClient() {
                       setPricingConfirmed(false);
                       setFormError(null);
                     }}
-                    placeholder={transactionType === "Sale" ? "e.g. 100000" : transactionType === "Lease" ? "e.g. 25000 (Optional)" : "e.g. 50000"}
+                    placeholder={
+                      transactionType === "Sale"
+                        ? "e.g. 100000"
+                        : transactionType === "Lease"
+                          ? "e.g. 25000 (Optional)"
+                          : "e.g. 50000"
+                    }
                     className="w-full h-11 pl-8 pr-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:ring-2 focus:ring-primary focus:outline-none"
                   />
                 </div>
@@ -2318,7 +2621,11 @@ export function RentalsPostClient() {
               {!isPlot && (
                 <div>
                   <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5">
-                    {transactionType === "Sale" ? "Monthly Association Maintenance (₹)" : transactionType === "Lease" ? "Monthly Maintenance (₹) (Optional)" : "Monthly Maintenance (₹)"}
+                    {transactionType === "Sale"
+                      ? "Monthly Association Maintenance (₹)"
+                      : transactionType === "Lease"
+                        ? "Monthly Maintenance (₹) (Optional)"
+                        : "Monthly Maintenance (₹)"}
                   </label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-1/2 -translate-y-1/2 font-bold text-slate-400 text-xs sm:text-sm">
@@ -2339,167 +2646,197 @@ export function RentalsPostClient() {
               )}
 
               {/* Row 2 - Right: Electricity Charges (Rent / Non-Commercial / Commercial only) */}
-              {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" && (
-                <div>
-                  <div className="flex items-center justify-between mb-1.5 h-5">
-                    <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
-                      Electricity Charges
-                      {electricityBillingMethod !== "Included in Rent" && (
-                        <span className="text-rose-500 ml-1">*</span>
-                      )}
-                    </label>
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
-                      <input
-                        type="checkbox"
-                        checked={electricityBillingMethod === "Included in Rent"}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setElectricityApplicable(true);
-                            setElectricityBillingMethod("Included in Rent");
-                          } else {
-                            setElectricityApplicable(true);
-                            setElectricityBillingMethod("Per Unit");
-                            if (!electricityRatePerUnit) setElectricityRatePerUnit("8");
+              {transactionType !== "Sale" &&
+                mainCategory !== "PROPERTY FOR SALE" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 h-5">
+                      <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
+                        Electricity Charges
+                        {electricityBillingMethod !== "Included in Rent" && (
+                          <span className="text-rose-500 ml-1">*</span>
+                        )}
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
+                        <input
+                          type="checkbox"
+                          checked={
+                            electricityBillingMethod === "Included in Rent"
                           }
-                          setPricingConfirmed(false);
-                        }}
-                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 accent-emerald-600 cursor-pointer focus:ring-emerald-500"
-                      />
-                      <span>Free</span>
-                    </label>
-                  </div>
-
-                  {electricityBillingMethod === "Included in Rent" ? (
-                    <div className="h-11 px-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        Free (Included in Rent)
-                      </span>
-                      <span className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
-                        No separate bill
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="relative flex items-center h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-primary overflow-hidden">
-                      <span className="pl-3.5 pr-1 font-bold text-slate-400 text-xs sm:text-sm shrink-0">
-                        ₹
-                      </span>
-                      <input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={electricityBillingMethod === "Fixed Monthly Charge" ? electricityMonthlyCharge : electricityRatePerUnit}
-                        onChange={(e) => {
-                          if (electricityBillingMethod === "Fixed Monthly Charge") {
-                            setElectricityMonthlyCharge(e.target.value);
-                          } else {
-                            setElectricityRatePerUnit(e.target.value);
-                          }
-                          setPricingConfirmed(false);
-                        }}
-                        placeholder={electricityBillingMethod === "Fixed Monthly Charge" ? "e.g. 500" : "e.g. 8"}
-                        className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
-                      />
-                      <select
-                        value={electricityBillingMethod === "Fixed Monthly Charge" ? "fixed" : "unit"}
-                        onChange={(e) => {
-                          if (e.target.value === "fixed") {
-                            setElectricityBillingMethod("Fixed Monthly Charge");
-                            if (!electricityMonthlyCharge && electricityRatePerUnit) {
-                              setElectricityMonthlyCharge("500");
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setElectricityApplicable(true);
+                              setElectricityBillingMethod("Included in Rent");
+                            } else {
+                              setElectricityApplicable(true);
+                              setElectricityBillingMethod("Per Unit");
+                              if (!electricityRatePerUnit)
+                                setElectricityRatePerUnit("8");
                             }
-                          } else {
-                            setElectricityBillingMethod("Per Unit");
-                            if (!electricityRatePerUnit) setElectricityRatePerUnit("8");
-                          }
-                          setPricingConfirmed(false);
-                        }}
-                        className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
-                      >
-                        <option value="unit">/ unit</option>
-                        <option value="fixed">/ month</option>
-                      </select>
+                            setPricingConfirmed(false);
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 accent-emerald-600 cursor-pointer focus:ring-emerald-500"
+                        />
+                        <span>Free</span>
+                      </label>
                     </div>
-                  )}
-                </div>
-              )}
+
+                    {electricityBillingMethod === "Included in Rent" ? (
+                      <div className="h-11 px-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          Free (Included in Rent)
+                        </span>
+                        <span className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
+                          No separate bill
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="relative flex items-center h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-primary overflow-hidden">
+                        <span className="pl-3.5 pr-1 font-bold text-slate-400 text-xs sm:text-sm shrink-0">
+                          ₹
+                        </span>
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={
+                            electricityBillingMethod === "Fixed Monthly Charge"
+                              ? electricityMonthlyCharge
+                              : electricityRatePerUnit
+                          }
+                          onChange={(e) => {
+                            if (
+                              electricityBillingMethod ===
+                              "Fixed Monthly Charge"
+                            ) {
+                              setElectricityMonthlyCharge(e.target.value);
+                            } else {
+                              setElectricityRatePerUnit(e.target.value);
+                            }
+                            setPricingConfirmed(false);
+                          }}
+                          placeholder={
+                            electricityBillingMethod === "Fixed Monthly Charge"
+                              ? "e.g. 500"
+                              : "e.g. 8"
+                          }
+                          className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
+                        />
+                        <select
+                          value={
+                            electricityBillingMethod === "Fixed Monthly Charge"
+                              ? "fixed"
+                              : "unit"
+                          }
+                          onChange={(e) => {
+                            if (e.target.value === "fixed") {
+                              setElectricityBillingMethod(
+                                "Fixed Monthly Charge",
+                              );
+                              if (
+                                !electricityMonthlyCharge &&
+                                electricityRatePerUnit
+                              ) {
+                                setElectricityMonthlyCharge("500");
+                              }
+                            } else {
+                              setElectricityBillingMethod("Per Unit");
+                              if (!electricityRatePerUnit)
+                                setElectricityRatePerUnit("8");
+                            }
+                            setPricingConfirmed(false);
+                          }}
+                          className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
+                        >
+                          <option value="unit">/ unit</option>
+                          <option value="fixed">/ month</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
 
               {/* Row 3 - Left: Water Supply (Rent / Non-Commercial / Commercial only) */}
-              {transactionType !== "Sale" && mainCategory !== "PROPERTY FOR SALE" && (
-                <div>
-                  <div className="flex items-center justify-between mb-1.5 h-5">
-                    <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
-                      Water Supply
-                      {waterBillingType === "Paid" && (
-                        <span className="text-rose-500 ml-1">*</span>
-                      )}
-                    </label>
-                    <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
-                      <input
-                        type="checkbox"
-                        checked={waterBillingType === "Free" || waterBillingType === "Included in Rent"}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setWaterAvailable(true);
-                            setWaterBillingType("Free");
-                          } else {
-                            setWaterAvailable(true);
-                            setWaterBillingType("Paid");
-                            if (!waterAmount) setWaterAmount("0");
+              {transactionType !== "Sale" &&
+                mainCategory !== "PROPERTY FOR SALE" && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5 h-5">
+                      <label className="text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm">
+                        Water Supply
+                        {waterBillingType === "Paid" && (
+                          <span className="text-rose-500 ml-1">*</span>
+                        )}
+                      </label>
+                      <label className="inline-flex items-center gap-1.5 cursor-pointer select-none text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-90">
+                        <input
+                          type="checkbox"
+                          checked={
+                            waterBillingType === "Free" ||
+                            waterBillingType === "Included in Rent"
                           }
-                          setPricingConfirmed(false);
-                        }}
-                        className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 accent-emerald-600 cursor-pointer focus:ring-emerald-500"
-                      />
-                      <span>Free</span>
-                    </label>
-                  </div>
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setWaterAvailable(true);
+                              setWaterBillingType("Free");
+                            } else {
+                              setWaterAvailable(true);
+                              setWaterBillingType("Paid");
+                              if (!waterAmount) setWaterAmount("0");
+                            }
+                            setPricingConfirmed(false);
+                          }}
+                          className="w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-emerald-600 accent-emerald-600 cursor-pointer focus:ring-emerald-500"
+                        />
+                        <span>Free</span>
+                      </label>
+                    </div>
 
-                  {waterBillingType === "Free" || waterBillingType === "Included in Rent" ? (
-                    <div className="h-11 px-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
-                      <span className="flex items-center gap-1.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                        Water Supply is Free
-                      </span>
-                      <span className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
-                        Included in Rent
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="relative flex items-center h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-primary overflow-hidden">
-                      <span className="pl-3.5 pr-1 font-bold text-slate-400 text-xs sm:text-sm shrink-0">
-                        ₹
-                      </span>
-                      <input
-                        type="number"
-                        min="0"
-                        value={waterAmount}
-                        onChange={(e) => {
-                          setWaterAmount(e.target.value);
-                          setPricingConfirmed(false);
-                        }}
-                        placeholder={
-                          waterBillingMethod === "Per Person Per Month"
-                            ? "e.g. 200"
-                            : "e.g. 300"
-                        }
-                        className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
-                      />
-                      <select
-                        value={waterBillingMethod}
-                        onChange={(e) => {
-                          setWaterBillingMethod(e.target.value as any);
-                          setPricingConfirmed(false);
-                        }}
-                        className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
-                      >
-                        <option value="Per Month">/ month</option>
-                        <option value="Per Person Per Month">/ person</option>
-                      </select>
-                    </div>
-                  )}
-                </div>
-              )}
+                    {waterBillingType === "Free" ||
+                    waterBillingType === "Included in Rent" ? (
+                      <div className="h-11 px-3.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-300">
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          Water Supply is Free
+                        </span>
+                        <span className="text-[11px] font-medium text-emerald-600/80 dark:text-emerald-400/80">
+                          Included in Rent
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="relative flex items-center h-11 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-primary overflow-hidden">
+                        <span className="pl-3.5 pr-1 font-bold text-slate-400 text-xs sm:text-sm shrink-0">
+                          ₹
+                        </span>
+                        <input
+                          type="number"
+                          min="0"
+                          value={waterAmount}
+                          onChange={(e) => {
+                            setWaterAmount(e.target.value);
+                            setPricingConfirmed(false);
+                          }}
+                          placeholder={
+                            waterBillingMethod === "Per Person Per Month"
+                              ? "e.g. 200"
+                              : "e.g. 300"
+                          }
+                          className="w-full h-full px-2 bg-transparent text-slate-900 dark:text-white font-extrabold text-xs sm:text-sm focus:outline-none"
+                        />
+                        <select
+                          value={waterBillingMethod}
+                          onChange={(e) => {
+                            setWaterBillingMethod(e.target.value as any);
+                            setPricingConfirmed(false);
+                          }}
+                          className="h-full px-2.5 bg-slate-100 dark:bg-slate-800/80 border-l border-slate-200 dark:border-slate-700/60 text-slate-700 dark:text-slate-200 text-xs font-bold cursor-pointer focus:outline-none"
+                        >
+                          <option value="Per Month">/ month</option>
+                          <option value="Per Person Per Month">/ person</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* Estimated Total Move-In / Purchase Cost Summary Box - Generates only when details are filled */}
@@ -2511,15 +2848,16 @@ export function RentalsPostClient() {
                       {transactionType === "Sale"
                         ? "Purchase Cost Transparency"
                         : transactionType === "Lease"
-                        ? "Lease Agreement Transparency"
-                        : "Move-In Cost Transparency"} · Direct (0% Brokerage)
+                          ? "Lease Agreement Transparency"
+                          : "Move-In Cost Transparency"}{" "}
+                      · Direct (0% Brokerage)
                     </span>
                     <h4 className="text-sm sm:text-base font-black text-slate-900 dark:text-white">
                       {transactionType === "Sale"
                         ? "Total Property Sale Price"
                         : transactionType === "Lease"
-                        ? "Total Lease Amount"
-                        : "Estimated Total Move-In Cost"}
+                          ? "Total Lease Amount"
+                          : "Estimated Total Move-In Cost"}
                     </h4>
                   </div>
                   <div className="text-right">
@@ -2531,19 +2869,37 @@ export function RentalsPostClient() {
 
                 <div className="grid grid-cols-3 gap-2 pt-2 border-t border-primary/10 text-[11px]">
                   <div>
-                    <span className="text-slate-400 block">{transactionType === "Sale" ? "Total Sale Price:" : transactionType === "Lease" ? "Total Lease Amount:" : "1st Month Rent:"}</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">₹{(parseFloat(monthlyRent) || 0).toLocaleString()}</span>
+                    <span className="text-slate-400 block">
+                      {transactionType === "Sale"
+                        ? "Total Sale Price:"
+                        : transactionType === "Lease"
+                          ? "Total Lease Amount:"
+                          : "1st Month Rent:"}
+                    </span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">
+                      ₹{(parseFloat(monthlyRent) || 0).toLocaleString()}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block">{transactionType === "Sale" || transactionType === "Lease" ? "Token Advance:" : "Security Deposit:"}</span>
+                    <span className="text-slate-400 block">
+                      {transactionType === "Sale" || transactionType === "Lease"
+                        ? "Token Advance:"
+                        : "Security Deposit:"}
+                    </span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {(transactionType === "Sale" || transactionType === "Lease") && (!securityDeposit || parseFloat(securityDeposit) === 0)
+                      {(transactionType === "Sale" ||
+                        transactionType === "Lease") &&
+                      (!securityDeposit || parseFloat(securityDeposit) === 0)
                         ? "Negotiable / Token"
                         : `₹${(parseFloat(securityDeposit) || 0).toLocaleString()}`}
                     </span>
                   </div>
                   <div>
-                    <span className="text-slate-400 block">{transactionType === "Sale" ? "Brokerage:" : "Maintenance:"}</span>
+                    <span className="text-slate-400 block">
+                      {transactionType === "Sale"
+                        ? "Brokerage:"
+                        : "Maintenance:"}
+                    </span>
                     <span className="font-bold text-slate-800 dark:text-slate-200">
                       {transactionType === "Sale"
                         ? "₹0 (Direct Owner)"
@@ -2564,7 +2920,13 @@ export function RentalsPostClient() {
                     className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer shrink-0"
                   />
                   <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
-                    I confirm that the {transactionType === "Sale" ? "total sale price and property details" : transactionType === "Lease" ? "total lease amount and property details" : "monthly rent, security deposit"}, and breakdown figures above are accurate.
+                    I confirm that the{" "}
+                    {transactionType === "Sale"
+                      ? "total sale price and property details"
+                      : transactionType === "Lease"
+                        ? "total lease amount and property details"
+                        : "monthly rent, security deposit"}
+                    , and breakdown figures above are accurate.
                   </span>
                 </label>
               </div>
@@ -2585,7 +2947,8 @@ export function RentalsPostClient() {
                     </span>
                   </label>
                   <p className="text-[11px] text-slate-400">
-                    Upload 1 to 3 property photos (hall, bedroom, kitchen, or front elevation). Maximum 3 photos.
+                    Upload 1 to 3 property photos (hall, bedroom, kitchen, or
+                    front elevation). Maximum 3 photos.
                   </p>
                 </div>
                 <button
@@ -2598,8 +2961,14 @@ export function RentalsPostClient() {
                       : "bg-primary hover:bg-orange-600 text-white cursor-pointer"
                   }`}
                 >
-                  {isCompressing ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-                  <span>{images.length >= 3 ? "Max 3 Photos" : "Add Photos"}</span>
+                  {isCompressing ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <Upload size={13} />
+                  )}
+                  <span>
+                    {images.length >= 3 ? "Max 3 Photos" : "Add Photos"}
+                  </span>
                 </button>
               </div>
 
@@ -2623,10 +2992,12 @@ export function RentalsPostClient() {
                   </div>
                   <div>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-200 block">
-                      Click to upload property photos <span className="text-rose-500">*</span>
+                      Click to upload property photos{" "}
+                      <span className="text-rose-500">*</span>
                     </span>
                     <span className="text-[11px] text-slate-400 block mt-0.5">
-                      At least 1 photo required (Maximum 3 photos allowed · JPEG, PNG, WebP)
+                      At least 1 photo required (Maximum 3 photos allowed ·
+                      JPEG, PNG, WebP)
                     </span>
                   </div>
                 </div>
@@ -2665,7 +3036,9 @@ export function RentalsPostClient() {
                       className="border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-primary/50 rounded-xl aspect-video flex flex-col items-center justify-center text-slate-400 hover:text-primary cursor-pointer transition p-2 text-center"
                     >
                       <Plus size={20} />
-                      <span className="text-[10px] font-bold mt-1">Add Photo ({images.length}/3)</span>
+                      <span className="text-[10px] font-bold mt-1">
+                        Add Photo ({images.length}/3)
+                      </span>
                     </div>
                   )}
                 </div>
@@ -2679,7 +3052,9 @@ export function RentalsPostClient() {
                   <ShieldCheck size={16} className="text-emerald-500" />
                   <span>Owner Contact Information</span>
                 </h3>
-                {(authUser?.name || authUser?.phone || (userProfile?.name && userProfile.name !== "Guest")) && (
+                {(authUser?.name ||
+                  authUser?.phone ||
+                  (userProfile?.name && userProfile.name !== "Guest")) && (
                   <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-850 px-2 py-0.5 rounded-full flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                     Auto-filled from account
@@ -2703,7 +3078,8 @@ export function RentalsPostClient() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-700 dark:text-slate-300 font-bold mb-1">
-                    Primary Phone Number <span className="text-rose-500">*</span>
+                    Primary Phone Number{" "}
+                    <span className="text-rose-500">*</span>
                   </label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">
@@ -2722,14 +3098,22 @@ export function RentalsPostClient() {
                 <div>
                   <div className="flex items-center justify-between mb-1 gap-2">
                     <label className="block text-slate-700 dark:text-slate-300 font-bold">
-                      WhatsApp Number <span className="text-slate-400 font-normal text-[10px]">(optional)</span>
+                      WhatsApp Number{" "}
+                      <span className="text-slate-400 font-normal text-[10px]">
+                        (optional)
+                      </span>
                     </label>
                     <button
                       type="button"
                       onClick={() => {
                         const targetNumber =
                           contactPhone ||
-                          (authUser?.phone ? authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10) : "");
+                          (authUser?.phone
+                            ? authUser.phone
+                                .replace(/^\+91/, "")
+                                .replace(/\D/g, "")
+                                .slice(-10)
+                            : "");
                         if (targetNumber) {
                           setWhatsappPhone(targetNumber);
                         }
@@ -2742,7 +3126,11 @@ export function RentalsPostClient() {
                         {whatsappPhone &&
                         (whatsappPhone === contactPhone ||
                           (authUser?.phone &&
-                            whatsappPhone === authUser.phone.replace(/^\+91/, "").replace(/\D/g, "").slice(-10)))
+                            whatsappPhone ===
+                              authUser.phone
+                                .replace(/^\+91/, "")
+                                .replace(/\D/g, "")
+                                .slice(-10)))
                           ? "Same as primary ✓"
                           : "Auto-fill"}
                       </span>
@@ -2764,7 +3152,8 @@ export function RentalsPostClient() {
               </div>
 
               <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                Contact details are defaulted from your account. You can freely edit them anytime before submitting.
+                Contact details are defaulted from your account. You can freely
+                edit them anytime before submitting.
               </p>
 
               {/* Declaration Checkbox */}
@@ -2776,7 +3165,9 @@ export function RentalsPostClient() {
                   className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-slate-700 text-primary accent-primary cursor-pointer shrink-0"
                 />
                 <span className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
-                  I confirm that I am the owner or authorized representative for this property in Avadi City. All rental rates, specs, and photos provided are accurate.
+                  I confirm that I am the owner or authorized representative for
+                  this property in Avadi City. All rental rates, specs, and
+                  photos provided are accurate.
                 </span>
               </label>
             </div>
@@ -2822,8 +3213,16 @@ export function RentalsPostClient() {
               disabled={isSubmitting || !declarationAgreed}
               className="px-6 py-2.5 bg-gradient-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle2 size={16} />}
-              <span>{isSubmitting ? "Publishing Listing..." : "Publish Property Listing"}</span>
+              {isSubmitting ? (
+                <Loader2 size={16} className="animate-spin" />
+              ) : (
+                <CheckCircle2 size={16} />
+              )}
+              <span>
+                {isSubmitting
+                  ? "Publishing Listing..."
+                  : "Publish Property Listing"}
+              </span>
             </button>
           )}
         </div>
