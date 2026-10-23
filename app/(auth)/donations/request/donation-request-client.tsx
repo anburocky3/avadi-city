@@ -32,7 +32,9 @@ export const DonationRequestClient: React.FC = () => {
       activeWardId={activeWard?.id}
       editingRequest={editingRequest}
       onClose={() => router.push("/donations")}
-      onSuccess={() => {}}
+      onSuccess={() => {
+        router.push("/donations");
+      }}
     />
   );
 };

@@ -43,10 +43,16 @@ class VolunteerService {
   public async syncWithDb(): Promise<Volunteer[]> {
     if (!this.isBrowser()) return this.getStored();
     try {
-      const res = await fetch("/api/volunteers");
+      const res = await fetch(`/api/volunteers?_t=${Date.now()}`, {
+        cache: "no-store",
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+        },
+      });
       if (res.ok) {
         const data = (await res.json()) as Volunteer[];
-        if (Array.isArray(data) && data.length > 0) {
+        if (Array.isArray(data)) {
           this.saveStored(data);
           return data;
         }
@@ -80,8 +86,13 @@ class VolunteerService {
     const list = this.getStored();
     if (this.isBrowser()) {
       const myId = localStorage.getItem(MY_VOLUNTEER_KEY);
+      if (myId === "none") {
+        return null;
+      }
       if (myId) {
-        const found = list.find((v) => v.id === myId);
+        const found = list.find(
+          (v) => v.id === myId || (v as any).displayId === myId,
+        );
         if (found) return found;
       }
     }
@@ -127,7 +138,7 @@ class VolunteerService {
     const newVolunteer: Volunteer = {
       ...data,
       id: nextId,
-      status: data.status || "active",
+      status: data.status || "pending",
       createdAt: now,
       updatedAt: now,
     };
@@ -180,7 +191,7 @@ class VolunteerService {
     const localVolunteer: Volunteer = {
       ...data,
       id: tempId,
-      status: data.status || "active",
+      status: data.status || "pending",
       createdAt: now,
       updatedAt: now,
     };
@@ -300,8 +311,8 @@ class VolunteerService {
   public toggleStatus(id: string): Volunteer {
     const vol = this.getById(id);
     if (!vol) throw new Error("Volunteer not found");
-    const nextStatus: VolunteerStatus =
-      vol.status === "active" ? "paused" : "active";
+    const isCurrentlyActive = (vol.status || "").trim().toLowerCase() === "active";
+    const nextStatus: VolunteerStatus = isCurrentlyActive ? "paused" : "active";
     return this.update(id, { status: nextStatus });
   }
 
@@ -309,30 +320,61 @@ class VolunteerService {
     return this.update(id, { status });
   }
 
-  public remove(id: string): boolean {
+  public remove(id: string, userId?: string): boolean {
     const list = this.getStored();
-    const filtered = list.filter((v) => v.id !== id);
-    if (filtered.length !== list.length) {
-      this.saveStored(filtered);
+    const filtered = list.filter(
+      (v) =>
+        v.id !== id &&
+        (v as any).displayId !== id &&
+        (!userId || v.userId !== userId),
+    );
+    this.saveStored(filtered);
 
-      if (this.isBrowser()) {
-        if (localStorage.getItem(MY_VOLUNTEER_KEY) === id) {
-          localStorage.removeItem(MY_VOLUNTEER_KEY);
-        }
-      }
+    if (this.isBrowser()) {
+      localStorage.setItem(MY_VOLUNTEER_KEY, "none");
+      localStorage.removeItem(DRAFT_KEY);
 
-      // Delete from MySQL database
-      if (this.isBrowser()) {
-        fetch(`/api/volunteers/${encodeURIComponent(id)}`, {
-          method: "DELETE",
-        }).catch((err) =>
-          console.error("Failed to delete volunteer in MySQL database:", err),
-        );
-      }
-
-      return true;
+      const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+      fetch(`/api/volunteers/${encodeURIComponent(id)}${query}`, {
+        method: "DELETE",
+      }).catch((err) =>
+        console.error("Failed to delete volunteer in MySQL database:", err),
+      );
     }
-    return false;
+
+    return true;
+  }
+
+  public async removeAsync(id: string, userId?: string): Promise<boolean> {
+    const list = this.getStored();
+    const filtered = list.filter(
+      (v) =>
+        v.id !== id &&
+        (v as any).displayId !== id &&
+        (!userId || v.userId !== userId),
+    );
+    this.saveStored(filtered);
+
+    if (this.isBrowser()) {
+      localStorage.setItem(MY_VOLUNTEER_KEY, "none");
+      localStorage.removeItem(DRAFT_KEY);
+
+      try {
+        const query = userId ? `?userId=${encodeURIComponent(userId)}` : "";
+        const res = await fetch(
+          `/api/volunteers/${encodeURIComponent(id)}${query}`,
+          { method: "DELETE" },
+        );
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          console.error("Server error deleting volunteer:", errData);
+        }
+      } catch (err) {
+        console.error("Failed to delete volunteer in MySQL database:", err);
+      }
+    }
+
+    return true;
   }
 
   // --- DRAFT AUTOSAVE SUPPORT ---

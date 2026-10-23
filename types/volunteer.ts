@@ -59,6 +59,7 @@ export interface Volunteer {
   id: string; // format: "AVC-VOL-0001"
   userId: string;
   fullName: string;
+  avatar?: string;
   ward: number;
   gender: string;
   age: number;

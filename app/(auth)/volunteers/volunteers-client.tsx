@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useWard } from "@/context/wardContext";
 
@@ -25,6 +26,7 @@ export interface VolunteersClientProps {
 export const VolunteersClient: React.FC<VolunteersClientProps> = ({
   initialDonations,
 }) => {
+  const router = useRouter();
   const t = useTranslations("volunteers");
   const { authUser, activeWard } = useWard();
 
@@ -71,8 +73,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
         <button
           type="button"
           onClick={() => {
-            setEditingDonation(null);
-            setIsCreateDonationOpen(true);
+            router.push("/donations/request");
           }}
           className="px-4 py-2.5 bg-primary hover:bg-orange-600 text-white rounded-xl text-xs font-black shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer shrink-0 self-start sm:self-auto"
         >
@@ -87,12 +88,10 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
           currentUserId={authUser?.id || "user-avadi-citizen"}
           authUser={authUser}
           onCreateNew={() => {
-            setEditingDonation(null);
-            setIsCreateDonationOpen(true);
+            router.push("/donations/request");
           }}
           onEdit={(req) => {
-            setEditingDonation(req);
-            setIsCreateDonationOpen(true);
+            router.push(`/donations/request?edit=${encodeURIComponent(req.id)}`);
           }}
           onRequestUpdated={(updatedList) => {
             setDonationsList(updatedList);

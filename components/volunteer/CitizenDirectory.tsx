@@ -219,9 +219,17 @@ export const CitizenDirectory: React.FC<CitizenDirectoryProps> = ({
                 {/* Top Card Row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-primary flex items-center justify-center font-black text-sm shrink-0 border border-orange-100 dark:border-orange-900/40 mt-0.5">
-                      {vol.fullName ? vol.fullName[0].toUpperCase() : "V"}
-                    </div>
+                    {vol.avatar ? (
+                      <img
+                        src={vol.avatar}
+                        alt={vol.fullName}
+                        className="w-10 h-10 rounded-2xl object-cover border border-orange-100 dark:border-orange-900/40 shrink-0 mt-0.5"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-primary flex items-center justify-center font-black text-sm shrink-0 border border-orange-100 dark:border-orange-900/40 mt-0.5">
+                        {vol.fullName ? vol.fullName[0].toUpperCase() : "V"}
+                      </div>
+                    )}
 
                     <div className="space-y-1">
                       <div className="flex items-center gap-2 flex-wrap">

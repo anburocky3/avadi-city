@@ -249,6 +249,27 @@ class DonationService {
     return updated;
   }
 
+  public async updateStatusAsync(
+    id: string,
+    status: DonationStatus,
+  ): Promise<DonationRequest> {
+    const updated = this.update(id, { status });
+
+    if (this.isBrowser()) {
+      try {
+        await fetch(`/api/donations/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+      } catch (err) {
+        console.error("Failed to update donation status in MySQL database:", err);
+      }
+    }
+
+    return updated;
+  }
+
   public reportRequest(
     id: string,
     reason: string,

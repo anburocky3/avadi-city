@@ -24,67 +24,79 @@ export default function VolunteerProfilePage() {
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Sync volunteer profile on mount
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        await volunteerService.syncWithDb();
-        const record = volunteerService.getMyVolunteer(
-          authUser?.id,
-          authUser?.phone,
-          authUser?.name,
-        );
-        setVolunteerRecord(record);
-      } catch (err) {
-        console.error("Failed to load volunteer record:", err);
-      } finally {
-        setIsLoading(false);
+  const loadProfile = async (silent = false) => {
+    if (!silent) setIsLoading(true);
+    try {
+      await volunteerService.syncWithDb();
+      const record = volunteerService.getMyVolunteer(
+        authUser?.id,
+        authUser?.phone,
+        authUser?.name,
+      );
+      setVolunteerRecord(record);
+      if (silent) {
+        const s = (record?.status || "").trim().toLowerCase();
+        if (s === "active" || s === "approved") {
+          toast.success("Profile status: Active Force in database!");
+        } else {
+          toast.info("Status refreshed: Still awaiting admin approval.");
+        }
       }
-    };
+    } catch (err) {
+      console.error("Failed to load volunteer record:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  // Sync volunteer profile on mount and on window focus
+  useEffect(() => {
     loadProfile();
+
+    const handleFocus = () => {
+      loadProfile(false);
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [authUser?.id, authUser?.phone, authUser?.name]);
 
   return (
     <div className="min-h-screen bg-slate-50/60 dark:bg-slate-950 py-6 px-4 sm:px-6">
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Top Breadcrumb Navigation */}
-        <div className="flex items-center justify-between gap-3">
-          <Link
-            href="/profile"
-            className="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition group py-1.5 px-2.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 cursor-pointer"
-          >
-            <ArrowLeft
-              size={15}
-              className="group-hover:-translate-x-0.5 transition"
-            />
-            <span>Back to Profile</span>
-          </Link>
+        {/* Top Breadcrumb Navigation & Title Header (Shown only when viewing profile card) */}
+        {volunteerRecord && !isEditing && (
+          <>
+            <div className="flex items-center justify-between gap-3">
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition group py-1.5 px-2.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 cursor-pointer"
+              >
+                <ArrowLeft
+                  size={15}
+                  className="group-hover:-translate-x-0.5 transition"
+                />
+                <span>Back to Profile</span>
+              </Link>
 
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-orange-50 dark:bg-orange-950/40 text-primary border border-orange-200/60 dark:border-orange-900/50">
-            <ShieldCheck size={12} className="text-primary" />
-            <span>Avadi City Force</span>
-          </span>
-        </div>
-
-        {/* Clean Lite Page Title Header (matching standard page style) */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-none flex items-center gap-2.5">
-              <HeartHandshake className="text-primary shrink-0" size={26} />
-              <span>
-                {volunteerRecord && !isEditing
-                  ? "My Volunteer Identity"
-                  : "Citizen Volunteer Force"}
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black tracking-wider uppercase bg-orange-50 dark:bg-orange-950/40 text-primary border border-orange-200/60 dark:border-orange-900/50">
+                <ShieldCheck size={12} className="text-primary" />
+                <span>Avadi City Force</span>
               </span>
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium leading-relaxed">
-              {volunteerRecord && !isEditing
-                ? "Your official Avadi Citizen Volunteer Force credentials and civic status."
-                : "Help during civic emergencies, blood donation drives, or ward cleanliness campaigns in Avadi."}
-            </p>
-          </div>
-        </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white leading-none flex items-center gap-2.5">
+                  <HeartHandshake className="text-primary shrink-0" size={26} />
+                  <span>My Volunteer Identity</span>
+                </h1>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium leading-relaxed">
+                  Your official Avadi Citizen Volunteer Force credentials and civic status.
+                </p>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Loading Skeleton */}
         {isLoading ? (
@@ -99,6 +111,8 @@ export default function VolunteerProfilePage() {
           <Card className="p-6 border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm">
             <MyVolunteerProfile
               volunteer={volunteerRecord}
+              avatarUrl={authUser?.avatar || (volunteerRecord as any)?.avatar}
+              onRefresh={() => loadProfile(true)}
               onEdit={() => setIsEditing(true)}
               onStatusChange={(updated) => {
                 setVolunteerRecord(updated);
@@ -106,7 +120,7 @@ export default function VolunteerProfilePage() {
               }}
               onLeave={() => {
                 setVolunteerRecord(null);
-                toast.info("You have left the volunteer force.");
+                setIsEditing(false);
                 router.push("/profile");
               }}
             />

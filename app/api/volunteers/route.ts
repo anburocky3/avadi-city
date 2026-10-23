@@ -8,6 +8,9 @@ import {
 } from "@/lib/volunteer-db";
 import { VolunteerFormData } from "@/types/volunteer";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // GET /api/volunteers
 export async function GET(request: Request) {
   try {
@@ -25,7 +28,14 @@ export async function GET(request: Request) {
       filtered = filtered.filter((v) => v.userId === userId);
     }
 
-    return NextResponse.json(filtered, { status: 200 });
+    return NextResponse.json(filtered, {
+      status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
+    });
   } catch (error: any) {
     console.error("GET /api/volunteers error:", error);
     return NextResponse.json(
@@ -119,7 +129,14 @@ export async function POST(request: Request) {
           conductConsent: Boolean(body.consents?.conduct ?? true),
           directoryConsent: Boolean(body.consents?.directory ?? true),
           truthfulConsent: Boolean(body.consents?.truthful ?? true),
-          status: body.status || existing.status,
+          status: body.status || existing.status || "pending",
+        },
+        include: {
+          user: {
+            select: {
+              avatar: true,
+            },
+          },
         },
       });
 
@@ -178,7 +195,14 @@ export async function POST(request: Request) {
         conductConsent: Boolean(body.consents?.conduct ?? true),
         directoryConsent: Boolean(body.consents?.directory ?? true),
         truthfulConsent: Boolean(body.consents?.truthful ?? true),
-        status: body.status || "active",
+        status: body.status || "pending",
+      },
+      include: {
+        user: {
+          select: {
+            avatar: true,
+          },
+        },
       },
     });
 

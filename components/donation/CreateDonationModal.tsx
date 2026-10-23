@@ -42,6 +42,7 @@ import {
   X,
   Loader2,
   RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -117,6 +118,7 @@ export interface CreateDonationModalProps {
   activeWardId?: number;
   editingRequest?: DonationRequest | null;
   onSuccess: (request: DonationRequest) => void;
+  isStandalonePage?: boolean;
 }
 
 const REQUEST_TYPES: DonationType[] = [
@@ -128,6 +130,16 @@ const REQUEST_TYPES: DonationType[] = [
   "Food & Clothing",
   "Other",
 ];
+
+const TITLE_PLACEHOLDERS: Record<DonationType, string> = {
+  "Blood Requirement": "e.g. Urgent O-Negative Blood Donors Needed at Avadi Govt Hospital",
+  "Medical Help": "e.g. Emergency funds & medicines needed for surgery at Avadi GH",
+  "Food & Clothing": "e.g. Dry grocery provisions and warm blankets needed for 25 families",
+  "Education Support": "e.g. School notebooks, stationery & bags needed for municipal school kids",
+  "Emergency Relief": "e.g. Flood relief kits, tarpaulin & drinking water packs needed urgently",
+  "Charity Need": "e.g. Wheelchairs and walking aids needed for local elder care home",
+  "Other": "e.g. Tree plantation saplings and cleanup tools for community drive",
+};
 
 const BENEFICIARY_TYPES: BeneficiaryType[] = [
   "Individual",
@@ -142,6 +154,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
   activeWardId,
   editingRequest,
   onSuccess,
+  isStandalonePage = false,
 }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const userWard = editingRequest?.ward || authUser?.wardNumber || activeWardId || 14;
@@ -155,6 +168,10 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
       } else {
         modalTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
       }
+    }
+    const mainEl = document.querySelector("main");
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: "smooth" });
     }
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -231,6 +248,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
   const [isStreetWardModalOpen, setIsStreetWardModalOpen] = useState<boolean>(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  const [showCriticalNotice, setShowCriticalNotice] = useState<boolean>(false);
 
   // Default coordinate setup
   const initialCoord = WARD_CENTROIDS[userWard] || { lat: 13.1169, lng: 80.0972 };
@@ -527,6 +545,137 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
   if (submittedDonation) {
     const isEditing = Boolean(editingRequest?.id);
 
+    const ackContent = (
+      <div className="space-y-6 py-2 text-center">
+        <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
+
+        {/* Success Animated Check Icon */}
+        <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border-4 border-emerald-100 dark:border-emerald-900/40 shadow-sm">
+          <CheckCircle2 size={36} strokeWidth={2.5} />
+        </div>
+
+        {/* Status badge & headings */}
+        <div className="space-y-2">
+          <span className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-widest text-emerald-700 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            {isEditing ? "Request Successfully Updated" : "Request Successfully Completed"}
+          </span>
+          <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white">
+            {isEditing
+              ? "Donation Details Updated!"
+              : "Donation Request Broadcasted!"}
+          </h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+            Your donation request is live in the Avadi City portal and has been posted to Ward {submittedDonation.ward} residents, donors, and verified civic volunteers.
+          </p>
+        </div>
+
+        {/* Identity & Request Summary Card */}
+        <div className="p-5 bg-gradient-to-br from-slate-50 to-orange-50/30 dark:from-slate-950 dark:to-orange-950/10 border border-orange-200/80 dark:border-orange-900/40 rounded-3xl text-left space-y-3.5 relative overflow-hidden shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
+              Avadi Donation Reference
+            </span>
+            <span className="text-[11px] font-mono font-extrabold text-primary bg-primary/10 px-2.5 py-0.5 rounded-md">
+              {submittedDonation.id}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="primary" className="text-[10px] font-bold">
+                {submittedDonation.type}
+              </Badge>
+              <StatusBadge type="urgency" value={submittedDonation.urgency} />
+            </div>
+            <span className="text-[10px] font-bold text-slate-400">
+              {new Date().toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+                year: "numeric",
+              })}
+            </span>
+          </div>
+
+          <div>
+            <p className="text-sm font-black text-slate-800 dark:text-slate-100">
+              {submittedDonation.title}
+            </p>
+            {submittedDonation.description && (
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
+                {submittedDonation.description}
+              </p>
+            )}
+          </div>
+
+          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Location
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5 text-[11px]">
+                <MapPin size={12} className="text-primary shrink-0" />
+                Ward {submittedDonation.ward} · {submittedDonation.address}
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Beneficiary
+              </span>
+              <span className="font-extrabold text-slate-700 dark:text-slate-200 block mt-0.5 text-[11px]">
+                {submittedDonation.beneficiary}
+              </span>
+            </div>
+          </div>
+
+          {submittedDonation.items && submittedDonation.items.length > 0 && (
+            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Requested Items ({submittedDonation.items.length})
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {submittedDonation.items.map((it, idx) => (
+                  <span
+                    key={idx}
+                    className="px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-700 dark:text-slate-300"
+                  >
+                    {it.name} ({it.qty} {it.unit})
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px]">
+            <span className="text-slate-500 dark:text-slate-400 font-semibold">
+              Coordinator: <strong className="text-slate-800 dark:text-slate-200">{submittedDonation.contact?.name}</strong> ({submittedDonation.contact?.phone})
+            </span>
+            <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+              ✓ Active on Feed
+            </span>
+          </div>
+        </div>
+
+        {/* Action Button */}
+        <button
+          type="button"
+          onClick={handleDone}
+          className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
+        >
+          <span>View in Donations Feed</span>
+          <ArrowRight size={14} />
+        </button>
+      </div>
+    );
+
+    if (isStandalonePage) {
+      return (
+        <div className="w-full max-w-xl mx-auto p-5 sm:p-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm">
+          {ackContent}
+        </div>
+      );
+    }
+
     return (
       <Modal
         isOpen={isOpen}
@@ -534,151 +683,63 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
         title="Request Acknowledgement"
         maxWidth="sm:max-w-xl"
       >
-        <div className="space-y-6 py-2 text-center">
-          <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
-
-          {/* Success Animated Check Icon */}
-          <div className="w-16 h-16 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center border-4 border-emerald-100 dark:border-emerald-900/40 shadow-sm">
-            <CheckCircle2 size={36} strokeWidth={2.5} />
-          </div>
-
-          {/* Status badge & headings */}
-          <div className="space-y-2">
-            <span className="inline-flex items-center gap-1.5 text-[10px] font-black tracking-widest text-emerald-700 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/40 px-3.5 py-1 rounded-full border border-emerald-200 dark:border-emerald-800">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              {isEditing ? "Request Successfully Updated" : "Request Successfully Completed"}
-            </span>
-            <h3 className="text-xl md:text-2xl font-black text-slate-800 dark:text-white">
-              {isEditing
-                ? "Donation Details Updated!"
-                : "Donation Request Broadcasted!"}
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
-              Your donation request is live in the Avadi City portal and has been posted to Ward {submittedDonation.ward} residents, donors, and verified civic volunteers.
-            </p>
-          </div>
-
-          {/* Identity & Request Summary Card */}
-          <div className="p-5 bg-gradient-to-br from-slate-50 to-orange-50/30 dark:from-slate-950 dark:to-orange-950/10 border border-orange-200/80 dark:border-orange-900/40 rounded-3xl text-left space-y-3.5 relative overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
-                Avadi Donation Reference
-              </span>
-              <span className="text-[11px] font-mono font-extrabold text-primary bg-primary/10 px-2.5 py-0.5 rounded-md">
-                {submittedDonation.id}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <Badge variant="primary" className="text-[10px] font-bold">
-                  {submittedDonation.type}
-                </Badge>
-                <StatusBadge type="urgency" value={submittedDonation.urgency} />
-              </div>
-              <span className="text-[10px] font-bold text-slate-400">
-                {new Date().toLocaleDateString("en-IN", {
-                  day: "numeric",
-                  month: "short",
-                  year: "numeric",
-                })}
-              </span>
-            </div>
-
-            <div>
-              <p className="text-sm font-black text-slate-800 dark:text-slate-100">
-                {submittedDonation.title}
-              </p>
-              {submittedDonation.description && (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">
-                  {submittedDonation.description}
-                </p>
-              )}
-            </div>
-
-            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 grid grid-cols-2 gap-2 text-xs">
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Location
-                </span>
-                <span className="font-extrabold text-slate-700 dark:text-slate-200 flex items-center gap-1 mt-0.5 text-[11px]">
-                  <MapPin size={12} className="text-primary shrink-0" />
-                  Ward {submittedDonation.ward} · {submittedDonation.address}
-                </span>
-              </div>
-              <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Beneficiary
-                </span>
-                <span className="font-extrabold text-slate-700 dark:text-slate-200 block mt-0.5 text-[11px]">
-                  {submittedDonation.beneficiary}
-                </span>
-              </div>
-            </div>
-
-            {submittedDonation.items && submittedDonation.items.length > 0 && (
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
-                  Requested Items ({submittedDonation.items.length})
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {submittedDonation.items.map((it, idx) => (
-                    <span
-                      key={idx}
-                      className="px-2 py-0.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-bold text-slate-700 dark:text-slate-300"
-                    >
-                      {it.name} ({it.qty} {it.unit})
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px]">
-              <span className="text-slate-500 dark:text-slate-400 font-semibold">
-                Coordinator: <strong className="text-slate-800 dark:text-slate-200">{submittedDonation.contact?.name}</strong> ({submittedDonation.contact?.phone})
-              </span>
-              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md border border-emerald-200/60">
-                ✓ Active on Feed
-              </span>
-            </div>
-          </div>
-
-          {/* Action Button */}
-          <button
-            type="button"
-            onClick={handleDone}
-            className="w-full py-3.5 bg-primary hover:bg-orange-600 text-white font-black text-xs rounded-xl shadow-md transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <span>View in Donations Feed</span>
-            <ArrowRight size={14} />
-          </button>
-        </div>
+        {ackContent}
       </Modal>
     );
   }
 
-  return (
-    <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        title={editingRequest ? "Edit Donation Request" : "Request Donation"}
-        maxWidth="sm:max-w-xl"
-      >
-        <div className="space-y-5">
-          <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
-          {/* Stepper with progress */}
-          <Stepper
-            steps={stepsList}
-            currentStep={currentStep}
-            onStepClick={(s) => {
-              if (s < currentStep) {
-                setCurrentStep(s);
-                scrollToModalTop();
-              }
-            }}
-          />
+  const formBody = (
+    <div className="space-y-5">
+      <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
+      {/* MODERN CAPSULE STEPPER (EXACT FLOW FROM IMAGE 2) */}
+      <div className="space-y-3 pb-2 border-b border-slate-100 dark:border-slate-800/80">
+        {/* 3 Clean Rounded Capsule Bars */}
+        <div className="grid grid-cols-3 gap-1.5">
+          {[1, 2, 3].map((stepIdx) => {
+            const isCompleted = currentStep > stepIdx;
+            const isCurrent = currentStep === stepIdx;
+            return (
+              <div
+                key={stepIdx}
+                className="h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 transition-all duration-300"
+              >
+                <div
+                  className={`h-full transition-all duration-300 rounded-full ${
+                    isCompleted
+                      ? "bg-emerald-500 w-full"
+                      : isCurrent
+                        ? "bg-linear-to-r from-primary to-orange-500 w-full shadow-xs"
+                        : "w-0"
+                  }`}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Step Heading & Guidance */}
+        <div className="flex items-start justify-between gap-3 pt-1">
+          <div>
+            <span className="text-[10px] font-black uppercase tracking-wider text-primary block">
+              STEP {currentStep} OF 3
+            </span>
+            <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 leading-snug">
+              {currentStep === 1 && (editingRequest ? "Edit Type & Basic Details" : "Request Type & Basic Details")}
+              {currentStep === 2 && "Needed Items & Contact Info"}
+              {currentStep === 3 && "Review & Submit Request"}
+            </h2>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+              {currentStep === 1 && "Select category, urgency, location, and brief description."}
+              {currentStep === 2 && "Specify needed materials, blood units, or funds and coordinator details."}
+              {currentStep === 3 && "Double-check your civic request details before broadcasting to Avadi."}
+            </p>
+          </div>
+
+          <div className="shrink-0 w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs flex items-center justify-center border border-slate-200/60 dark:border-slate-700/60">
+            {currentStep}/3
+          </div>
+        </div>
+      </div>
 
           {/* ========================================== */}
           {/* STEP 1: TYPE & DETAILS */}
@@ -714,31 +775,56 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 </FormField>
 
                 <FormField label="Urgency Level" required error={errors.urgency}>
-                  <div className="flex items-center gap-2">
-                    <select
-                      id="donation-urgency"
-                      name="urgency"
-                      data-field="urgency"
-                      value={formData.urgency}
-                      onChange={(e) =>
-                        setFormData((prev) => ({
-                          ...prev,
-                          urgency: e.target.value as DonationUrgency,
-                        }))
+                  <select
+                    id="donation-urgency"
+                    name="urgency"
+                    data-field="urgency"
+                    value={formData.urgency}
+                    onChange={(e) => {
+                      const newUrgency = e.target.value as DonationUrgency;
+                      if (newUrgency === "Critical") {
+                        setShowCriticalNotice(true);
                       }
-                      className={`w-full px-3 py-2.5 rounded-xl border ${
-                        errors.urgency
-                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
-                          : "border-slate-200 dark:border-slate-800"
-                      } bg-white dark:bg-slate-950 text-xs font-bold focus:ring-2 focus:ring-primary/40 focus:outline-none`}
-                    >
-                      <option value="Normal">Normal</option>
-                      <option value="Urgent">Urgent</option>
-                      <option value="Critical">Critical</option>
-                    </select>
-                    <StatusBadge type="urgency" value={formData.urgency} />
-                  </div>
+                      setFormData((prev) => ({
+                        ...prev,
+                        urgency: newUrgency,
+                      }));
+                    }}
+                    className={`w-full px-3 py-2.5 rounded-xl border ${
+                      errors.urgency
+                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
+                        : "border-slate-200 dark:border-slate-800"
+                    } bg-white dark:bg-slate-950 text-xs font-bold focus:ring-2 focus:ring-primary/40 focus:outline-none`}
+                  >
+                    <option value="Normal">Normal</option>
+                    <option value="Urgent">Urgent</option>
+                    <option value="Critical">Critical</option>
+                  </select>
                 </FormField>
+
+                {/* Inline Critical Urgency Protocol Alert */}
+                {formData.urgency === "Critical" && (
+                  <div className="sm:col-span-2 -mt-1 p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 flex items-start justify-between gap-3 text-rose-800 dark:text-rose-300">
+                    <div className="flex items-start gap-2.5">
+                      <AlertTriangle size={16} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+                      <div className="text-[11px] leading-tight space-y-0.5">
+                        <span className="font-extrabold text-rose-700 dark:text-rose-300 block">
+                          Critical Need Protocol Active
+                        </span>
+                        <span className="text-rose-600/90 dark:text-rose-400/90 block">
+                          This request will be escalated across community alerts. Ensure contact details are accurate and verified.
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCriticalNotice(true)}
+                      className="text-[10px] font-black underline hover:text-rose-900 dark:hover:text-rose-200 cursor-pointer shrink-0"
+                    >
+                      View Instructions
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Title */}
@@ -759,7 +845,10 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, title: e.target.value }))
                   }
-                  placeholder="e.g. Food relief, School notebooks, or Emergency blood requirement"
+                  placeholder={
+                    TITLE_PLACEHOLDERS[formData.type] ||
+                    "e.g. Describe what community assistance is needed"
+                  }
                   className={`w-full px-3 py-2.5 rounded-xl border ${
                     errors.title
                       ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
@@ -894,7 +983,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                     onClick={() => setIsStreetWardModalOpen(true)}
                     className={`w-full p-3 rounded-xl border ${
                       errors.ward
-                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
+                        ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
                         : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/60"
                     } hover:bg-slate-100 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer group shadow-2xs`}
                   >
@@ -1167,7 +1256,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       placeholder="e.g. trust@okhdfcbank"
                       className={`w-full px-3 py-2 rounded-xl border ${
                         errors.targetUpi
-                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
+                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
                           : "border-slate-200 dark:border-slate-800"
                       } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-amber-500 focus:outline-none`}
                     />
@@ -1393,7 +1482,7 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       placeholder="e.g. Avadi Care Charitable Trust"
                       className={`w-full px-3 py-2 rounded-xl border ${
                         errors.orgName
-                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20"
+                          ? "border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20 dark:bg-rose-950/20"
                           : "border-slate-200 dark:border-slate-800"
                       } bg-white dark:bg-slate-900 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none`}
                     />
@@ -1456,11 +1545,13 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 <div
                   id="donation-confirmedGenuine"
                   data-field="confirmedGenuine"
-                  className={`space-y-1 p-2 rounded-xl transition ${
-                    errors.confirmedGenuine ? "bg-rose-50/50 border border-rose-300 dark:border-rose-900/60" : ""
+                  className={`space-y-1 p-2.5 rounded-xl transition ${
+                    errors.confirmedGenuine
+                      ? "bg-rose-50/80 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/80"
+                      : "border border-transparent"
                   }`}
                 >
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-100">
                     <input
                       type="checkbox"
                       checked={formData.confirmedGenuine}
@@ -1472,13 +1563,13 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       }
                       className="mt-0.5 rounded text-primary focus:ring-primary accent-primary"
                     />
-                    <span>
+                    <span className="leading-relaxed">
                       I confirm this request is genuine and needed for actual
                       beneficiaries in Avadi.
                     </span>
                   </label>
                   {errors.confirmedGenuine && (
-                    <p className="text-[11px] font-bold text-rose-500 pl-6">
+                    <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 pl-6">
                       {errors.confirmedGenuine}
                     </p>
                   )}
@@ -1487,11 +1578,13 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                 <div
                   id="donation-agreedGuidelines"
                   data-field="agreedGuidelines"
-                  className={`space-y-1 p-2 rounded-xl transition ${
-                    errors.agreedGuidelines ? "bg-rose-50/50 border border-rose-300 dark:border-rose-900/60" : ""
+                  className={`space-y-1 p-2.5 rounded-xl transition ${
+                    errors.agreedGuidelines
+                      ? "bg-rose-50/80 dark:bg-rose-950/40 border border-rose-300 dark:border-rose-900/80"
+                      : "border border-transparent"
                   }`}
                 >
-                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-slate-700 dark:text-slate-300">
+                  <label className="flex items-start gap-2.5 cursor-pointer text-xs font-bold text-slate-800 dark:text-slate-100">
                     <input
                       type="checkbox"
                       checked={formData.agreedGuidelines}
@@ -1503,13 +1596,13 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
                       }
                       className="mt-0.5 rounded text-primary focus:ring-primary accent-primary"
                     />
-                    <span>
+                    <span className="leading-relaxed">
                       I agree to the Community Guidelines and understand that
                       fraudulent posts will be banned and reported.
                     </span>
                   </label>
                   {errors.agreedGuidelines && (
-                    <p className="text-[11px] font-bold text-rose-500 pl-6">
+                    <p className="text-[11px] font-bold text-rose-600 dark:text-rose-400 pl-6">
                       {errors.agreedGuidelines}
                     </p>
                   )}
@@ -1571,7 +1664,46 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
             )}
           </div>
         </div>
-      </Modal>
+  );
+
+  return (
+    <>
+      {isStandalonePage ? (
+        <div className="w-full max-w-2xl mx-auto space-y-3.5">
+          {/* Top Navigation Bar from Image 2 */}
+          <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition font-bold text-xs py-1 px-2 -ml-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Donations</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+                {currentStep === 1 && "Type & Details"}
+                {currentStep === 2 && "Needs & Contact"}
+                {currentStep === 3 && "Review & Submit"}
+              </span>
+            </div>
+          </div>
+
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-sm space-y-5">
+            {formBody}
+          </div>
+        </div>
+      ) : (
+        <Modal
+          isOpen={isOpen}
+          onClose={onClose}
+          title={editingRequest ? "Edit Donation Request" : "Request Donation"}
+          maxWidth="sm:max-w-xl"
+        >
+          {formBody}
+        </Modal>
+      )}
 
       {/* Street to Ward Mapping Modal (Find Your Street Modal) */}
       <Modal
@@ -1592,6 +1724,120 @@ export const CreateDonationModal: React.FC<CreateDonationModalProps> = ({
           }}
         />
       </Modal>
+
+      {/* Critical Urgency Caution & Instruction Modal */}
+      <AnimatePresence>
+        {showCriticalNotice && (
+          <div className="fixed inset-0 z-70 flex items-center justify-center p-4">
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowCriticalNotice(false)}
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs"
+            />
+
+            {/* Modal Dialog */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ duration: 0.2 }}
+              className="relative z-10 w-full max-w-md bg-white dark:bg-slate-900 border border-rose-200 dark:border-rose-900/60 rounded-3xl p-6 shadow-2xl space-y-4 text-slate-800 dark:text-slate-100"
+            >
+              {/* Close 'X' Button */}
+              <button
+                type="button"
+                onClick={() => setShowCriticalNotice(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X size={16} />
+              </button>
+
+              {/* Header with Caution Icon */}
+              <div className="flex items-start gap-3.5">
+                <div className="w-11 h-11 rounded-2xl bg-rose-100 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 shadow-sm border border-rose-200 dark:border-rose-900/40">
+                  <AlertTriangle size={22} className="stroke-[2.5]" />
+                </div>
+                <div>
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[9px] font-black uppercase tracking-wider mb-1 shadow-xs shadow-rose-500/20">
+                    High Priority Caution
+                  </span>
+                  <h3 className="text-base font-black text-slate-900 dark:text-slate-100 leading-snug">
+                    Critical Urgency Advisory
+                  </h3>
+                </div>
+              </div>
+
+              {/* Description */}
+              <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+                Marking a request as <strong>Critical</strong> pushes emergency alerts to local volunteers and community coordinators. Please review these vital instructions:
+              </p>
+
+              {/* Instructions List */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-950/80 border border-slate-200/80 dark:border-slate-800 space-y-3 text-xs">
+                <div className="flex items-start gap-2.5">
+                  <span className="text-base shrink-0">🚨</span>
+                  <div className="leading-snug">
+                    <strong className="text-slate-900 dark:text-slate-100 block text-xs">
+                      Life-Safety & Severe Emergencies Only:
+                    </strong>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed block mt-0.5">
+                      Use only for life-saving surgeries, urgent blood needs, immediate disaster relief, or acute distress needed within 24–48 hours.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="text-base shrink-0">📞</span>
+                  <div className="leading-snug">
+                    <strong className="text-slate-900 dark:text-slate-100 block text-xs">
+                      Direct Verification Required:
+                    </strong>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed block mt-0.5">
+                      A reachable phone & WhatsApp contact is mandatory. Volunteer responders will reach out promptly to verify details.
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2.5">
+                  <span className="text-base shrink-0">⚖️</span>
+                  <div className="leading-snug">
+                    <strong className="text-slate-900 dark:text-slate-100 block text-xs">
+                      Zero-Tolerance for Misuse:
+                    </strong>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] leading-relaxed block mt-0.5">
+                      Marking general or non-urgent needs as Critical undermines community emergency response and will result in post removal.
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-2 flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFormData((prev) => ({ ...prev, urgency: "Normal" }));
+                    setShowCriticalNotice(false);
+                  }}
+                  className="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+                >
+                  Change to Normal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCriticalNotice(false)}
+                  className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-sm shadow-rose-600/30 transition flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>I Understand & Confirm</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </>
   );
 };

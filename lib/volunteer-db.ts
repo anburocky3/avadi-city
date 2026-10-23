@@ -11,6 +11,7 @@ export function mapPrismaVolunteerToVolunteer(v: any): Volunteer {
     gender: v.gender,
     age: v.age,
     dob: v.dob || undefined,
+    avatar: v.avatar || v.user?.avatar || undefined,
     contact: {
       mobile: v.mobile,
       whatsapp: v.whatsapp,
@@ -48,7 +49,7 @@ export function mapPrismaVolunteerToVolunteer(v: any): Volunteer {
       directory: Boolean(v.directoryConsent),
       truthful: Boolean(v.truthfulConsent),
     },
-    status: v.status || "active",
+    status: v.status || "pending",
     createdAt:
       typeof v.createdAt === "string"
         ? v.createdAt
@@ -63,6 +64,13 @@ export function mapPrismaVolunteerToVolunteer(v: any): Volunteer {
 export async function getDbVolunteers(): Promise<Volunteer[]> {
   try {
     const list = await prisma.volunteer.findMany({
+      include: {
+        user: {
+          select: {
+            avatar: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
     });
 

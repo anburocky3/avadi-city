@@ -32,40 +32,35 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   // Urgency badge
   if (type === "urgency") {
-    switch (value) {
-      case "Critical":
-        return (
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm shadow-rose-500/20 animate-pulse ${className}`}
-          >
-            {showIcon && <AlertTriangle size={11} strokeWidth={2.5} />}
-            <span>Critical Need</span>
-          </span>
-        );
-      case "Urgent":
-        return (
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm shadow-amber-500/20 ${className}`}
-          >
-            {showIcon && <Clock size={11} strokeWidth={2.5} />}
-            <span>Urgent</span>
-          </span>
-        );
-      case "Normal":
-      default:
-        return (
-          <span
-            className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-bold tracking-wider ${className}`}
-          >
-            <span>Normal</span>
-          </span>
-        );
+    const val = typeof value === "string" ? value.trim().toLowerCase() : "";
+    if (val === "critical") {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm shadow-rose-500/20 animate-pulse ${className}`}
+        >
+          {showIcon && <AlertTriangle size={11} strokeWidth={2.5} />}
+          <span>Critical Need</span>
+        </span>
+      );
     }
+    if (val === "urgent") {
+      return (
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-white text-[10px] font-black uppercase tracking-wider shadow-sm shadow-amber-500/20 ${className}`}
+        >
+          {showIcon && <Clock size={11} strokeWidth={2.5} />}
+          <span>Urgent</span>
+        </span>
+      );
+    }
+    // Normal or unspecified urgency: do not render any badge
+    return null;
   }
 
   // Volunteer status
   if (type === "volunteerStatus") {
-    switch (value) {
+    const s = typeof value === "string" ? value.trim().toLowerCase() : "";
+    switch (s) {
       case "pending":
         return (
           <span
@@ -110,14 +105,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   // Donation status
   switch (value) {
     case "approved":
-      return (
-        <span
-          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold ${className}`}
-        >
-          {showIcon && <CheckCircle2 size={11} />}
-          <span>Active Request</span>
-        </span>
-      );
+      return null;
     case "pending":
       return (
         <span

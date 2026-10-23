@@ -18,7 +18,9 @@ export default function DonationRequestPage() {
         </div>
       }
     >
-      <DonationRequestClient />
+      <div className="p-3 sm:p-6 max-w-2xl mx-auto pb-28 pt-2 sm:pt-4">
+        <DonationRequestClient />
+      </div>
     </Suspense>
   );
 }

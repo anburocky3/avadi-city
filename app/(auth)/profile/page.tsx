@@ -19,10 +19,11 @@ import {
   Check,
   Camera,
   Loader2,
-  User,
   HeartHandshake,
+  Clock,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 // Context & Component imports matching your project structure
 import { useWard, APP_VERSION } from "@/context/wardContext";
@@ -100,27 +101,35 @@ export const Profile: React.FC = () => {
         );
         setVolunteerRecord(found);
 
-        const synced = await volunteerService.syncWithDb();
-        if (synced && synced.length > 0) {
-          const syncedFound = volunteerService.getMyVolunteer(
-            authUser.id,
-            authUser.phone,
-            authUser.name,
-          );
-          setVolunteerRecord(syncedFound);
-        }
+        await volunteerService.syncWithDb();
+        const syncedFound = volunteerService.getMyVolunteer(
+          authUser.id,
+          authUser.phone,
+          authUser.name,
+        );
+        setVolunteerRecord(syncedFound);
       } catch (err) {
         console.error("Failed to load volunteer record in profile:", err);
       }
     };
 
     fetchVolunteer();
+
+    const handleFocus = () => {
+      fetchVolunteer();
+    };
+    window.addEventListener("focus", handleFocus);
+    return () => window.removeEventListener("focus", handleFocus);
   }, [authUser]);
 
   const isVolunteer = Boolean(
     volunteerRecord &&
-      volunteerRecord.status !== "left" &&
-      volunteerRecord.status !== "paused",
+      ((volunteerRecord.status || "").trim().toLowerCase() === "active" ||
+        (volunteerRecord.status || "").trim().toLowerCase() === "approved"),
+  );
+  const isPendingVolunteer = Boolean(
+    volunteerRecord &&
+      (volunteerRecord.status || "").trim().toLowerCase() === "pending",
   );
   const myComplaintsCount = complaints.filter(
     (c) => c.author === (authUser?.name || "Avadi Resident"),
@@ -240,9 +249,14 @@ export const Profile: React.FC = () => {
             <h3 className="font-black text-sm text-slate-900 dark:text-white flex items-center space-x-1.5">
               <span>{authUser?.name || "Avadi Resident"}</span>
               {isVolunteer && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-900/60">
-                  <ShieldCheck size={12} className="text-emerald-500" />
-                  <span>Avadi Volunteer</span>
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/80 dark:border-emerald-900/60">
+                  <span>Volunteer</span>
+                </span>
+              )}
+              {isPendingVolunteer && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border border-amber-200/80 dark:border-amber-900/60">
+                  <Clock size={11} className="text-amber-500 animate-pulse" />
+                  <span>Volunteer Pending</span>
                 </span>
               )}
             </h3>
@@ -281,8 +295,8 @@ export const Profile: React.FC = () => {
 
       {/* Citizen Metrics Grid */}
       <div className="grid grid-cols-2 gap-4">
-        <Card className="p-4 border-2 border-slate-200 dark:border-slate-800 text-center space-y-2 bg-white dark:bg-slate-900 flex flex-col justify-between">
-          <div className="space-y-1">
+        <Card className="p-4 border-2 border-slate-200 dark:border-slate-800 text-center bg-white dark:bg-slate-900 flex flex-col justify-between">
+          <div className="space-y-0.5">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
               Grievances Filed
             </span>
@@ -290,7 +304,7 @@ export const Profile: React.FC = () => {
               {myComplaintsCount}
             </span>
           </div>
-          <div className="pt-1">
+          <div>
             <Link
               href="/complaints"
               className="inline-flex items-center justify-center gap-1 text-[11px] font-black text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition hover:underline"
@@ -301,20 +315,24 @@ export const Profile: React.FC = () => {
           </div>
         </Card>
 
-        <Card className="p-4 border-2 border-slate-200 dark:border-slate-800 text-center space-y-2 bg-white dark:bg-slate-900 flex flex-col justify-between">
-          <div className="space-y-1">
+        <Card className="p-4 border-2 border-slate-200 dark:border-slate-800 text-center bg-white dark:bg-slate-900 flex flex-col justify-between">
+          <div className="space-y-0.5">
             <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider block">
               Volunteer Status
             </span>
             <div className="pt-0.5">
               {isVolunteer ? (
-                <div className="space-y-1">
-                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    You are now a Volunteer
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <CheckCircle2 size={20} className="text-emerald-500" strokeWidth={2.5} />
+                  <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
+                    Active Volunteer
                   </span>
-                  <span className="text-[10px] text-slate-400 block font-mono font-bold">
-                    {volunteerRecord?.id} · Active
+                </div>
+              ) : isPendingVolunteer ? (
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <Clock size={18} className="text-amber-500 animate-pulse" />
+                  <span className="text-xs font-black text-amber-600 dark:text-amber-400">
+                    Awaiting Approval
                   </span>
                 </div>
               ) : (
@@ -331,7 +349,7 @@ export const Profile: React.FC = () => {
             </div>
           </div>
 
-          <div className="pt-1">
+          <div>
             {isVolunteer ? (
               <Link
                 href="/profile/volunteer"
@@ -339,6 +357,14 @@ export const Profile: React.FC = () => {
               >
                 <span>View Volunteer Identity</span>
                 <ChevronRight size={12} />
+              </Link>
+            ) : isPendingVolunteer ? (
+              <Link
+                href="/profile/volunteer"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[11px] font-black rounded-xl transition shadow-sm w-full cursor-pointer text-center"
+              >
+                <Clock size={12} />
+                <span>Check Application Status</span>
               </Link>
             ) : (
               <Link
@@ -822,7 +848,6 @@ export const Profile: React.FC = () => {
           </button>
         </form>
       </Modal>
-
     </div>
   );
 };

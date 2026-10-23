@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { mapPrismaVolunteerToVolunteer } from "@/lib/volunteer-db";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 // GET /api/volunteers/[id]
 export async function GET(
   _request: Request,
@@ -12,6 +15,13 @@ export async function GET(
     const volunteer = await prisma.volunteer.findFirst({
       where: {
         OR: [{ id }, { displayId: id }],
+      },
+      include: {
+        user: {
+          select: {
+            avatar: true,
+          },
+        },
       },
     });
 
@@ -24,6 +34,11 @@ export async function GET(
 
     return NextResponse.json(mapPrismaVolunteerToVolunteer(volunteer), {
       status: 200,
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        Pragma: "no-cache",
+        Expires: "0",
+      },
     });
   } catch (error: any) {
     return NextResponse.json({ error: error?.message }, { status: 500 });
@@ -70,6 +85,13 @@ export async function PUT(
           fitness: body.health.fitness,
         }),
       },
+      include: {
+        user: {
+          select: {
+            avatar: true,
+          },
+        },
+      },
     });
 
     return NextResponse.json(mapPrismaVolunteerToVolunteer(updated), {
@@ -82,21 +104,29 @@ export async function PUT(
 
 // DELETE /api/volunteers/[id]
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get("userId");
+
+    const orClauses: any[] = [{ id }, { displayId: id }];
+    if (userId) {
+      orClauses.push({ userId });
+    }
+
     const existing = await prisma.volunteer.findFirst({
       where: {
-        OR: [{ id }, { displayId: id }],
+        OR: orClauses,
       },
     });
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Volunteer not found" },
-        { status: 404 },
+        { success: true, message: "Volunteer already deleted or not found" },
+        { status: 200 },
       );
     }
 

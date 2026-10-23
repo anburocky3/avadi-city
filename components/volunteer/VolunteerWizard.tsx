@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   HeartHandshake,
@@ -18,13 +18,13 @@ import {
   Lock,
   Loader2,
 } from "lucide-react";
-import { Stepper } from "./Stepper";
 import { FormField } from "./FormField";
 import { ChipSelect } from "./ChipSelect";
 import { ToggleSwitch } from "./ToggleSwitch";
 import { ReviewCard } from "./ReviewCard";
 import { StatusBadge } from "./StatusBadge";
 import { Card } from "@/components/shared-components";
+import { VolunteerAdvisoryModal } from "./VolunteerAdvisoryModal";
 import {
   Volunteer,
   VolunteerFormData,
@@ -42,6 +42,7 @@ import {
 } from "@/utils/validators";
 import volunteerService from "@/services/volunteerService";
 import toast from "@/utils/toast";
+import { ALL_AVADI_STREETS, StreetItem } from "@/lib/wards";
 
 const INTEREST_OPTIONS = [
   "Disaster Relief",
@@ -118,6 +119,27 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
     null,
   );
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [showAdvisoryModal, setShowAdvisoryModal] = useState<boolean>(!initialData);
+  const wizardTopRef = useRef<HTMLDivElement>(null);
+
+  // Smoothly scroll to the top of the wizard / main viewport
+  const scrollToWizardTop = () => {
+    if (wizardTopRef.current) {
+      wizardTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    const mainEl = document.querySelector("main") || document.querySelector(".overflow-y-auto");
+    if (mainEl) {
+      mainEl.scrollTo({ top: 0, behavior: "smooth" });
+    }
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  // Scroll to top whenever step changes
+  useEffect(() => {
+    scrollToWizardTop();
+  }, [currentStep]);
 
   // Form State
   const [formData, setFormData] = useState<VolunteerFormData>(() => {
@@ -215,6 +237,63 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
+  // Street Autocomplete dropdown state
+  const [showStreetDropdown, setShowStreetDropdown] = useState<boolean>(false);
+  const streetInputRef = useRef<HTMLDivElement>(null);
+
+  // Close street dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (
+        streetInputRef.current &&
+        !streetInputRef.current.contains(e.target as Node)
+      ) {
+        setShowStreetDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const streetMatches = useMemo(() => {
+    const q = (formData.contact.area || "").trim().toLowerCase();
+    if (!q || q.length < 1) return [];
+
+    const matches: StreetItem[] = [];
+    const seen = new Set<string>();
+
+    for (const item of ALL_AVADI_STREETS) {
+      if (item.streetName.toLowerCase().includes(q)) {
+        const key = `${item.streetName.toLowerCase()}-${item.wardNo}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          matches.push(item);
+          if (matches.length >= 25) break;
+        }
+      }
+    }
+    return matches;
+  }, [formData.contact.area]);
+
+  const handleSelectStreet = (street: StreetItem) => {
+    setFormData((prev) => ({
+      ...prev,
+      ward: street.wardNo,
+      contact: {
+        ...prev.contact,
+        area: street.streetName,
+      },
+    }));
+    setShowStreetDropdown(false);
+    if (errors.area) {
+      setErrors((prev) => {
+        const next = { ...prev };
+        delete next.area;
+        return next;
+      });
+    }
+  };
+
   // Autosave draft on formData change (unless completed or editing)
   useEffect(() => {
     if (!initialData && currentStep <= 5) {
@@ -299,7 +378,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
           }
         }, 120);
       } else {
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        scrollToWizardTop();
       }
     }, 40);
   };
@@ -314,13 +393,13 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
     }
     setErrors({});
     setCurrentStep((prev) => prev + 1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToWizardTop();
   };
 
   const handlePrevStep = () => {
     setErrors({});
     setCurrentStep((prev) => Math.max(1, prev - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    scrollToWizardTop();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -357,9 +436,9 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
       } else {
         saved = await volunteerService.createAsync({
           ...formData,
-          status: "active",
+          status: "pending",
         });
-        toast.success("Welcome! You are now registered as an Avadi Citizen Volunteer!");
+        toast.success("Registration submitted! Awaiting admin approval in database.");
       }
       setCreatedVolunteer(saved);
       setCurrentStep(6); // Success screen
@@ -386,7 +465,8 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
   // SUCCESS SCREEN
   // ==========================================
   if (currentStep === 6 && createdVolunteer) {
-    const isPending = createdVolunteer.status === "pending";
+    const isPending =
+      (createdVolunteer.status || "").trim().toLowerCase() === "pending";
 
     return (
       <Card className="p-6 md:p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-6 max-w-xl mx-auto shadow-xl">
@@ -462,41 +542,134 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
   }
 
   return (
-    <Card className="p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-6 shadow-sm">
-      {/* Wizard Header (Shown when editing existing profile) */}
-      {initialData && (
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-primary rounded-2xl border border-orange-100 dark:border-orange-900/40">
-              <HeartHandshake size={22} />
+    <>
+      <div ref={wizardTopRef} className="-mt-2 scroll-mt-6" />
+
+      <div className="w-full max-w-2xl mx-auto space-y-3.5">
+        {/* Top Navigation Bar from Picture 2 */}
+        <div className="flex items-center justify-between gap-3 pb-2 border-b border-slate-100 dark:border-slate-800">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex items-center gap-1.5 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition font-bold text-xs py-1 px-2 -ml-1 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer"
+          >
+            <ArrowLeft size={16} />
+            <span>Profile</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-0.5 rounded-full">
+              {currentStep === 1 && "Personal Details"}
+              {currentStep === 2 && "Interests & Skills"}
+              {currentStep === 3 && "Availability"}
+              {currentStep === 4 && "Consent & Health"}
+              {currentStep === 5 && "Review & Submit"}
+            </span>
+          </div>
+        </div>
+
+        <Card className="p-4 sm:p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl space-y-6 shadow-sm">
+          {/* Volunteer Guidelines Pill / Banner */}
+          {!initialData && (
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50">
+              <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 text-xs font-bold">
+                <HeartHandshake size={15} className="shrink-0" />
+                <span>Avadi Citizen Volunteer Force Guidelines Active</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAdvisoryModal(true)}
+                className="text-[11px] font-black text-rose-600 dark:text-rose-400 underline hover:text-rose-700 cursor-pointer shrink-0"
+              >
+                Review Instructions
+              </button>
             </div>
-            <div>
-              <h3 className="font-black text-sm md:text-base text-slate-800 dark:text-white leading-tight">
-                Edit Volunteer Profile
-              </h3>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
-                Update your contact, availability, or skill preferences
-              </p>
+          )}
+
+          {/* Wizard Header (Shown when editing existing profile) */}
+          {initialData && (
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-orange-50 dark:bg-orange-950/40 text-primary rounded-2xl border border-orange-100 dark:border-orange-900/40">
+                  <HeartHandshake size={22} />
+                </div>
+                <div>
+                  <h3 className="font-black text-sm md:text-base text-slate-800 dark:text-white leading-tight">
+                    Edit Volunteer Profile
+                  </h3>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
+                    Update your contact, availability, or skill preferences
+                  </p>
+                </div>
+              </div>
+              {onCancel && (
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded-lg cursor-pointer"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* MODERN 5-CAPSULE STEPPER (EXACT FLOW FROM PICTURE 2) */}
+          <div className="space-y-3 pb-2 border-b border-slate-100 dark:border-slate-800/80">
+            {/* 5 Clean Rounded Capsule Progress Bars */}
+            <div className="grid grid-cols-5 gap-1.5">
+              {[1, 2, 3, 4, 5].map((stepIdx) => {
+                const isCompleted = currentStep > stepIdx;
+                const isCurrent = currentStep === stepIdx;
+                return (
+                  <div
+                    key={stepIdx}
+                    onClick={() => stepIdx < currentStep && setCurrentStep(stepIdx)}
+                    className={`h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 transition-all duration-300 ${
+                      stepIdx < currentStep ? "cursor-pointer" : ""
+                    }`}
+                  >
+                    <div
+                      className={`h-full transition-all duration-300 rounded-full ${
+                        isCompleted
+                          ? "bg-emerald-500 w-full"
+                          : isCurrent
+                            ? "bg-linear-to-r from-primary to-orange-500 w-full shadow-xs"
+                            : "w-0"
+                      }`}
+                    />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Step Heading & Guidance */}
+            <div className="flex items-start justify-between gap-3 pt-1">
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-primary block">
+                  STEP {currentStep} OF 5
+                </span>
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100 leading-snug">
+                  {currentStep === 1 && (initialData ? "Edit Personal & Contact Details" : "Personal & Contact Details")}
+                  {currentStep === 2 && "Interests & Skills"}
+                  {currentStep === 3 && "Availability & Mobility"}
+                  {currentStep === 4 && "Health & Citizen Consent"}
+                  {currentStep === 5 && "Review & Confirm Details"}
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {currentStep === 1 && "Provide your basic details, ward, and contact information."}
+                  {currentStep === 2 && "Select focus areas and skills where you want to assist Avadi."}
+                  {currentStep === 3 && "Specify your days, time slots, and emergency vehicle access."}
+                  {currentStep === 4 && "Provide emergency contact, blood group, and code declarations."}
+                  {currentStep === 5 && "Verify your volunteer credentials before submitting to Avadi Force."}
+                </p>
+              </div>
+
+              <div className="shrink-0 w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-black text-xs flex items-center justify-center border border-slate-200/60 dark:border-slate-700/60">
+                {currentStep}/5
+              </div>
             </div>
           </div>
-          {onCancel && (
-            <button
-              type="button"
-              onClick={onCancel}
-              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 px-2 py-1 rounded-lg cursor-pointer"
-            >
-              Cancel
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Stepper with progress bar */}
-      <Stepper
-        steps={stepsList}
-        currentStep={currentStep}
-        onStepClick={(s) => s < currentStep && setCurrentStep(s)}
-      />
 
       {/* ========================================== */}
       {/* STEP 1: PERSONAL & CONTACT */}
@@ -525,7 +698,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
                 👤 {resolvedName}
               </span>
               <span className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
-                📍 Ward {resolvedWard}
+                📍 Ward {formData.ward || resolvedWard}
               </span>
               <span className="px-2.5 py-1 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-800 dark:text-slate-200">
                 ⚧ {resolvedGender}
@@ -545,7 +718,7 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
           {/* Contact Numbers */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <FormField
-              label="Mobile Number (10-digit Indian)"
+              label="Mobile Number"
               required
               error={errors.mobile}
               hint="Must start with 6, 7, 8, or 9"
@@ -615,18 +788,48 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
             error={errors.area}
             hint="Helps ward captains deploy you to nearby incidents"
           >
-            <input
-              type="text"
-              value={formData.contact.area}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  contact: { ...prev.contact, area: e.target.value },
-                }))
-              }
-              placeholder="e.g. 2nd Cross Street, near Kamaraj Statue"
-              className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none"
-            />
+            <div ref={streetInputRef} className="relative">
+              <input
+                type="text"
+                value={formData.contact.area}
+                onFocus={() => {
+                  if ((formData.contact.area || "").trim().length >= 1) {
+                    setShowStreetDropdown(true);
+                  }
+                }}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    contact: { ...prev.contact, area: val },
+                  }));
+                  setShowStreetDropdown(true);
+                }}
+                placeholder="e.g. 2nd Cross Street, near Kamaraj Statue"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 text-xs focus:ring-2 focus:ring-primary/40 focus:outline-none"
+              />
+
+              {showStreetDropdown && streetMatches.length > 0 && (
+                <div className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl divide-y divide-slate-100 dark:divide-slate-800">
+                  {streetMatches.map((item, idx) => (
+                    <button
+                      key={`${item.streetName}-${item.wardNo}-${idx}`}
+                      type="button"
+                      onClick={() => handleSelectStreet(item)}
+                      className="w-full px-3.5 py-2.5 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/80 transition flex items-center justify-between cursor-pointer"
+                    >
+                      <span className="flex items-center gap-2.5 min-w-0 pr-2">
+                        <MapPin size={15} className="text-slate-400 shrink-0" />
+                        <span className="truncate">{item.streetName}</span>
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 shrink-0">
+                        Ward {item.wardNo}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </FormField>
 
           {/* Preferred Languages */}
@@ -1459,6 +1662,20 @@ export const VolunteerWizard: React.FC<VolunteerWizardProps> = ({
         )}
       </div>
     </Card>
+  </div>
+
+    {/* Volunteer Guidelines & Advisory Modal */}
+    <VolunteerAdvisoryModal
+      isOpen={showAdvisoryModal}
+      onClose={() => {
+        setShowAdvisoryModal(false);
+        if (onCancel && !initialData) {
+          onCancel();
+        }
+      }}
+      onConfirm={() => setShowAdvisoryModal(false)}
+    />
+  </>
   );
 };
 
