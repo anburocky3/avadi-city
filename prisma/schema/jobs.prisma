@@ -47,7 +47,6 @@ model JobVacancy {
 
   // Status & Ownership
   status             ApprovalStatus @default(PENDING)
-  featured           Boolean        @default(false)
   ownerId            String
   user               User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   applications       JobApplication[]
