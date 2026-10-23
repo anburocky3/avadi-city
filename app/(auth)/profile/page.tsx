@@ -8,7 +8,6 @@ import {
   MapPin,
   Moon,
   Sun,
-  ShieldCheck,
   Info,
   Lock,
   ChevronRight,
@@ -21,6 +20,7 @@ import {
   Loader2,
   HeartHandshake,
   Clock,
+  User,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -85,7 +85,9 @@ export const Profile: React.FC = () => {
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
 
   // --- Volunteer Record & Derived Metrics ---
-  const [volunteerRecord, setVolunteerRecord] = useState<Volunteer | null>(null);
+  const [volunteerRecord, setVolunteerRecord] = useState<Volunteer | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchVolunteer = async () => {
@@ -124,12 +126,12 @@ export const Profile: React.FC = () => {
 
   const isVolunteer = Boolean(
     volunteerRecord &&
-      ((volunteerRecord.status || "").trim().toLowerCase() === "active" ||
-        (volunteerRecord.status || "").trim().toLowerCase() === "approved"),
+    ((volunteerRecord.status || "").trim().toLowerCase() === "active" ||
+      (volunteerRecord.status || "").trim().toLowerCase() === "approved"),
   );
   const isPendingVolunteer = Boolean(
     volunteerRecord &&
-      (volunteerRecord.status || "").trim().toLowerCase() === "pending",
+    (volunteerRecord.status || "").trim().toLowerCase() === "pending",
   );
   const myComplaintsCount = complaints.filter(
     (c) => c.author === (authUser?.name || "Avadi Resident"),
@@ -323,7 +325,11 @@ export const Profile: React.FC = () => {
             <div className="pt-0.5">
               {isVolunteer ? (
                 <div className="flex flex-col items-center justify-center gap-1">
-                  <CheckCircle2 size={20} className="text-emerald-500" strokeWidth={2.5} />
+                  <CheckCircle2
+                    size={20}
+                    className="text-emerald-500"
+                    strokeWidth={2.5}
+                  />
                   <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
                     Active Volunteer
                   </span>
@@ -378,8 +384,6 @@ export const Profile: React.FC = () => {
           </div>
         </Card>
       </div>
-
-
 
       {/* SECTION 0: SHARE APP FEATURE WIDGET */}
       <div className="space-y-3">

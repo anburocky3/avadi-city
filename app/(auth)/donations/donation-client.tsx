@@ -14,30 +14,25 @@ import { DonationRequest } from "@/types/donation";
 // Components
 import { DonationFeed } from "@/components/donation/DonationFeed";
 import { CreateDonationModal } from "@/components/donation/CreateDonationModal";
+import { getDbDonations } from "@/lib/donation-db";
 
 // Re-export for page.tsx compatibility
 export type DonationCause = DonationRequest;
 
-export interface VolunteersClientProps {
-  initialDonations?: any[];
-  initialVolunteers?: any[];
-}
-
-export const VolunteersClient: React.FC<VolunteersClientProps> = ({
-  initialDonations,
-}) => {
+export const DonationClient = () => {
   const router = useRouter();
   const t = useTranslations("volunteers");
   const { authUser, activeWard } = useWard();
 
   const [donationsList, setDonationsList] = useState<DonationRequest[]>(() => {
-    if (initialDonations && initialDonations.length > 0) return initialDonations;
     return donationService.list();
   });
 
   // Donation Modal State
-  const [isCreateDonationOpen, setIsCreateDonationOpen] = useState<boolean>(false);
-  const [editingDonation, setEditingDonation] = useState<DonationRequest | null>(null);
+  const [isCreateDonationOpen, setIsCreateDonationOpen] =
+    useState<boolean>(false);
+  const [editingDonation, setEditingDonation] =
+    useState<DonationRequest | null>(null);
 
   // Sync with MySQL database on mount
   useEffect(() => {
@@ -57,7 +52,7 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
   };
 
   return (
-    <div className="p-4 md:p-6 max-w-3xl mx-auto space-y-6">
+    <div className="p-4 md:p-6 max-w-3xl mx-auto md:max-w-full space-y-6">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -91,7 +86,9 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
             router.push("/donations/request");
           }}
           onEdit={(req) => {
-            router.push(`/donations/request?edit=${encodeURIComponent(req.id)}`);
+            router.push(
+              `/donations/request?edit=${encodeURIComponent(req.id)}`,
+            );
           }}
           onRequestUpdated={(updatedList) => {
             setDonationsList(updatedList);
@@ -123,4 +120,4 @@ export const VolunteersClient: React.FC<VolunteersClientProps> = ({
   );
 };
 
-export default VolunteersClient;
+export default DonationClient;

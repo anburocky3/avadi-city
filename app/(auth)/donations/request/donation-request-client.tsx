@@ -13,7 +13,9 @@ export const DonationRequestClient: React.FC = () => {
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
 
-  const [editingRequest, setEditingRequest] = useState<DonationRequest | null>(null);
+  const [editingRequest, setEditingRequest] = useState<DonationRequest | null>(
+    null,
+  );
 
   useEffect(() => {
     if (editId) {
@@ -23,6 +25,10 @@ export const DonationRequestClient: React.FC = () => {
       }
     }
   }, [editId]);
+
+  if (!authUser || !activeWard) {
+    return;
+  }
 
   return (
     <CreateDonationModal
