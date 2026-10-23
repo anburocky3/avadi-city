@@ -218,12 +218,12 @@ const WARD_SERVICES = [
     icon: Gift,
     bg: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
   },
-  {
-    name: "Local Alerts",
-    path: "/notifications",
-    icon: Bell,
-    bg: "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400",
-  },
+  // {
+  //   name: "Local Alerts",
+  //   path: "/notifications",
+  //   icon: Bell,
+  //   bg: "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400",
+  // },
   {
     name: "Lost & Found",
     path: "/lost-found",

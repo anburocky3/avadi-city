@@ -343,10 +343,10 @@ export const Profile: React.FC = () => {
                 </div>
               ) : (
                 <div className="space-y-0.5">
-                  <span className="text-xs font-black text-slate-500 dark:text-slate-400 inline-flex items-center gap-1.5">
+                  {/* <span className="text-xs font-black text-slate-500 dark:text-slate-400 inline-flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-purple-500/80" />
                     CIVIC MEMBER
-                  </span>
+                  </span> */}
                   <span className="text-[10px] text-slate-400 block font-medium">
                     Not a volunteer yet
                   </span>
@@ -355,7 +355,7 @@ export const Profile: React.FC = () => {
             </div>
           </div>
 
-          <div>
+          <div className="mt-2">
             {isVolunteer ? (
               <Link
                 href="/profile/volunteer"
