@@ -43,10 +43,10 @@ model JobVacancy {
   startDate          String?        // Joining date
   imageUrl           String?        @db.Text
   additionalInfo     String?        @db.Text
+  featured           Boolean        @default(false)
 
   // Status & Ownership
   status             ApprovalStatus @default(PENDING)
-  featured           Boolean        @default(false)
   ownerId            String
   user               User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   applications       JobApplication[]

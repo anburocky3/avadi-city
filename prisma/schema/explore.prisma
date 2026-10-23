@@ -1,0 +1,51 @@
+model ExplorePlace {
+  id                String   @id @default(cuid())
+  name              String
+  category          String
+  description       String   @db.Text
+  address           String   @db.Text
+  areaLandmark      String?
+  ward              Int
+  latitude          Float?
+  longitude         Float?
+  is24x7            Boolean  @default(false)
+  openingTime       String?
+  closingTime       String?
+  entryFeeType      String   @default("Free Entry")
+  entryFeeAmount    Float?
+  imageUrl          String?  @db.Text
+  additionalImages  Json?
+  activities        Json?
+  visitorTypes      Json?
+  facilities        Json?
+  bestTimeToVisit   String?
+  guidelines        String?  @db.Text
+  phone             String?
+  website           String?
+  officialUrl       String?
+  additionalDetails String?  @db.Text
+  status            String   @default("PENDING")
+  ownerId           String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([category])
+  @@index([ward])
+  @@index([status])
+  @@index([ownerId])
+  @@map("explore_places")
+}
+
+model PlaceReview {
+  id         String   @id @default(cuid())
+  placeId    String
+  userId     String
+  rating     Int
+  reviewText String?  @db.Text
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([placeId])
+  @@index([userId])
+  @@map("place_reviews")
+}

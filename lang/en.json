@@ -10,6 +10,7 @@
   "foods": "Food & Dining",
   "transport": "Travel & Transport",
   "govServices": "Government Services",
+  "donations": "Donations",
   "language": "App Language",
   "darkTheme": "Dark Appearance Mode",
   "aboutApp": "About Avadi City App",
@@ -234,8 +235,8 @@
     }
   },
   "volunteers": {
-    "title": "Volunteers & Donations",
-    "subtitle": "Join civic community drives or contribute to local charitable needs in Avadi.",
+    "title": "Donations & Relief Requests",
+    "subtitle": "Contribute to local charitable needs or submit requests for community assistance in Avadi.",
     "tabDonations": "Donation Requests",
     "tabVolunteers": "Volunteer Force",
     "joinSuccessMsg": "Success! You have joined the Avadi Volunteer Force.",
