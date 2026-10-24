@@ -35,6 +35,7 @@ export default function ForgotPasswordClient() {
   const [resendCountdown, setResendCountdown] = useState(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [apiError, setApiError] = useState("");
+  const [isPasswordReuse, setIsPasswordReuse] = useState(false);
 
   useEffect(() => {
     if (step === "otp" && resendCountdown > 0) {
@@ -53,6 +54,7 @@ export default function ForgotPasswordClient() {
 
     setIsSubmitting(true);
     setApiError("");
+    setIsPasswordReuse(false);
 
     try {
       const res = await fetch("/api/auth/forgot-password", {
@@ -137,6 +139,7 @@ export default function ForgotPasswordClient() {
 
     setIsSubmitting(true);
     setApiError("");
+    setIsPasswordReuse(false);
 
     try {
       const res = await fetch("/api/auth/forgot-password/verify-otp", {
@@ -188,9 +191,15 @@ export default function ForgotPasswordClient() {
       const result = await res.json();
 
       if (!res.ok) {
+        if (result.code === "SAME_PASSWORD_REUSE") {
+          setIsPasswordReuse(true);
+        } else {
+          setIsPasswordReuse(false);
+        }
         throw new Error(result.error || "Failed to reset password.");
       }
 
+      setIsPasswordReuse(false);
       setStep("done");
       try {
         toast.success("Password updated successfully.");
@@ -241,13 +250,34 @@ export default function ForgotPasswordClient() {
         <AnimatePresence>
           {apiError && (
             <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mx-6 mt-4 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center space-x-2.5 text-rose-600 dark:text-rose-400 text-xs font-bold"
+              initial={{ opacity: 0, height: 0, y: -4 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -4 }}
+              className={`mx-6 mt-4 p-4 rounded-2xl flex items-start space-x-3 text-xs font-bold transition-all shadow-xs ${
+                isPasswordReuse
+                  ? "bg-amber-500/10 border-2 border-amber-500/30 text-amber-900 dark:text-amber-200"
+                  : "bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400"
+              }`}
             >
-              <AlertCircle size={18} className="shrink-0" />
-              <span className="flex-1 leading-snug">{apiError}</span>
+              {isPasswordReuse ? (
+                <span className="text-xl select-none shrink-0 mt-0.5" role="img" aria-label="laugh">
+                  😂
+                </span>
+              ) : (
+                <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 space-y-1">
+                {isPasswordReuse && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
+                      Password Reuse Detected 🔐
+                    </span>
+                  </div>
+                )}
+                <span className="flex-1 leading-relaxed block font-semibold">
+                  {apiError}
+                </span>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -488,12 +518,22 @@ export default function ForgotPasswordClient() {
                         onChange={(e) => {
                           setPassword(e.target.value);
                           setApiError("");
+                          setIsPasswordReuse(false);
                         }}
                         autoFocus
                         placeholder="••••••••"
-                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                        className={`w-full h-12 pl-11 pr-4 rounded-2xl border ${
+                          isPasswordReuse
+                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
+                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
+                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
                       />
                     </div>
+                    {isPasswordReuse && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 pt-1">
+                        <span>👉</span> Please choose a fresh, different password.
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -512,9 +552,14 @@ export default function ForgotPasswordClient() {
                         onChange={(e) => {
                           setConfirmPassword(e.target.value);
                           setApiError("");
+                          setIsPasswordReuse(false);
                         }}
                         placeholder="••••••••"
-                        className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
+                        className={`w-full h-12 pl-11 pr-4 rounded-2xl border ${
+                          isPasswordReuse
+                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
+                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
+                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
                       />
                     </div>
                   </div>
