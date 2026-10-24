@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { forgotPasswordOtpSchema } from "@/lib/validations/auth";
 import { prisma } from "@/lib/prisma";
-import { signResetToken } from "@/lib/auth";
+import { verifyResetToken } from "@/lib/auth";
 
 export async function POST(req: Request) {
   try {
@@ -19,35 +19,68 @@ export async function POST(req: Request) {
     }
 
     const email = validation.data.email.trim().toLowerCase();
-    const { otp } = validation.data;
+    const { otp, resetToken } = validation.data;
+
+    // Verify session resetToken
+    const payload = await verifyResetToken(resetToken);
+    if (!payload || payload.email !== email) {
+      return NextResponse.json(
+        {
+          error: "INVALID_SESSION",
+          message: "This reset session has expired or is invalid. Please start over.",
+          code: "INVALID_SESSION",
+        },
+        { status: 401 },
+      );
+    }
 
     const tokenRecord = await prisma.verificationToken.findUnique({
       where: { email_otp: { email, otp } },
     });
 
+    // SECTION 3.B: Incorrect OTP
     if (!tokenRecord) {
       return NextResponse.json(
-        { error: "Invalid verification code." },
+        {
+          error: "INCORRECT_OTP",
+          message: "🚫 That OTP missed the target! Check the code and try again.",
+          code: "INCORRECT_OTP",
+        },
         { status: 400 },
       );
     }
 
+    // SECTION 3.C: Expired OTP
     if (new Date() > tokenRecord.expiresAt) {
       await prisma.verificationToken.delete({ where: { id: tokenRecord.id } });
       return NextResponse.json(
-        { error: "Verification code has expired. Please request a new one." },
+        {
+          error: "EXPIRED_OTP",
+          message: "⏰ This OTP has expired. Request a fresh one and try again.",
+          code: "EXPIRED_OTP",
+        },
         { status: 400 },
       );
     }
 
-    // OTP is single-use — consume it now that it's verified
+    // Consume single-use OTP
     await prisma.verificationToken.delete({ where: { id: tokenRecord.id } });
 
-    // Issue a short-lived token authorizing the password change for this email
-    const resetToken = await signResetToken(email);
+    // SECTION 2 STEP 4: Only update user password AFTER successful OTP verification
+    if (payload.pendingPasswordHash) {
+      await prisma.user.update({
+        where: { email },
+        data: { password: payload.pendingPasswordHash },
+      });
+    }
 
+    // SECTION 2 STEP 5: Success Response
     return NextResponse.json(
-      { success: true, message: "Code verified.", resetToken },
+      {
+        success: true,
+        message:
+          "Password changed successfully! 🎉 Your account has a fresh new password.",
+      },
       { status: 200 },
     );
   } catch (error: any) {
