@@ -1,4 +1,4 @@
-import { SuburbanTrainSchedule } from "@/app/(auth)/transport/suburban-trains";
+import { SuburbanTrainSchedule } from "@/app/(app)/transport/suburban-trains";
 
 // Station codes that sit West of Avadi
 const WESTBOUND_CODES = new Set([

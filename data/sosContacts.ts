@@ -1,4 +1,4 @@
-import { EmergencyContact } from "@/app/(auth)/sos/sos-client";
+import { EmergencyContact } from "@/features/sos/components/sos-client";
 
 export const initialSosContactsData: EmergencyContact[] = [
   {

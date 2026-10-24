@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseErailDump } from "@/utils/parseErail";
-import { SuburbanTrainSchedule } from "@/app/(auth)/transport/suburban-trains";
+import { SuburbanTrainSchedule } from "@/app/(app)/transport/suburban-trains";
 
 // ⚠️ Bypass Node.js SSL leaf signature verification for external Indian railway servers
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";

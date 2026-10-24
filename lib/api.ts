@@ -1,4 +1,3 @@
-// src/lib/api.ts
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "/api";
 
 export async function apiClient<T>(

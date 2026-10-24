@@ -90,7 +90,7 @@
   "rentalsSubtitle": "Find verified 1BHK, 2BHK houses, apartments, and commercial shops for rent in Avadi",
   "searchRentalsPlaceholder": "Search house, shop, location...",
   "contactOwner": "Contact Owner",
-  "jobsTitle": "Local Job Vacancies",
+  "jobsTitle": "Job Vacancies",
   "jobsSubtitle": "Discover job opportunities in Avadi shops, factories, offices, and schools",
   "searchJobsPlaceholder": "Search driver, accountant, teacher, sales...",
   "applyNow": "Apply Now",
@@ -216,7 +216,7 @@
     "scheduleVisit": "Schedule Visit"
   },
   "jobs": {
-    "title": "Local Job Vacancies",
+    "title": "Job Vacancies",
     "subtitle": "Direct hiring for shops, supermarkets, showrooms & offices in Avadi.",
     "postJobBtn": "Post Job Vacancy",
     "postJobShort": "Post Job",

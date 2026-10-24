@@ -1,20 +1,11 @@
 export type ExperienceLevel = "Beginner" | "Intermediate" | "Experienced";
 export type VehicleType = "None" | "Two-wheeler" | "Four-wheeler";
 export type AvailabilityType =
-  | "Weekends only"
-  | "Weekdays"
-  | "Anytime"
-  | "Emergency-only";
+  "Weekends only" | "Weekdays" | "Anytime" | "Emergency-only";
 export type TravelRadius =
-  | "My ward only"
-  | "Nearby wards"
-  | "Anywhere in Avadi";
+  "My ward only" | "Nearby wards" | "Anywhere in Avadi";
 export type VolunteerStatus =
-  | "active"
-  | "paused"
-  | "left"
-  | "pending"
-  | "approved";
+  "active" | "paused" | "left" | "pending" | "approved";
 
 export interface VolunteerContact {
   mobile: string;

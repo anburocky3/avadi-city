@@ -126,15 +126,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   ];
 
   const quickModules: NavItem[] = [
-    { name: t("explore"), path: "/explore", icon: Compass },
-    { name: t("foods"), path: "/foods", icon: ChefHat },
+    { name: t("explore"), path: "/explore-places", icon: Compass },
+    { name: t("foods"), path: "/food-and-dining", icon: ChefHat },
     { name: t("healthcare.title"), path: "/healthcare", icon: HeartPulse },
-    { name: t("services.servicesTitle"), path: "/services", icon: Wrench },
+    {
+      name: t("services.servicesTitle"),
+      path: "/local-services",
+      icon: Wrench,
+    },
     { name: t("rentals.title"), path: "/rentals", icon: Building2 },
     { name: t("jobs.title"), path: "/jobs", icon: Briefcase },
     { name: t("donations") || "Donations", path: "/donations", icon: Gift },
     { name: t("transport"), path: "/transport", icon: Train },
-    { name: "Lost & Found", path: "/lost-found", icon: PackageSearch },
+    { name: "Lost & Found", path: "/lost-and-found", icon: PackageSearch },
   ];
 
   // Helper function to reliably check if a route is active (handles nested routing)

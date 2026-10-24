@@ -1,4 +1,4 @@
-import { JobVacancy } from "@/app/(auth)/jobs/jobs-client";
+import { JobVacancy } from "@/features/jobs/components/jobs-client";
 
 export const initialJobsData: JobVacancy[] = [
   {
@@ -34,7 +34,7 @@ export const initialJobsData: JobVacancy[] = [
     salary: "₹14,000 - ₹18,000 / month",
     location: "NM Road, Avadi (Ward 15)",
     latitude: 13.1205,
-    longitude: 80.1030,
+    longitude: 80.103,
     shift: "Rotational Shifts",
     contact: "9840012345",
     ward: 15,
@@ -56,7 +56,7 @@ export const initialJobsData: JobVacancy[] = [
     postedTime: "2 days ago",
     salary: "₹8,000 + Per Order Petrol Allowance",
     location: "Kamaraj Nagar, Avadi (Ward 14)",
-    latitude: 13.1250,
+    latitude: 13.125,
     longitude: 80.1065,
     shift: "5:00 PM - 10:00 PM",
     contact: "9710088899",
