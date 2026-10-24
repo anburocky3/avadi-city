@@ -10,6 +10,8 @@ import {
   AlertCircle,
   X,
   CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useState, useEffect, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -17,7 +19,9 @@ import Link from "next/link";
 import Image from "next/image";
 import useToast from "@/hooks/useToast";
 
-type Step = "email" | "otp" | "reset" | "done";
+// The complete workflow order:
+// Forgot Password → Email → New Password & Confirm Password → OTP Verification → Password Changed Successfully → Login
+type Step = "email" | "password" | "otp" | "done";
 
 export default function ForgotPasswordClient() {
   const router = useRouter();
@@ -29,8 +33,11 @@ export default function ForgotPasswordClient() {
   const [otpValues, setOtpValues] = useState(["", "", "", ""]);
   const [demoOtp, setDemoOtp] = useState("");
   const [resetToken, setResetToken] = useState("");
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [resendCountdown, setResendCountdown] = useState(30);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,8 +54,18 @@ export default function ForgotPasswordClient() {
     }
   }, [step, resendCountdown]);
 
-  // STEP 1: REQUEST RESET CODE
-  const handleRequestCode = async (e: FormEvent) => {
+  const isNetworkError = (err: any) => {
+    return (
+      (typeof navigator !== "undefined" && !navigator.onLine) ||
+      err.name === "TypeError" ||
+      err.message?.includes("fetch") ||
+      err.message?.includes("Failed to fetch") ||
+      err.message?.includes("network")
+    );
+  };
+
+  // STEP 1: ENTER EMAIL
+  const handleEmailSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
@@ -60,14 +77,75 @@ export default function ForgotPasswordClient() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
       });
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.error || "Failed to send verification code.");
+        throw new Error(result.error || "Failed to process email.");
       }
 
+      setStep("password");
+    } catch (err: any) {
+      if (isNetworkError(err)) {
+        toast.error("📡 Connection trouble! Check your internet and try again.");
+        setApiError("📡 Connection trouble! Check your internet and try again.");
+      } else {
+        setApiError(err.message || "An unexpected error occurred.");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // STEP 2: CREATE NEW PASSWORD & CONFIRM PASSWORD
+  const handlePasswordSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!password.trim() || !confirmPassword.trim()) return;
+
+    // Minimum length requirement
+    if (password.length < 6) {
+      setApiError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    // Matching validation (Inline only, strict rule: NO toast for mismatch)
+    if (password !== confirmPassword) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setApiError("");
+    setIsPasswordReuse(false);
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      });
+      const result = await res.json();
+
+      if (!res.ok) {
+        if (result.code === "SAME_PASSWORD_REUSE") {
+          setIsPasswordReuse(true);
+          // SECTION 3.D: Previous Password Reused Toast Notification
+          toast.error(
+            "😂 Your old password wants a comeback! Give your account something new.",
+          );
+          setApiError(
+            "😂 Your old password wants a comeback! Give your account something new.",
+          );
+          return;
+        }
+        throw new Error(result.error || result.message || "Failed to submit new password.");
+      }
+
+      // Store resetToken which cryptographically holds the pending password hash
+      setResetToken(result.resetToken || "");
       if (result.demoOtp) {
         setDemoOtp(result.demoOtp);
       }
@@ -76,15 +154,21 @@ export default function ForgotPasswordClient() {
       setResendCountdown(30);
       setStep("otp");
       try {
-        toast.success(`If that email is registered, a code has been sent.`);
+        toast.success("Verification code sent to your email.");
       } catch {}
     } catch (err: any) {
-      setApiError(err.message || "An unexpected error occurred.");
+      if (isNetworkError(err)) {
+        toast.error("📡 Connection trouble! Check your internet and try again.");
+        setApiError("📡 Connection trouble! Check your internet and try again.");
+      } else {
+        setApiError(err.message || "Failed to submit new password.");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // OTP Resend
   const handleResendCode = async () => {
     if (resendCountdown > 0) return;
     setIsSubmitting(true);
@@ -93,17 +177,28 @@ export default function ForgotPasswordClient() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          resend: true,
+          resetToken,
+        }),
       });
       const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Failed to resend code.");
+      if (!res.ok) {
+        throw new Error(result.error || "Failed to resend code.");
+      }
       if (result.demoOtp) setDemoOtp(result.demoOtp);
       setResendCountdown(30);
       try {
         toast.success("Verification code resent.");
       } catch {}
     } catch (err: any) {
-      setApiError(err.message || "Failed to resend code.");
+      if (isNetworkError(err)) {
+        toast.error("📡 Connection trouble! Check your internet and try again.");
+        setApiError("📡 Connection trouble! Check your internet and try again.");
+      } else {
+        setApiError(err.message || "Failed to resend code.");
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -131,7 +226,7 @@ export default function ForgotPasswordClient() {
     }
   };
 
-  // STEP 2: VERIFY OTP
+  // STEP 3: VERIFY OTP AND COMMIT NEW PASSWORD
   const handleVerifyOtp = async (e: FormEvent) => {
     e.preventDefault();
     const code = otpValues.join("");
@@ -139,81 +234,63 @@ export default function ForgotPasswordClient() {
 
     setIsSubmitting(true);
     setApiError("");
-    setIsPasswordReuse(false);
 
     try {
       const res = await fetch("/api/auth/forgot-password/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp: code }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          otp: code,
+          resetToken,
+        }),
       });
       const result = await res.json();
 
       if (!res.ok) {
-        throw new Error(result.error || "Invalid verification code.");
-      }
-
-      setResetToken(result.resetToken);
-      setStep("reset");
-      try {
-        toast.success("Code verified. Set your new password.");
-      } catch {}
-    } catch (err: any) {
-      setApiError(err.message || "Verification failed. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // STEP 3: SET NEW PASSWORD
-  const handleResetPassword = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!password.trim()) return;
-
-    if (password.length < 6) {
-      setApiError("Password must be at least 6 characters long.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setApiError("Passwords do not match.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    setApiError("");
-
-    try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resetToken, password }),
-      });
-      const result = await res.json();
-
-      if (!res.ok) {
-        if (result.code === "SAME_PASSWORD_REUSE") {
-          setIsPasswordReuse(true);
-        } else {
-          setIsPasswordReuse(false);
+        if (result.code === "INCORRECT_OTP") {
+          // SECTION 3.B: Incorrect OTP
+          toast.error("🚫 That OTP missed the target! Check the code and try again.");
+          setApiError("🚫 That OTP missed the target! Check the code and try again.");
+          return;
         }
-        throw new Error(result.error || "Failed to reset password.");
+
+        if (result.code === "EXPIRED_OTP") {
+          // SECTION 3.C: Expired OTP
+          toast.error("⏰ This OTP has expired. Request a fresh one and try again.");
+          setApiError("⏰ This OTP has expired. Request a fresh one and try again.");
+          return;
+        }
+
+        throw new Error(result.message || result.error || "Verification failed. Please try again.");
       }
 
-      setIsPasswordReuse(false);
       setStep("done");
       try {
-        toast.success("Password updated successfully.");
+        toast.success(
+          "Password changed successfully! 🎉 Your account has a fresh new password.",
+        );
       } catch {}
     } catch (err: any) {
-      setApiError(err.message || "Failed to reset password.");
+      if (isNetworkError(err)) {
+        toast.error("📡 Connection trouble! Check your internet and try again.");
+        setApiError("📡 Connection trouble! Check your internet and try again.");
+      } else {
+        setApiError(err.message || "Verification failed. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const isPasswordMismatch =
+    confirmPassword.length > 0 && password !== confirmPassword;
+  const isPasswordValid =
+    password.length >= 6 && confirmPassword.length >= 6 && !isPasswordMismatch;
 
   return (
     <div className="min-h-screen w-full bg-slate-100 dark:bg-slate-950 flex flex-col items-center justify-center sm:py-8 sm:px-4 transition-colors duration-300 font-sans select-none">
-      {/* Mobile-App Frame Container (Matching Login / Get-Started UI) */}
+      {/* Mobile-App Frame Container */}
       <div className="w-full sm:max-w-md min-h-screen sm:min-h-0 bg-white dark:bg-slate-900 sm:border sm:border-slate-200/80 dark:sm:border-slate-800/80 sm:rounded-[36px] shadow-none sm:shadow-2xl flex flex-col justify-between overflow-hidden transition-all duration-300 relative">
         {/* Top App Header */}
         <div className="pt-6 pb-5 px-6 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 flex items-center justify-between">
@@ -238,6 +315,7 @@ export default function ForgotPasswordClient() {
           </div>
 
           <button
+            type="button"
             onClick={() => router.push("/login")}
             className="p-2 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white transition cursor-pointer"
             title="Cancel"
@@ -285,6 +363,7 @@ export default function ForgotPasswordClient() {
         {/* Main Content Area */}
         <div className="flex-1 px-6 py-8 flex flex-col justify-center">
           <AnimatePresence mode="wait">
+            {/* STEP 1: ENTER EMAIL */}
             {step === "email" && (
               <motion.div
                 key="fp-email-step"
@@ -296,15 +375,14 @@ export default function ForgotPasswordClient() {
               >
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Forgot password?
+                    Enter Email
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                    Enter your registered email address and we&apos;ll send
-                    you a verification code to reset your password.
+                    Enter your registered email address to start resetting your password.
                   </p>
                 </div>
 
-                <form onSubmit={handleRequestCode} className="space-y-5">
+                <form onSubmit={handleEmailSubmit} className="space-y-5">
                   <div className="space-y-1.5">
                     <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
                       Email Address *
@@ -322,7 +400,7 @@ export default function ForgotPasswordClient() {
                           setApiError("");
                         }}
                         autoFocus
-                        placeholder="your@beautiful.com"
+                        placeholder="your@email.com"
                         className="w-full h-12 pl-11 pr-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 text-base sm:text-sm font-medium transition"
                       />
                     </div>
@@ -335,10 +413,13 @@ export default function ForgotPasswordClient() {
                       className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
                     >
                       {isSubmitting ? (
-                        <Loader2 size={18} className="animate-spin" />
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Processing...</span>
+                        </>
                       ) : (
                         <>
-                          <span>Send Reset Code</span>
+                          <span>Continue</span>
                           <ArrowRight size={18} />
                         </>
                       )}
@@ -360,6 +441,167 @@ export default function ForgotPasswordClient() {
               </motion.div>
             )}
 
+            {/* STEP 2: CREATE NEW PASSWORD & CONFIRM PASSWORD */}
+            {step === "password" && (
+              <motion.div
+                key="fp-password-step"
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.25 }}
+                className="space-y-6"
+              >
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
+                      Create New Password
+                    </h2>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStep("email");
+                        setApiError("");
+                        setIsPasswordReuse(false);
+                      }}
+                      className="text-xs font-bold text-primary hover:underline cursor-pointer"
+                    >
+                      Change email
+                    </button>
+                  </div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed truncate max-w-xs">
+                    Choose a new password for{" "}
+                    <strong className="text-slate-700 dark:text-slate-300">
+                      {email}
+                    </strong>
+                  </p>
+                </div>
+
+                <form onSubmit={handlePasswordSubmit} className="space-y-5">
+                  {/* New Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      New Password *
+                    </label>
+                    <div className="relative mt-2">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <KeyRound size={18} />
+                      </span>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        value={password}
+                        onChange={(e) => {
+                          setPassword(e.target.value);
+                          setApiError("");
+                          setIsPasswordReuse(false);
+                        }}
+                        autoFocus
+                        placeholder="••••••••"
+                        className={`w-full h-12 pl-11 pr-11 rounded-2xl border ${
+                          isPasswordReuse
+                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
+                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
+                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-r-2xl transition"
+                      >
+                        {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    {isPasswordReuse && (
+                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 pt-1">
+                        <span>👉</span> Please choose a fresh, different password.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                      Confirm Password *
+                    </label>
+                    <div className="relative mt-2">
+                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+                        <KeyRound size={18} />
+                      </span>
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        minLength={6}
+                        value={confirmPassword}
+                        onChange={(e) => {
+                          setConfirmPassword(e.target.value);
+                          setApiError("");
+                          setIsPasswordReuse(false);
+                        }}
+                        placeholder="••••••••"
+                        className={`w-full h-12 pl-11 pr-11 rounded-2xl border ${
+                          isPasswordMismatch
+                            ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 focus:ring-rose-400/50"
+                            : isPasswordReuse
+                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
+                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
+                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((v) => !v)}
+                        aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-r-2xl transition"
+                      >
+                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                      </button>
+                    </div>
+                    {/* STRICT RULE: Inline validation message only, NO popup */}
+                    {isPasswordMismatch && (
+                      <p className="text-xs text-rose-500 font-semibold mt-1">
+                        Passwords do not match
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-3 pt-4">
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        setStep("email");
+                        setApiError("");
+                        setIsPasswordReuse(false);
+                      }}
+                      className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
+                      title="Back"
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!isPasswordValid || isSubmitting}
+                      className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 size={18} className="animate-spin" />
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Continue to Verification</span>
+                          <ArrowRight size={18} />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            )}
+
+            {/* STEP 3: VERIFY OTP */}
             {step === "otp" && (
               <motion.div
                 key="fp-otp-step"
@@ -372,17 +614,17 @@ export default function ForgotPasswordClient() {
                 <div>
                   <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                      Enter code
+                      Verify OTP
                     </h2>
                     <button
                       type="button"
                       onClick={() => {
-                        setStep("email");
+                        setStep("password");
                         setApiError("");
                       }}
                       className="text-xs font-bold text-primary hover:underline cursor-pointer"
                     >
-                      Change email
+                      Edit password
                     </button>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed truncate max-w-xs">
@@ -452,7 +694,10 @@ export default function ForgotPasswordClient() {
                     <button
                       type="button"
                       disabled={isSubmitting}
-                      onClick={() => setStep("email")}
+                      onClick={() => {
+                        setStep("password");
+                        setApiError("");
+                      }}
                       className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
                       title="Back"
                     >
@@ -470,7 +715,7 @@ export default function ForgotPasswordClient() {
                         </>
                       ) : (
                         <>
-                          <span>Verify Code</span>
+                          <span>Verify & Update</span>
                           <ArrowRight size={18} />
                         </>
                       )}
@@ -480,112 +725,7 @@ export default function ForgotPasswordClient() {
               </motion.div>
             )}
 
-            {step === "reset" && (
-              <motion.div
-                key="fp-reset-step"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.25 }}
-                className="space-y-6"
-              >
-                <div>
-                  <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Set new password
-                  </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                    Choose a new password for{" "}
-                    <strong className="text-slate-700 dark:text-slate-300">
-                      {email}
-                    </strong>
-                  </p>
-                </div>
-
-                <form onSubmit={handleResetPassword} className="space-y-5">
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      New Password *
-                    </label>
-                    <div className="relative mt-2">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <KeyRound size={18} />
-                      </span>
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={password}
-                        onChange={(e) => {
-                          setPassword(e.target.value);
-                          setApiError("");
-                          setIsPasswordReuse(false);
-                        }}
-                        autoFocus
-                        placeholder="••••••••"
-                        className={`w-full h-12 pl-11 pr-4 rounded-2xl border ${
-                          isPasswordReuse
-                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
-                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
-                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
-                      />
-                    </div>
-                    {isPasswordReuse && (
-                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 pt-1">
-                        <span>👉</span> Please choose a fresh, different password.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                      Confirm Password *
-                    </label>
-                    <div className="relative mt-2">
-                      <span className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
-                        <KeyRound size={18} />
-                      </span>
-                      <input
-                        type="password"
-                        required
-                        minLength={6}
-                        value={confirmPassword}
-                        onChange={(e) => {
-                          setConfirmPassword(e.target.value);
-                          setApiError("");
-                          setIsPasswordReuse(false);
-                        }}
-                        placeholder="••••••••"
-                        className={`w-full h-12 pl-11 pr-4 rounded-2xl border ${
-                          isPasswordReuse
-                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
-                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
-                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      type="submit"
-                      disabled={
-                        isSubmitting || !password.trim() || !confirmPassword.trim()
-                      }
-                      className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
-                    >
-                      {isSubmitting ? (
-                        <Loader2 size={18} className="animate-spin" />
-                      ) : (
-                        <>
-                          <span>Update Password</span>
-                          <ArrowRight size={18} />
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            )}
-
+            {/* STEP 4: PASSWORD CHANGED SUCCESSFULLY */}
             {step === "done" && (
               <motion.div
                 key="fp-done-step"
@@ -601,10 +741,10 @@ export default function ForgotPasswordClient() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Password updated
+                    Password Changed Successfully
                   </h2>
-                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
-                    You can now sign in with your new password.
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 font-medium leading-relaxed">
+                    Password changed successfully! 🎉 Your account has a fresh new password.
                   </p>
                 </div>
                 <button

@@ -17,10 +17,12 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import useToast from "@/hooks/useToast";
 
 export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const toast = useToast();
 
   // 2-Step Login Navigation: "email" -> "password"
   const [step, setStep] = useState<"email" | "password">("email");
@@ -60,6 +62,13 @@ export default function LoginPage() {
         router.push(`/get-started?email=${encodeURIComponent(email.trim())}`);
       }
     } catch (err: any) {
+      if (
+        (typeof navigator !== "undefined" && !navigator.onLine) ||
+        err.name === "TypeError" ||
+        err.message?.includes("fetch")
+      ) {
+        toast.error("📡 Connection trouble! Check your internet and try again.");
+      }
       setApiError(err.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
@@ -84,7 +93,9 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.message || "Invalid credentials provided.");
+        // Trigger exact specified notification A: Invalid password
+        toast.error("Invalid password");
+        throw new Error(data.message || "Invalid password");
       }
 
       if (data.user) {
@@ -97,7 +108,16 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
-      setApiError(err.message || "Sign in failed. Please check your password.");
+      if (
+        (typeof navigator !== "undefined" && !navigator.onLine) ||
+        err.name === "TypeError" ||
+        err.message?.includes("fetch")
+      ) {
+        toast.error("📡 Connection trouble! Check your internet and try again.");
+        setApiError("📡 Connection trouble! Check your internet and try again.");
+      } else {
+        setApiError(err.message || "Invalid password");
+      }
     } finally {
       setIsSubmitting(false);
     }
