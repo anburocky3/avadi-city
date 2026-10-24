@@ -14,6 +14,7 @@ import {
   MapPin,
   ChevronDown,
   ShieldCheck,
+  LifeBuoy,
 } from "lucide-react";
 
 // Context & Theme imports
@@ -255,6 +256,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                     >
                       <User size={16} className="text-primary shrink-0" />
                       <span>My Profile</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        router.push("/support");
+                      }}
+                      className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
+                    >
+                      <LifeBuoy size={16} className="text-cyan-500 shrink-0" />
+                      <span>Support</span>
                     </button>
 
                     <button
