@@ -43,6 +43,21 @@ export async function POST(req: Request) {
       );
     }
 
+    // Detect if the user is reusing their current password
+    if (user.password) {
+      const isSamePassword = await bcrypt.compare(password, user.password);
+      if (isSamePassword) {
+        return NextResponse.json(
+          {
+            error:
+              "Whoa! 😂 Trying to fool us with your old password? We've seen that one before! 🔐 Pick a fresh password and give your account a new beginning!",
+            code: "SAME_PASSWORD_REUSE",
+          },
+          { status: 400 },
+        );
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await prisma.user.update({
