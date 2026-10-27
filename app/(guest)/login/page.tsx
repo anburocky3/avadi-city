@@ -19,6 +19,43 @@ import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import useToast from "@/hooks/useToast";
 
+// Safe JSON parser: guards against HTML error pages returned by server/proxy.
+// Returns parsed body or throws a classified error without leaking raw messages.
+async function safeJson(res: Response): Promise<any> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    // Server returned HTML (e.g. 404 page, 500 crash, proxy error)
+    throw Object.assign(
+      new Error("INVALID_RESPONSE"),
+      { kind: "bad_response" },
+    );
+  }
+  try {
+    return await res.json();
+  } catch {
+    throw Object.assign(
+      new Error("INVALID_RESPONSE"),
+      { kind: "bad_response" },
+    );
+  }
+}
+
+// Classify a caught error into a user-friendly message.
+function friendlyMessage(err: any): string {
+  if (err?.kind === "bad_response") {
+    return "We couldn't complete your request. Please try again.";
+  }
+  if (
+    (typeof navigator !== "undefined" && !navigator.onLine) ||
+    err?.name === "TypeError" ||
+    err?.message?.toLowerCase().includes("fetch") ||
+    err?.message?.toLowerCase().includes("network")
+  ) {
+    return "Your internet connection seems slow. Please check your connection and try again.";
+  }
+  return "Something went wrong. Please try again shortly.";
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -31,7 +68,7 @@ export default function LoginPage() {
 
   // API & Network States
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [apiError, setApiError] = useState("");
+  const [fieldError, setFieldError] = useState("");
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -39,9 +76,10 @@ export default function LoginPage() {
   const handleCheckEmail = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
-    setApiError("");
+    setFieldError("");
 
     try {
       const res = await fetch("/api/auth/check-email", {
@@ -49,27 +87,36 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-      const data = await res.json();
+
+      const data = await safeJson(res);
 
       if (!res.ok) {
-        throw new Error(data.message || "Something went wrong during lookup.");
+        toast.error("Something went wrong. Please try again shortly.");
+        return;
       }
 
       if (data.exists) {
         setStep("password");
       } else {
-        // Unknown email -> Automatically redirect to get-started with prefilled query param
+        // Unknown email -> redirect to get-started with prefilled query param
         router.push(`/get-started?email=${encodeURIComponent(email.trim())}`);
       }
     } catch (err: any) {
-      if (
+      const isConnectivity =
         (typeof navigator !== "undefined" && !navigator.onLine) ||
-        err.name === "TypeError" ||
-        err.message?.includes("fetch")
-      ) {
-        toast.error("📡 Connection trouble! Check your internet and try again.");
+        err?.name === "TypeError" ||
+        err?.message?.toLowerCase().includes("fetch") ||
+        err?.message?.toLowerCase().includes("network");
+
+      if (err?.kind === "bad_response") {
+        toast.error("We couldn't complete your request. Please try again.");
+      } else if (isConnectivity) {
+        toast.error(
+          "Your internet connection seems slow. Please check your connection and try again.",
+        );
+      } else {
+        toast.error("Something went wrong. Please try again shortly.");
       }
-      setApiError(err.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -79,9 +126,10 @@ export default function LoginPage() {
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     if (!password.trim()) return;
+    if (isSubmitting) return;
 
     setIsSubmitting(true);
-    setApiError("");
+    setFieldError("");
 
     try {
       const res = await fetch("/api/auth/login", {
@@ -90,12 +138,19 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await res.json();
+      // Guard: read JSON only if the server actually returned JSON.
+      const data = await safeJson(res);
+
+      if (res.status === 401) {
+        // Wrong password — field-level feedback only.
+        setFieldError("Invalid password");
+        toast.error("Invalid password");
+        return;
+      }
 
       if (!res.ok) {
-        // Trigger exact specified notification A: Invalid password
-        toast.error("Invalid password");
-        throw new Error(data.message || "Invalid password");
+        toast.error("Something went wrong. Please try again shortly.");
+        return;
       }
 
       if (data.user) {
@@ -108,16 +163,7 @@ export default function LoginPage() {
       router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
-      if (
-        (typeof navigator !== "undefined" && !navigator.onLine) ||
-        err.name === "TypeError" ||
-        err.message?.includes("fetch")
-      ) {
-        toast.error("📡 Connection trouble! Check your internet and try again.");
-        setApiError("📡 Connection trouble! Check your internet and try again.");
-      } else {
-        setApiError(err.message || "Invalid password");
-      }
+      toast.error(friendlyMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -156,9 +202,9 @@ export default function LoginPage() {
           </button>
         </div>
 
-        {/* Global API Error Alert Banner */}
+        {/* Field-level Error Banner (only for actionable field feedback, never raw errors) */}
         <AnimatePresence>
-          {apiError && (
+          {fieldError && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
@@ -166,7 +212,7 @@ export default function LoginPage() {
               className="mx-6 mt-4 p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex items-center space-x-2.5 text-rose-600 dark:text-rose-400 text-xs font-bold"
             >
               <AlertCircle size={18} className="shrink-0" />
-              <span className="flex-1 leading-snug">{apiError}</span>
+              <span className="flex-1 leading-snug">{fieldError}</span>
             </motion.div>
           )}
         </AnimatePresence>
@@ -208,7 +254,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(e) => {
                           setEmail(e.target.value);
-                          setApiError("");
+                          setFieldError("");
                         }}
                         autoFocus
                         placeholder="your@beautiful.com"
@@ -265,7 +311,7 @@ export default function LoginPage() {
                       type="button"
                       onClick={() => {
                         setStep("email");
-                        setApiError("");
+                        setFieldError("");
                       }}
                       className="text-xs font-bold text-primary hover:underline cursor-pointer"
                     >
@@ -295,7 +341,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => {
                           setPassword(e.target.value);
-                          setApiError("");
+                          setFieldError("");
                         }}
                         autoFocus
                         placeholder="••••••••"
@@ -327,7 +373,7 @@ export default function LoginPage() {
                       disabled={isSubmitting}
                       onClick={() => {
                         setStep("email");
-                        setApiError("");
+                        setFieldError("");
                       }}
                       className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
                       title="Back"
