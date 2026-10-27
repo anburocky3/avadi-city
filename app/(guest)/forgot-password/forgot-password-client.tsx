@@ -18,6 +18,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import useToast from "@/hooks/useToast";
+import { useWard } from "@/context/wardContext";
 
 // The complete workflow order:
 // Forgot Password → Email → New Password & Confirm Password → OTP Verification → Password Changed Successfully → Login
@@ -27,6 +28,7 @@ export default function ForgotPasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
+  const { logout } = useWard();
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState(searchParams.get("email") || "");
@@ -164,6 +166,27 @@ export default function ForgotPasswordClient() {
         setApiError(err.message || "Failed to submit new password.");
       }
     } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Navigate directly to existing Login page while ensuring any previous session is cleared
+  // so route guards do not redirect to /dashboard and prevent authentication bypass
+  const handleGoToLogin = async () => {
+    setIsSubmitting(true);
+    try {
+      if (logout) {
+        await logout();
+      } else {
+        await fetch("/api/auth/logout", { method: "POST" });
+      }
+    } catch {
+      try {
+        await fetch("/api/auth/logout", { method: "POST" });
+      } catch {}
+    } finally {
+      router.push("/login");
+      router.refresh();
       setIsSubmitting(false);
     }
   };
@@ -564,11 +587,21 @@ export default function ForgotPasswordClient() {
                       // Password reuse detected — navigate directly to Login, skip OTP
                       <button
                         type="button"
-                        onClick={() => router.push("/login")}
-                        className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                        onClick={handleGoToLogin}
+                        disabled={isSubmitting}
+                        className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
                       >
-                        <span>Go to Login</span>
-                        <ArrowRight size={18} />
+                        {isSubmitting ? (
+                          <>
+                            <Loader2 size={18} className="animate-spin" />
+                            <span>Going to Login...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Go to Login</span>
+                            <ArrowRight size={18} />
+                          </>
+                        )}
                       </button>
                     ) : (
                       // Normal flow — back arrow + Continue to Verification

@@ -14,12 +14,20 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // 2. Prevent logged-in users from visiting guest-only pages (/login or /get-started or /forgot-password)
+  // 2. Prevent logged-in users from visiting guest-only pages (/login or /get-started)
   const isAuthRoute =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/get-started") ||
-    pathname.startsWith("/forgot-password");
+    pathname.startsWith("/get-started");
   if (session && isAuthRoute) {
+    if (
+      pathname.startsWith("/login") &&
+      (req.nextUrl.searchParams.has("reset") ||
+        req.nextUrl.searchParams.get("from") === "reset")
+    ) {
+      const res = NextResponse.next();
+      res.cookies.delete("avadi_session");
+      return res;
+    }
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
