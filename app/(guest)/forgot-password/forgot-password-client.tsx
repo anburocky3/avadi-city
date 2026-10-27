@@ -132,12 +132,12 @@ export default function ForgotPasswordClient() {
       if (!res.ok) {
         if (result.code === "SAME_PASSWORD_REUSE") {
           setIsPasswordReuse(true);
-          // SECTION 3.D: Previous Password Reused Toast Notification
+          // SECTION 3.D: Previous Password Reused — professional warning, no emoji
           toast.error(
-            "😂 Your old password wants a comeback! Give your account something new.",
+            "This is your existing password. You don't need to create a new one. Please log in using your current password.",
           );
           setApiError(
-            "😂 Your old password wants a comeback! Give your account something new.",
+            "This is your existing password. You don't need to create a new one. Please log in using your current password.",
           );
           return;
         }
@@ -337,18 +337,12 @@ export default function ForgotPasswordClient() {
                   : "bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400"
               }`}
             >
-              {isPasswordReuse ? (
-                <span className="text-xl select-none shrink-0 mt-0.5" role="img" aria-label="laugh">
-                  😂
-                </span>
-              ) : (
-                <AlertCircle size={18} className="shrink-0 mt-0.5" />
-              )}
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
                 {isPasswordReuse && (
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-700 dark:text-amber-300">
-                      Password Reuse Detected 🔐
+                      Password Reuse Detected
                     </span>
                   </div>
                 )}
@@ -565,37 +559,52 @@ export default function ForgotPasswordClient() {
                     )}
                   </div>
 
-                  <div className="flex space-x-3 pt-4">
-                    <button
-                      type="button"
-                      disabled={isSubmitting}
-                      onClick={() => {
-                        setStep("email");
-                        setApiError("");
-                        setIsPasswordReuse(false);
-                      }}
-                      className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
-                      title="Back"
-                    >
-                      <ArrowLeft size={18} />
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!isPasswordValid || isSubmitting}
-                      className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
-                    >
-                      {isSubmitting ? (
-                        <>
-                          <Loader2 size={18} className="animate-spin" />
-                          <span>Processing...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Continue to Verification</span>
-                          <ArrowRight size={18} />
-                        </>
-                      )}
-                    </button>
+                  <div className="pt-4">
+                    {isPasswordReuse ? (
+                      // Password reuse detected — navigate directly to Login, skip OTP
+                      <button
+                        type="button"
+                        onClick={() => router.push("/login")}
+                        className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                      >
+                        <span>Go to Login</span>
+                        <ArrowRight size={18} />
+                      </button>
+                    ) : (
+                      // Normal flow — back arrow + Continue to Verification
+                      <div className="flex space-x-3">
+                        <button
+                          type="button"
+                          disabled={isSubmitting}
+                          onClick={() => {
+                            setStep("email");
+                            setApiError("");
+                            setIsPasswordReuse(false);
+                          }}
+                          className="h-13 px-5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-[0.98] text-slate-700 dark:text-slate-300 rounded-2xl font-bold transition text-sm flex items-center justify-center cursor-pointer"
+                          title="Back"
+                        >
+                          <ArrowLeft size={18} />
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={!isPasswordValid || isSubmitting}
+                          className="flex-1 h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                        >
+                          {isSubmitting ? (
+                            <>
+                              <Loader2 size={18} className="animate-spin" />
+                              <span>Processing...</span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Continue to Verification</span>
+                              <ArrowRight size={18} />
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </form>
               </motion.div>
