@@ -469,7 +469,7 @@ export default function ForgotPasswordClient() {
                     </button>
                   </div>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed truncate max-w-xs">
-                    Choose a new password for{" "}
+                    Your email:{" "}
                     <strong className="text-slate-700 dark:text-slate-300">
                       {email}
                     </strong>
