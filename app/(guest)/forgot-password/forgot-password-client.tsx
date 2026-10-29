@@ -18,7 +18,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import useToast from "@/hooks/useToast";
-import { useWard } from "@/context/wardContext";
 
 // The complete workflow order:
 // Forgot Password → Email → New Password & Confirm Password → OTP Verification → Password Changed Successfully → Login
@@ -28,7 +27,6 @@ export default function ForgotPasswordClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const toast = useToast();
-  const { logout } = useWard();
 
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState(searchParams.get("email") || "");
@@ -157,7 +155,7 @@ export default function ForgotPasswordClient() {
       setStep("otp");
       try {
         toast.success("Verification code sent to your email.");
-      } catch {}
+      } catch { }
     } catch (err: any) {
       if (isNetworkError(err)) {
         toast.error("📡 Connection trouble! Check your internet and try again.");
@@ -166,27 +164,6 @@ export default function ForgotPasswordClient() {
         setApiError(err.message || "Failed to submit new password.");
       }
     } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Navigate directly to existing Login page while ensuring any previous session is cleared
-  // so route guards do not redirect to /dashboard and prevent authentication bypass
-  const handleGoToLogin = async () => {
-    setIsSubmitting(true);
-    try {
-      if (logout) {
-        await logout();
-      } else {
-        await fetch("/api/auth/logout", { method: "POST" });
-      }
-    } catch {
-      try {
-        await fetch("/api/auth/logout", { method: "POST" });
-      } catch {}
-    } finally {
-      router.push("/login");
-      router.refresh();
       setIsSubmitting(false);
     }
   };
@@ -214,7 +191,7 @@ export default function ForgotPasswordClient() {
       setResendCountdown(30);
       try {
         toast.success("Verification code resent.");
-      } catch {}
+      } catch { }
     } catch (err: any) {
       if (isNetworkError(err)) {
         toast.error("📡 Connection trouble! Check your internet and try again.");
@@ -293,7 +270,7 @@ export default function ForgotPasswordClient() {
         toast.success(
           "Password changed successfully! 🎉 Your account has a fresh new password.",
         );
-      } catch {}
+      } catch { }
     } catch (err: any) {
       if (isNetworkError(err)) {
         toast.error("📡 Connection trouble! Check your internet and try again.");
@@ -354,11 +331,10 @@ export default function ForgotPasswordClient() {
               initial={{ opacity: 0, height: 0, y: -4 }}
               animate={{ opacity: 1, height: "auto", y: 0 }}
               exit={{ opacity: 0, height: 0, y: -4 }}
-              className={`mx-6 mt-4 p-4 rounded-2xl flex items-start space-x-3 text-xs font-bold transition-all shadow-xs ${
-                isPasswordReuse
-                  ? "bg-amber-500/10 border-2 border-amber-500/30 text-amber-900 dark:text-amber-200"
-                  : "bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400"
-              }`}
+              className={`mx-6 mt-4 p-4 rounded-2xl flex items-start space-x-3 text-xs font-bold transition-all shadow-xs ${isPasswordReuse
+                ? "bg-amber-500/10 border-2 border-amber-500/30 text-amber-900 dark:text-amber-200"
+                : "bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400"
+                }`}
             >
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <div className="flex-1 space-y-1">
@@ -392,7 +368,7 @@ export default function ForgotPasswordClient() {
               >
                 <div>
                   <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-                    Enter Email
+                    Password Recovery
                   </h2>
                   <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium leading-relaxed">
                     Enter your registered email address to start resetting your password.
@@ -515,11 +491,10 @@ export default function ForgotPasswordClient() {
                         }}
                         autoFocus
                         placeholder="••••••••"
-                        className={`w-full h-12 pl-11 pr-11 rounded-2xl border ${
-                          isPasswordReuse
-                            ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
-                            : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
-                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
+                        className={`w-full h-12 pl-11 pr-11 rounded-2xl border ${isPasswordReuse
+                          ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
+                          : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
+                          } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
                       />
                       <button
                         type="button"
@@ -530,11 +505,6 @@ export default function ForgotPasswordClient() {
                         {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                       </button>
                     </div>
-                    {isPasswordReuse && (
-                      <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1 pt-1">
-                        <span>👉</span> Please choose a fresh, different password.
-                      </p>
-                    )}
                   </div>
 
                   {/* Confirm Password */}
@@ -557,13 +527,12 @@ export default function ForgotPasswordClient() {
                           setIsPasswordReuse(false);
                         }}
                         placeholder="••••••••"
-                        className={`w-full h-12 pl-11 pr-11 rounded-2xl border ${
-                          isPasswordMismatch
-                            ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 focus:ring-rose-400/50"
-                            : isPasswordReuse
+                        className={`w-full h-12 pl-11 pr-11 rounded-2xl border ${isPasswordMismatch
+                          ? "border-rose-400 dark:border-rose-500 bg-rose-50/40 dark:bg-rose-950/20 focus:ring-rose-400/50"
+                          : isPasswordReuse
                             ? "border-amber-400 dark:border-amber-500 bg-amber-50/40 dark:bg-amber-950/20 focus:ring-amber-400/50"
                             : "border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900 focus:ring-primary/50"
-                        } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
+                          } text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 text-base sm:text-sm font-medium transition`}
                       />
                       <button
                         type="button"
@@ -587,21 +556,11 @@ export default function ForgotPasswordClient() {
                       // Password reuse detected — navigate directly to Login, skip OTP
                       <button
                         type="button"
-                        onClick={handleGoToLogin}
-                        disabled={isSubmitting}
-                        className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] disabled:opacity-50 text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
+                        onClick={() => router.push("/login")}
+                        className="w-full h-13 bg-primary hover:bg-orange-600 active:scale-[0.98] text-white rounded-2xl font-bold shadow-lg shadow-primary/25 transition flex items-center justify-center space-x-2 text-sm cursor-pointer"
                       >
-                        {isSubmitting ? (
-                          <>
-                            <Loader2 size={18} className="animate-spin" />
-                            <span>Going to Login...</span>
-                          </>
-                        ) : (
-                          <>
-                            <span>Go to Login</span>
-                            <ArrowRight size={18} />
-                          </>
-                        )}
+                        <span>Go to Login</span>
+                        <ArrowRight size={18} />
                       </button>
                     ) : (
                       // Normal flow — back arrow + Continue to Verification
