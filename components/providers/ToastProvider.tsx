@@ -24,16 +24,22 @@ export default function ToastProvider({
       type?: string;
       duration?: number;
     }) => {
-      const id = Date.now() + Math.random();
-      const toast = { id, message: t.message, type: t.type } as InternalToast;
-      setToasts((s) => [toast, ...s]);
+      setToasts((current) => {
+        if (current.some((existing) => existing.message === t.message)) {
+          return current;
+        }
+        const id = Date.now() + Math.random();
+        const toast = { id, message: t.message, type: t.type } as InternalToast;
 
-      if (t.duration !== 0) {
-        const timeoutId = window.setTimeout(() => {
-          setToasts((s) => s.filter((x) => x.id !== id));
-        }, t.duration ?? 4000);
-        timeouts.push(timeoutId);
-      }
+        if (t.duration !== 0) {
+          const timeoutId = window.setTimeout(() => {
+            setToasts((s) => s.filter((x) => x.id !== id));
+          }, t.duration ?? 4000);
+          timeouts.push(timeoutId);
+        }
+
+        return [toast, ...current];
+      });
     };
 
     const unsub = toastEmitter.on(listener);

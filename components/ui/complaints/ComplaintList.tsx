@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useState, MouseEvent } from "react";
+import React, { useState, useEffect, useMemo, MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ThumbsUp, Check, AlertTriangle } from "lucide-react";
+import { MapPin, ThumbsUp, Check, AlertTriangle, ExternalLink } from "lucide-react";
 import { Badge, Modal, EmptyState } from "@/components/shared-components";
 import { Complaint, useWard } from "@/context/wardContext";
 import { useRouter } from "next/navigation";
+import { reverseGeocodeAvadi } from "@/lib/wards";
 
 export default function ComplaintList({
   data,
@@ -20,6 +21,66 @@ export default function ComplaintList({
     null,
   );
   const [upvotingId, setUpvotingId] = useState<number | string | null>(null);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedComplaint) {
+      setResolvedAddress(null);
+      return;
+    }
+    const addr = selectedComplaint.address;
+    if (
+      addr &&
+      addr.trim() !== "" &&
+      addr !== "Selected Location" &&
+      addr !== "Selected Location...."
+    ) {
+      setResolvedAddress(addr);
+      return;
+    }
+
+    // If coordinates are available, reverse geocode to fetch real address
+    if (selectedComplaint.lat && selectedComplaint.lng) {
+      reverseGeocodeAvadi(selectedComplaint.lat, selectedComplaint.lng)
+        .then((res) => {
+          if (res.address || res.streetName) {
+            setResolvedAddress(res.address || res.streetName);
+          } else {
+            setResolvedAddress("Location not available");
+          }
+        })
+        .catch(() => {
+          setResolvedAddress("Location not available");
+        });
+    } else {
+      setResolvedAddress("Location not available");
+    }
+  }, [selectedComplaint]);
+
+  const displayAddress =
+    resolvedAddress ||
+    (selectedComplaint?.address &&
+    selectedComplaint.address !== "Selected Location" &&
+    selectedComplaint.address !== "Selected Location...."
+      ? selectedComplaint.address
+      : "Location not available");
+
+  const cleanDescription = useMemo(() => {
+    if (!selectedComplaint?.description) return "";
+    let desc = selectedComplaint.description;
+    const addr =
+      displayAddress !== "Location not available"
+        ? displayAddress
+        : selectedComplaint.address &&
+            selectedComplaint.address !== "Selected Location"
+          ? selectedComplaint.address
+          : `Ward ${selectedComplaint.ward || selectedComplaint.incidentWard || 14}, Avadi`;
+
+    return desc.replace(
+      /Location:\s*Selected Location(?:\.\.\.|\.)?/gi,
+      `Location: ${addr}.`,
+    );
+  }, [selectedComplaint, displayAddress]);
 
   const handleUpvote = (
     id: number | string,
@@ -31,7 +92,17 @@ export default function ComplaintList({
     setTimeout(() => setUpvotingId(null), 500);
   };
 
-  if (data.length === 0) {
+  const uniqueComplaints = React.useMemo(() => {
+    const seen = new Set<string>();
+    return data.filter((c) => {
+      const idStr = String(c.id);
+      if (seen.has(idStr)) return false;
+      seen.add(idStr);
+      return true;
+    });
+  }, [data]);
+
+  if (uniqueComplaints.length === 0) {
     return (
       <EmptyState
         icon={AlertTriangle}
@@ -46,10 +117,24 @@ export default function ComplaintList({
   return (
     <>
       <div className="space-y-4">
-        {data.map((complaint) => {
+        {uniqueComplaints.map((complaint) => {
           // Add your categoryConfig fallback here or pass it in as a prop
           const formattedIssueId =
             complaint.issueId || `AVD-2026-${1000 + Number(complaint.id)}`;
+
+          const cardAddress =
+            complaint.address &&
+            complaint.address !== "Selected Location" &&
+            complaint.address !== "Selected Location...."
+              ? complaint.address
+              : `Ward ${complaint.ward || complaint.incidentWard || complaint.userWard || 14}, Avadi`;
+
+          const cleanCardDescription = complaint.description
+            ? complaint.description.replace(
+                /Location:\s*Selected Location(?:\.\.\.|\.)?/gi,
+                `Location: ${cardAddress}.`,
+              )
+            : "";
 
           return (
             <motion.div
@@ -66,7 +151,7 @@ export default function ComplaintList({
                         {formattedIssueId}
                       </span>
                       <span className="text-xs font-bold text-slate-400">
-                        Ward {complaint.ward} ·{" "}
+                        Ward {complaint.ward || complaint.incidentWard || 14} ·{" "}
                         {complaint.subCategory || complaint.category}
                       </span>
                     </div>
@@ -83,7 +168,7 @@ export default function ComplaintList({
                 </Badge>
               </div>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2 pl-1">
-                {complaint.description}
+                {cleanCardDescription}
               </p>
               <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800/80 text-xs font-bold text-slate-500">
                 <button
@@ -127,20 +212,18 @@ export default function ComplaintList({
                       `AVD-2026-${1000 + Number(selectedComplaint.id)}`}
                   </span>
                   <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                    Ward {selectedComplaint.ward}
+                    Ward {selectedComplaint.ward || selectedComplaint.incidentWard || 14}
                   </span>
                 </div>
                 <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-snug">
                   {selectedComplaint.title}
                 </h3>
-                {selectedComplaint.address && (
-                  <p className="text-xs font-medium text-slate-500 flex items-center pt-1">
-                    <MapPin size={12} className="mr-1 text-primary shrink-0" />
-                    <span className="truncate">
-                      {selectedComplaint.address}
-                    </span>
-                  </p>
-                )}
+                <p className="text-xs font-medium text-slate-500 flex items-center pt-1">
+                  <MapPin size={12} className="mr-1 text-primary shrink-0" />
+                  <span className="truncate">
+                    {displayAddress}
+                  </span>
+                </p>
               </div>
             </div>
 
@@ -185,12 +268,43 @@ export default function ComplaintList({
               </div>
             </div>
 
+            {/* Dedicated Location Section */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                Location
+              </h4>
+              <div className="p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5 min-w-0">
+                  <MapPin size={18} className="text-rose-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                      {displayAddress}
+                    </p>
+                    <p className="text-xs text-slate-400 mt-0.5">
+                      Ward {selectedComplaint.ward || selectedComplaint.incidentWard || selectedComplaint.userWard || 14} • Avadi Corporation
+                    </p>
+                  </div>
+                </div>
+                {selectedComplaint.lat && selectedComplaint.lng ? (
+                  <a
+                    href={`https://www.google.com/maps?q=${selectedComplaint.lat},${selectedComplaint.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-orange-500/10 hover:text-primary text-xs font-bold text-slate-600 dark:text-slate-300 transition-colors shrink-0 flex items-center gap-1 border border-slate-200 dark:border-slate-700 shadow-xs"
+                  >
+                    <span>View Map</span>
+                    <ExternalLink size={12} />
+                  </a>
+                ) : null}
+              </div>
+            </div>
+
             <div className="space-y-2">
               <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
                 Issue Description
               </h4>
-              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800">
-                {selectedComplaint.description}
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed p-4 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-200/60 dark:border-slate-800 whitespace-pre-wrap">
+                {cleanDescription}
               </p>
             </div>
 

@@ -38,10 +38,18 @@ export async function verifyAuthToken(
 export interface ResetTokenPayload {
   email: string;
   purpose: "password-reset";
+  pendingPasswordHash?: string;
 }
 
-export async function signResetToken(email: string): Promise<string> {
-  return new SignJWT({ email, purpose: "password-reset" })
+export async function signResetToken(
+  email: string,
+  pendingPasswordHash?: string,
+): Promise<string> {
+  const payload: Record<string, any> = { email, purpose: "password-reset" };
+  if (pendingPasswordHash) {
+    payload.pendingPasswordHash = pendingPasswordHash;
+  }
+  return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("10m") // Reset window is intentionally short

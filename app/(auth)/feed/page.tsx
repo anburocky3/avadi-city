@@ -27,6 +27,7 @@ import {
   Edit3,
   Trash2,
   Lock,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import useToast from "@/hooks/useToast";
@@ -48,11 +49,22 @@ export interface Complaint {
 }
 
 export type FeedMode =
-  "all-avadi" | "general" | "news" | "complaints" | "blood-feed" | "my-ward";
+  | "all-avadi"
+  | "general"
+  | "news"
+  | "complaints"
+  | "blood-feed"
+  | "outages"
+  | "my-ward";
 
 export type FeedVisibility = "within-ward" | "entire-avadi";
 export type FeedCategory =
-  "General" | "News" | "Complaint" | "Blood Request" | "Announcement";
+  | "General"
+  | "News"
+  | "Complaint"
+  | "Blood Request"
+  | "Current Outage"
+  | "Announcement";
 
 const validateAndCompressImage = async (
   file: File,
@@ -115,6 +127,7 @@ const validateAndCompressImage = async (
 };
 
 export const FeedPage: React.FC = () => {
+  const router = useRouter();
   const {
     authUser,
     activeWard,
@@ -190,11 +203,22 @@ export const FeedPage: React.FC = () => {
       if (dbCat === "complaint") return "Complaint";
       if (dbCat === "blood request" || dbCat === "emergency")
         return "Blood Request";
+      if (dbCat === "current outage" || dbCat === "outage")
+        return "Current Outage";
       if (dbCat === "announcement") return "Announcement";
       return feed.category;
     }
     if (feed.isEmergency) return "Blood Request";
     const text = (feed.text || "").toLowerCase();
+    if (
+      text.includes("outage") ||
+      text.includes("power cut") ||
+      text.includes("voltage") ||
+      text.includes("tneb") ||
+      text.includes("electricity") ||
+      text.includes("⚡")
+    )
+      return "Current Outage";
     if (
       text.includes("blood") ||
       text.includes("donation") ||
@@ -217,6 +241,8 @@ export const FeedPage: React.FC = () => {
         return "bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 border-rose-200/60";
       case "Complaint":
         return "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200/60";
+      case "Current Outage":
+        return "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30";
       case "Announcement":
         return "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200/60";
       default:
@@ -227,6 +253,47 @@ export const FeedPage: React.FC = () => {
   // --- FILTERING ---
   const filteredFeeds = useMemo<FeedData[]>(() => {
     let list = feeds as FeedData[];
+
+    // Defensive deduplication: ensure each complaint-linked post and feed ID is represented only once
+    const complaintFeedMap = new Map<string, FeedData>();
+    for (const f of list) {
+      const compId = f.complaintId || f.complaint?.id || (f.complaint?.issueId ? `issue-${f.complaint.issueId}` : null);
+      if (compId) {
+        const existing = complaintFeedMap.get(compId);
+        if (!existing) {
+          complaintFeedMap.set(compId, f);
+        } else if (
+          existing.text === "SYSTEM_GENERATED_COMPLAINT_POINTER" &&
+          f.text !== "SYSTEM_GENERATED_COMPLAINT_POINTER"
+        ) {
+          complaintFeedMap.set(compId, f);
+        }
+      }
+    }
+
+    const seenFeedIds = new Set<string>();
+    const seenComplaintIds = new Set<string>();
+    const deduplicatedList: FeedData[] = [];
+
+    for (const f of list) {
+      const feedIdStr = String(f.id);
+      if (seenFeedIds.has(feedIdStr)) continue;
+
+      const compId = f.complaintId || f.complaint?.id || (f.complaint?.issueId ? `issue-${f.complaint.issueId}` : null);
+      if (compId) {
+        if (seenComplaintIds.has(compId)) continue;
+        seenComplaintIds.add(compId);
+        const bestFeed = complaintFeedMap.get(compId) || f;
+        seenFeedIds.add(String(bestFeed.id));
+        deduplicatedList.push(bestFeed);
+      } else {
+        seenFeedIds.add(feedIdStr);
+        deduplicatedList.push(f);
+      }
+    }
+
+    list = deduplicatedList;
+
     if (feedMode === "my-ward") {
       list = list.filter(
         (f) =>
@@ -254,6 +321,13 @@ export const FeedPage: React.FC = () => {
           f.isEmergency ||
           getFeedCategory(f).toLowerCase() === "blood request" ||
           (f.text || "").includes("🩸"),
+      );
+    } else if (feedMode === "outages") {
+      list = list.filter(
+        (f) =>
+          ["current outage", "outage"].includes(getFeedCategory(f).toLowerCase()) ||
+          (f.text || "").toLowerCase().includes("outage") ||
+          (f.text || "").toLowerCase().includes("power cut"),
       );
     }
     return list;
@@ -440,6 +514,12 @@ export const FeedPage: React.FC = () => {
       color: "text-rose-600 fill-rose-600",
     },
     {
+      id: "outages",
+      label: "Outages",
+      icon: Zap,
+      color: "text-amber-500 fill-amber-500",
+    },
+    {
       id: "my-ward",
       label: `Ward ${activeWard.id}`,
       icon: MapPin,
@@ -452,6 +532,7 @@ export const FeedPage: React.FC = () => {
     { id: "News", label: "News", icon: "📰" },
     { id: "Complaint", label: "Complaint", icon: "⚠️" },
     { id: "Blood Request", label: "Blood Request", icon: "🩸" },
+    { id: "Current Outage", label: "Current Outage", icon: "⚡" },
   ];
 
   return (
@@ -468,8 +549,8 @@ export const FeedPage: React.FC = () => {
           </p>
         </div>
         <button
-          onClick={openCreateModal}
-          className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer shrink-0"
+          onClick={() => router.push("/feed/create")}
+          className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer shrink-0 active:scale-95"
         >
           <Plus size={16} />
           <span>New Feed</span>
@@ -528,7 +609,14 @@ export const FeedPage: React.FC = () => {
                   <ComplaintFeedCard
                     key={feed.id}
                     feed={formattedFeedProps}
-                    onUpvote={(feedId) => upvoteComplaint(feedId)}
+                    onUpvote={(feedId, complaintIssueId) => {
+                      const targetId =
+                        (feed.complaint as any)?.id ||
+                        feed.complaintId ||
+                        complaintIssueId ||
+                        feedId;
+                      upvoteComplaint(targetId);
+                    }}
                     onComment={(feedId) => {}}
                     // onComment={(feedId) => setSelectedFeed(feed)}
                     onShare={(feedId) => handleShare(feed)}
@@ -1264,6 +1352,15 @@ export const FeedPage: React.FC = () => {
           </div>
         </Modal>
       )}
+
+      {/* Mobile Floating Action Button */}
+      <button
+        onClick={() => router.push("/feed/create")}
+        className="sm:hidden fixed bottom-24 right-4 z-40 w-14 h-14 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-full shadow-2xl flex items-center justify-center transition cursor-pointer border-2 border-white/20"
+        aria-label="New Feed"
+      >
+        <Plus size={28} strokeWidth={2.5} />
+      </button>
     </div>
   );
 };
