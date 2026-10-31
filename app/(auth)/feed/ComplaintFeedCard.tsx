@@ -197,6 +197,21 @@ export default function ComplaintFeedCard({
     onUpvote(feed.id, complaint?.issueId);
   };
 
+  const feedAddress =
+    complaint?.address &&
+    complaint.address.trim() !== "" &&
+    complaint.address !== "Selected Location" &&
+    complaint.address !== "Selected Location...."
+      ? complaint.address
+      : "Location not available";
+
+  const cleanFeedDescription = complaint?.description
+    ? complaint.description.replace(
+        /Location:\s*Selected Location(?:\.\.\.|\.)?/gi,
+        `Location: ${feedAddress !== "Location not available" ? feedAddress : "Avadi"}.`,
+      )
+    : feed.text;
+
   return (
     <>
       <motion.div
@@ -261,7 +276,7 @@ export default function ComplaintFeedCard({
                         {complaint.title}
                       </h3>
                       <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed whitespace-pre-wrap line-clamp-3">
-                        {complaint.description}
+                        {cleanFeedDescription}
                       </p>
                     </div>
                   </div>
@@ -270,7 +285,7 @@ export default function ComplaintFeedCard({
                   <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm mt-auto">
                     <MapPin size={18} className="text-rose-500 shrink-0" />
                     <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate">
-                      {complaint.address}
+                      {feedAddress}
                     </span>
                   </div>
                 </div>

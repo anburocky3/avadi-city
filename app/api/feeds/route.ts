@@ -60,8 +60,41 @@ export async function GET(request: Request) {
     });
 
     if (feeds && feeds.length > 0) {
+      // Deduplicate multiple feed posts pointing to the same complaint
+      const complaintFeedMap = new Map<string, (typeof feeds)[0]>();
+
+      for (const feed of feeds) {
+        if (feed.complaintId) {
+          const existing = complaintFeedMap.get(feed.complaintId);
+          if (!existing) {
+            complaintFeedMap.set(feed.complaintId, feed);
+          } else {
+            // Prefer the feed that contains actual text and details over SYSTEM_GENERATED_COMPLAINT_POINTER
+            if (
+              existing.text === "SYSTEM_GENERATED_COMPLAINT_POINTER" &&
+              feed.text !== "SYSTEM_GENERATED_COMPLAINT_POINTER"
+            ) {
+              complaintFeedMap.set(feed.complaintId, feed);
+            }
+          }
+        }
+      }
+
+      const seenComplaintIds = new Set<string>();
+      const deduplicatedFeeds: typeof feeds = [];
+
+      for (const feed of feeds) {
+        if (feed.complaintId) {
+          if (seenComplaintIds.has(feed.complaintId)) continue;
+          seenComplaintIds.add(feed.complaintId);
+          deduplicatedFeeds.push(complaintFeedMap.get(feed.complaintId) || feed);
+        } else {
+          deduplicatedFeeds.push(feed);
+        }
+      }
+
       // Format response so frontend receives expected property names
-      const formattedFeeds = feeds.map((feed) => ({
+      const formattedFeeds = deduplicatedFeeds.map((feed) => ({
         ...feed,
         authorName: feed.author?.name || "Avadi Resident",
         authorAvatar: feed.author?.avatar || "/default-avatar.png",
@@ -71,7 +104,32 @@ export async function GET(request: Request) {
         likes: feed.likesCount,
         // If feed.likes returned an array with at least 1 item, YOU liked this post!
         likedByMe: Array.isArray(feed.likes) && feed.likes.length > 0,
-        complaint: feed.complaint || null,
+        complaint: feed.complaint
+          ? {
+              ...feed.complaint,
+              address:
+                feed.complaint.address &&
+                feed.complaint.address.trim() !== "" &&
+                feed.complaint.address !== "Selected Location"
+                  ? feed.complaint.address
+                  : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`,
+              description: feed.complaint.description
+                ? feed.complaint.description.replace(
+                    /Location:\s*Selected Location\.?/gi,
+                    `Location: ${feed.complaint.address && feed.complaint.address !== "Selected Location" ? feed.complaint.address : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`}.`,
+                  )
+                : feed.complaint.description,
+              title: feed.complaint.title
+                ? feed.complaint.title.replace(
+                    /Selected Location/g,
+                    feed.complaint.address &&
+                      feed.complaint.address !== "Selected Location"
+                      ? feed.complaint.address
+                      : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`,
+                  )
+                : feed.complaint.title,
+            }
+          : null,
         comments: feed.comments.map((c: any) => ({
           ...c,
           author: c.user?.name || c.author || "Resident",
@@ -131,9 +189,16 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const { text, category, ward, isEmergency, imageUrl: base64Image } = body;
+    const { text, title, category, ward, isEmergency, imageUrl: base64Image } = body;
 
-    if (!text && !base64Image) {
+    let finalContent = text?.trim() || "";
+    if (title?.trim()) {
+      if (!finalContent.startsWith(title.trim())) {
+        finalContent = `**${title.trim()}**\n\n${finalContent}`;
+      }
+    }
+
+    if (!finalContent && !base64Image) {
       return NextResponse.json(
         { message: "Feed must contain either text or an image." },
         { status: 400 },
@@ -144,28 +209,39 @@ export async function POST(request: Request) {
 
     // Convert compressed Base64 Data URL from client into a Buffer and upload to R2
     if (base64Image && base64Image.startsWith("data:image/")) {
-      const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        const contentType = matches[1];
-        const buffer = Buffer.from(matches[2], "base64");
-        const fileKey = `feeds/ward-${ward}/${payload.userId}-${Date.now()}.webp`;
+      try {
+        if (BUCKET_NAME && process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) {
+          const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          if (matches && matches.length === 3) {
+            const contentType = matches[1];
+            const buffer = Buffer.from(matches[2], "base64");
+            const fileKey = `feeds/ward-${ward || 0}/${payload.userId}-${Date.now()}.webp`;
 
-        await r2Client.send(
-          new PutObjectCommand({
-            Bucket: BUCKET_NAME,
-            Key: fileKey,
-            Body: buffer,
-            ContentType: contentType,
-          }),
-        );
+            await r2Client.send(
+              new PutObjectCommand({
+                Bucket: BUCKET_NAME,
+                Key: fileKey,
+                Body: buffer,
+                ContentType: contentType,
+              }),
+            );
 
-        r2ImageUrl = `${PUBLIC_R2_DOMAIN}/${fileKey}`;
+            r2ImageUrl = `${PUBLIC_R2_DOMAIN}/${fileKey}`;
+          }
+        } else {
+          r2ImageUrl = base64Image;
+        }
+      } catch (uploadErr) {
+        console.warn("R2 upload error, falling back to data URL:", uploadErr);
+        r2ImageUrl = base64Image;
       }
+    } else if (base64Image) {
+      r2ImageUrl = base64Image;
     }
 
     const newFeed = await prisma.feed.create({
       data: {
-        text: text?.trim() || "",
+        text: finalContent,
         category: category || "General",
         ward: Number(ward) || 0,
         isEmergency: Boolean(isEmergency),

@@ -62,8 +62,10 @@ export interface Feed {
   likes: number;
   likedByMe: boolean;
   comments: Comment[];
+  complaintId?: string | null;
 
   complaint?: {
+    id?: string;
     issueId: string;
     title: string;
     description: string;
@@ -603,6 +605,11 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
     if (!res.ok) {
       throw new Error(result.message || "Failed to submit grievance report");
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["complaints"] });
+    if (data.shareOnFeed) {
+      queryClient.invalidateQueries({ queryKey: ["feeds"] });
     }
 
     return result.complaint;
