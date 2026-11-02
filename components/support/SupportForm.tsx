@@ -25,6 +25,8 @@ import {
   Send,
   MapPin,
   Sparkles,
+  Clock,
+  Copy,
 } from "lucide-react";
 import { useWard } from "@/context/wardContext";
 import { submitSupportTicket } from "@/app/api/actions/support-actions";
@@ -57,6 +59,50 @@ interface CategoryMeta {
 }
 
 const CATEGORIES: CategoryMeta[] = [
+  {
+    key: "OTHER",
+    label: "General / Suggestions",
+    icon: HelpCircle,
+    badge: "Ideas",
+    description: "Suggest a new civic feature, UI improvements, or general feedback",
+    subCategories: [
+      "Feature suggestion / New idea",
+      "Dark mode or UI glitch",
+      "Language / Tamil translation mistake",
+      "Slow app performance",
+      "General citizen inquiry",
+    ],
+  },
+  {
+    key: "COMPLAINTS",
+    label: "Civic Complaints",
+    icon: AlertTriangle,
+    badge: "Grievances",
+    description: "Garbage, streetlights, drainage, roads, or drinking water issues",
+    subCategories: [
+      "Cannot upload photo proof",
+      "Street name or ward not matching",
+      "Complaint status not updating",
+      "Submission failed / network timeout",
+      "Duplicate complaint issue",
+      "Other complaint redressal bug",
+    ],
+  },
+  {
+    key: "FEED",
+    label: "Community Feed",
+    icon: MessageSquare,
+    badge: "Town Hall",
+    description: "Ward posts, discussion threads, commenting, and neighborhood news",
+    subCategories: [
+      "Post failed to publish",
+      "Comments not loading or posting",
+      "Image upload / compression bug",
+      "Inappropriate content to flag",
+      "Ward filter not showing posts",
+      "Other community feed feedback",
+    ],
+  },
   {
     key: "EXPLORE_PLACES",
     label: "Explore Places",
@@ -195,68 +241,13 @@ const CATEGORIES: CategoryMeta[] = [
       "Other lost & found feedback",
     ],
   },
-  {
-    key: "COMPLAINTS",
-    label: "Civic Complaints",
-    icon: AlertTriangle,
-    badge: "Grievances",
-    description: "Garbage, streetlights, drainage, roads, or drinking water issues",
-    subCategories: [
-      "Cannot upload photo proof",
-      "Street name or ward not matching",
-      "Complaint status not updating",
-      "Submission failed / network timeout",
-      "Duplicate complaint issue",
-      "Other complaint redressal bug",
-    ],
-  },
-  {
-    key: "SOS",
-    label: "Radiant SOS Hub",
-    icon: LifeBuoy,
-    badge: "Emergency",
-    description: "Audio siren, 112 dialer, WhatsApp GPS emergency broadcast",
-    subCategories: [
-      "Audio siren not playing",
-      "112 emergency dialer issue",
-      "WhatsApp GPS location inaccurate",
-      "Avadi police station contact wrong",
-      "Blood request SOS broadcast error",
-      "Other emergency hub issue",
-    ],
-  },
-  {
-    key: "FEED",
-    label: "Community Feed",
-    icon: MessageSquare,
-    badge: "Town Hall",
-    description: "Ward posts, discussion threads, commenting, and neighborhood news",
-    subCategories: [
-      "Post failed to publish",
-      "Comments not loading or posting",
-      "Image upload / compression bug",
-      "Inappropriate content to flag",
-      "Ward filter not showing posts",
-      "Other community feed feedback",
-    ],
-  },
-  {
-    key: "OTHER",
-    label: "General / Suggestions",
-    icon: HelpCircle,
-    badge: "Ideas",
-    description: "Suggest a new civic feature, UI improvements, or general feedback",
-    subCategories: [
-      "Feature suggestion / New idea",
-      "Dark mode or UI glitch",
-      "Language / Tamil translation mistake",
-      "Slow app performance",
-      "General citizen inquiry",
-    ],
-  },
 ];
 
-export default function SupportForm() {
+export interface SupportFormProps {
+  onViewHistory?: () => void;
+}
+
+export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
   const { activeWard, authUser } = useWard();
   const fileInputId = useId();
 
@@ -350,6 +341,18 @@ export default function SupportForm() {
       if (res.success && res.ticketId) {
         setSubmittedTicketId(res.ticketId);
         setIsPopupModalOpen(true);
+        if (typeof window !== "undefined") {
+          try {
+            const raw = localStorage.getItem("avadi_user_support_tickets");
+            const list: string[] = raw ? JSON.parse(raw) : [];
+            if (!list.includes(res.ticketId)) {
+              list.unshift(res.ticketId);
+              localStorage.setItem("avadi_user_support_tickets", JSON.stringify(list));
+            }
+          } catch {
+            // ignore localStorage error
+          }
+        }
         toast.success("Feedback submitted successfully!");
       } else {
         const errorText = res.error || "Unable to submit your ticket. Please try again.";
@@ -373,47 +376,103 @@ export default function SupportForm() {
 
   return (
     <>
-      {/* POPUP CONFIRMATION MODAL */}
+      {/* PROFESSIONAL POPUP CONFIRMATION MODAL */}
       <Modal
         isOpen={isPopupModalOpen}
-        onClose={() => setIsPopupModalOpen(false)}
-        title="Feedback Registered"
+        onClose={() => {
+          setIsPopupModalOpen(false);
+          handleReset();
+        }}
+        title="Submission Confirmation"
         maxWidth="sm:max-w-md"
       >
-        <div className="p-6 text-center space-y-4">
-          <div className="mx-auto w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-xs">
-            <CheckCircle2 size={36} className="stroke-[2.2]" />
+        <div className="p-6 text-center space-y-5">
+          {/* Hero Icon with glowing indicator */}
+          <div className="relative mx-auto w-16 h-16 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-sm">
+            <CheckCircle2 size={34} className="stroke-[2.4]" />
+            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 flex items-center justify-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            </span>
           </div>
 
-          <h4 className="text-lg font-black text-slate-900 dark:text-white">
-            Feedback Submitted!
-          </h4>
+          <div className="space-y-1.5">
+            <h4 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
+              Feedback Submitted Successfully!
+            </h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
+              Your report has been logged with the Avadi City Municipal technical team and queued for inspection.
+            </p>
+          </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Your report has been saved to the database. The Avadi Municipal tech team will inspect this item.
-          </p>
-
+          {/* Clean Reference Box */}
           {submittedTicketId && (
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-800 dark:text-slate-200">
-              <span className="text-slate-400">Report ID:</span>
-              <span className="font-bold text-primary">{submittedTicketId}</span>
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 text-left space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  Ticket Reference
+                </span>
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800/60">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  Under Review
+                </span>
+              </div>
+              <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200/80 dark:border-slate-800 font-mono text-xs">
+                <span className="font-black text-slate-800 dark:text-slate-200 tracking-wide">
+                  #{submittedTicketId.slice(-8).toUpperCase()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (navigator?.clipboard) {
+                      navigator.clipboard.writeText(submittedTicketId);
+                      toast.success("Ticket ID copied!");
+                    }
+                  }}
+                  className="text-[11px] font-bold text-primary hover:text-orange-600 flex items-center gap-1 cursor-pointer transition"
+                >
+                  <Copy size={11} />
+                  <span>Copy</span>
+                </button>
+              </div>
             </div>
           )}
 
-          <div className="pt-2 flex gap-2">
-            <button
-              type="button"
-              onClick={() => setIsPopupModalOpen(false)}
-              className="flex-1 py-3 px-4 rounded-xl bg-primary hover:bg-orange-600 text-white font-bold text-xs uppercase tracking-wide transition shadow-sm cursor-pointer"
-            >
-              Done
-            </button>
-            <Link
-              href="/dashboard"
-              className="flex-1 py-3 px-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs uppercase tracking-wide transition text-center"
-            >
-              Dashboard
-            </Link>
+          {/* Action Buttons: Unified Hierarchy */}
+          <div className="space-y-2.5 pt-1">
+            {onViewHistory && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPopupModalOpen(false);
+                  handleReset();
+                  onViewHistory();
+                }}
+                className="w-full py-3.5 px-4 rounded-xl bg-primary hover:bg-orange-600 text-white font-black text-xs uppercase tracking-wider transition shadow-md shadow-primary/20 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Clock size={15} />
+                <span>Track History & Status</span>
+                <ArrowRight size={14} />
+              </button>
+            )}
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPopupModalOpen(false);
+                  handleReset();
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition cursor-pointer"
+              >
+                Done
+              </button>
+              <Link
+                href="/dashboard"
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs transition text-center flex items-center justify-center"
+              >
+                Dashboard
+              </Link>
+            </div>
           </div>
         </div>
       </Modal>
@@ -440,7 +499,7 @@ export default function SupportForm() {
           </h3>
 
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-2 leading-relaxed">
-            Your feedback has been logged into the municipal issue queue. Our technical and ward administration team will review this report.
+            Your feedback has been logged into the municipal issue queue. Our technical and ward administration team will review this report and clear it once resolved.
           </p>
 
           <div className="my-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-700 dark:text-slate-200">
@@ -449,6 +508,16 @@ export default function SupportForm() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            {onViewHistory && (
+              <button
+                type="button"
+                onClick={onViewHistory}
+                className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs tracking-wide uppercase transition-all shadow-md shadow-emerald-600/25 active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Clock size={15} />
+                <span>View in History & Track Status</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={handleReset}
@@ -470,21 +539,6 @@ export default function SupportForm() {
           onSubmit={handleSubmit}
           className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-5 sm:p-7 space-y-6"
         >
-        {/* User & Ward Context Ribbon */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800 text-xs">
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400 font-medium">
-            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Reporting as:</span>
-            <span className="font-bold text-slate-900 dark:text-white">
-              {authUser?.name || "Avadi Citizen"}
-            </span>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
-            <MapPin size={12} />
-            <span>Ward {activeWard?.id || authUser?.wardNumber || 1}</span>
-          </div>
-        </div>
-
         {/* Feature Category Selector (No numbers) */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">

@@ -218,3 +218,212 @@ export async function submitSupportTicket(
     };
   }
 }
+
+export interface SupportTicketItem {
+  id: string;
+  userId: string | null;
+  featureCategory: string;
+  subCategory: string;
+  description: string;
+  screenshotUrl: string | null;
+  status: "REVIEWING" | "RESOLVED";
+  rawStatus?: string;
+  wardId: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Server Action: Fetch Support Ticket History for Current User
+ */
+export async function getUserSupportTickets(
+  cachedTicketIds: string[] = []
+): Promise<{
+  success: boolean;
+  tickets: SupportTicketItem[];
+  error?: string;
+}> {
+  try {
+    let userId: string | null = null;
+    try {
+      const cookieStore = await cookies();
+      const token = cookieStore.get("avadi_session")?.value;
+      if (token) {
+        const session = await verifyAuthToken(token);
+        if (session?.userId) {
+          userId = session.userId;
+        }
+      }
+    } catch {
+      // Cookies unavailable
+    }
+
+    // Build query conditions
+    const orConditions: Array<Record<string, unknown>> = [];
+    if (userId) {
+      orConditions.push({ userId });
+    }
+    if (Array.isArray(cachedTicketIds) && cachedTicketIds.length > 0) {
+      orConditions.push({ id: { in: cachedTicketIds } });
+    }
+
+    if (orConditions.length === 0) {
+      return { success: true, tickets: [] };
+    }
+
+    const tickets = await prisma.supportTicket.findMany({
+      where: {
+        OR: orConditions,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    const formatted: SupportTicketItem[] = tickets.map((t) => {
+      const raw = String(t.status || "").toUpperCase();
+      const isCleared =
+        raw === "CLEARED" ||
+        raw === "RESOLVED" ||
+        raw === "CLEAR" ||
+        raw === "CLOSED";
+
+      return {
+        id: t.id,
+        userId: t.userId,
+        featureCategory: t.featureCategory,
+        subCategory: t.subCategory,
+        description: t.description,
+        screenshotUrl: t.screenshotUrl,
+        status: isCleared ? "RESOLVED" : "REVIEWING",
+        rawStatus: raw,
+        wardId: t.wardId,
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+      };
+    });
+
+    return {
+      success: true,
+      tickets: formatted,
+    };
+  } catch (error: unknown) {
+    console.error("Fetch Support Tickets Error:", error);
+    return {
+      success: false,
+      tickets: [],
+      error: error instanceof Error ? error.message : "Failed to load support history.",
+    };
+  }
+}
+
+/**
+ * Server Action: Update Ticket Status (e.g. Cleared/Resolved or Re-opened)
+ */
+export async function updateSupportTicketStatus(
+  ticketId: string,
+  newStatus: "OPEN" | "REVIEWING" | "RESOLVED"
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    let userId: string | null = null;
+    try {
+      const cookieStore = await cookies();
+      const token = cookieStore.get("avadi_session")?.value;
+      if (token) {
+        const session = await verifyAuthToken(token);
+        if (session?.userId) {
+          userId = session.userId;
+        }
+      }
+    } catch {
+      // Cookies unavailable
+    }
+
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return { success: false, error: "Support ticket not found." };
+    }
+
+    // Allow user to update their own ticket, or if ticket has no user id assigned
+    if (userId && ticket.userId && ticket.userId !== userId) {
+      return { success: false, error: "Unauthorized to update this ticket." };
+    }
+
+    await prisma.supportTicket.update({
+      where: { id: ticketId },
+      data: { status: newStatus },
+    });
+
+    const statusLabel =
+      newStatus === "RESOLVED"
+        ? "Cleared / Resolved"
+        : newStatus === "REVIEWING"
+        ? "In Technical Review"
+        : "Re-opened";
+
+    return {
+      success: true,
+      message: `Feedback ticket status updated to: ${statusLabel}`,
+    };
+  } catch (error: unknown) {
+    console.error("Update Ticket Status Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to update ticket status.",
+    };
+  }
+}
+
+/**
+ * Server Action: Delete / Withdraw Support Ticket
+ */
+export async function deleteSupportTicket(
+  ticketId: string
+): Promise<{ success: boolean; message?: string; error?: string }> {
+  try {
+    let userId: string | null = null;
+    try {
+      const cookieStore = await cookies();
+      const token = cookieStore.get("avadi_session")?.value;
+      if (token) {
+        const session = await verifyAuthToken(token);
+        if (session?.userId) {
+          userId = session.userId;
+        }
+      }
+    } catch {
+      // Cookies unavailable
+    }
+
+    const ticket = await prisma.supportTicket.findUnique({
+      where: { id: ticketId },
+    });
+
+    if (!ticket) {
+      return { success: false, error: "Support ticket not found." };
+    }
+
+    if (userId && ticket.userId && ticket.userId !== userId) {
+      return { success: false, error: "Unauthorized to delete this ticket." };
+    }
+
+    await prisma.supportTicket.delete({
+      where: { id: ticketId },
+    });
+
+    return {
+      success: true,
+      message: "Ticket removed successfully.",
+    };
+  } catch (error: unknown) {
+    console.error("Delete Ticket Error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Failed to delete ticket.",
+    };
+  }
+}
+
