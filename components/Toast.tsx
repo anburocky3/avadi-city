@@ -18,13 +18,13 @@ export default function ToastContainer({
   return (
     <div
       aria-live="polite"
-      className="fixed bottom-5 right-5 sm:bottom-10 sm:right-10 z-50 flex flex-col items-end gap-2.5 pointer-events-none"
+      className="fixed bottom-20 sm:bottom-8 right-4 sm:right-8 left-4 sm:left-auto z-[9999] flex flex-col items-center sm:items-end gap-2.5 pointer-events-none"
     >
       {toasts.map((t) => (
         <div
           key={t.id}
           role="status"
-          className="pointer-events-auto max-w-sm w-full rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-black/40 p-4 flex items-center gap-3.5 transition-all duration-300 animate-toast-in bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800"
+          className="pointer-events-auto max-w-md w-full rounded-2xl shadow-xl shadow-slate-900/10 dark:shadow-black/50 p-4 flex items-center gap-3.5 transition-all duration-300 animate-toast-in bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200/80 dark:border-slate-800"
         >
           {/* Status Icon */}
           <div className="shrink-0 flex items-center justify-center">
