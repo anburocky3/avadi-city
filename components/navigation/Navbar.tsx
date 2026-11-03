@@ -14,6 +14,7 @@ import {
   MapPin,
   ChevronDown,
   ShieldCheck,
+  LifeBuoy,
 } from "lucide-react";
 
 // Context & Theme imports
@@ -83,9 +84,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { data: pendingClaimsCount = 0 } = useQuery<number>({
     queryKey: ["lost-found-claims-badge"],
     queryFn: async () => {
-      const res = await fetch("/api/lost-found/claims?role=owner&status=PENDING", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        "/api/lost-found/claims?role=owner&status=PENDING",
+        {
+          credentials: "include",
+        },
+      );
       if (!res.ok) return 0;
       const data = await res.json();
       return Array.isArray(data) ? data.length : 0;
@@ -98,9 +102,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const { data: acceptedClaimsCount = 0 } = useQuery<number>({
     queryKey: ["lost-found-claims-requester-badge"],
     queryFn: async () => {
-      const res = await fetch("/api/lost-found/claims?role=requester&status=ACCEPTED", {
-        credentials: "include",
-      });
+      const res = await fetch(
+        "/api/lost-found/claims?role=requester&status=ACCEPTED",
+        {
+          credentials: "include",
+        },
+      );
       if (!res.ok) return 0;
       const data = await res.json();
       return Array.isArray(data) ? data.length : 0;
@@ -109,7 +116,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     refetchInterval: 15000,
   });
 
-  const totalNotificationCount = unreadAlertsCount + pendingClaimsCount + acceptedClaimsCount;
+  const totalNotificationCount =
+    unreadAlertsCount + pendingClaimsCount + acceptedClaimsCount;
 
   // Execute backend session logout
   const handleLogout = async () => {
@@ -182,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
             >
               <Bell size={16} />
               {totalNotificationCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 bg-rose-500 text-[9px] font-black text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
+                <span className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-rose-500 text-[9px] font-black text-white rounded-full flex items-center justify-center ring-2 ring-white dark:ring-slate-900 animate-pulse">
                   {totalNotificationCount > 9 ? "9+" : totalNotificationCount}
                 </span>
               )}
@@ -266,6 +274,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
                     >
                       <MapPin size={16} className="text-emerald-500 shrink-0" />
                       <span>Change Ward</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        router.push("/support");
+                      }}
+                      className="w-full flex items-center gap-3 px-3.5 py-3 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer active:scale-[0.98]"
+                    >
+                      <LifeBuoy size={16} className="text-cyan-500 shrink-0" />
+                      <span>Support</span>
                     </button>
                   </div>
 

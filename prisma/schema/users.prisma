@@ -53,6 +53,7 @@ model User {
   placeReviews        PlaceReview[]
   volunteers          Volunteer[]
   donations           DonationRequest[]
+  supportTickets      SupportTicket[]
 
   @@index([wardNumber])
   @@map("users")

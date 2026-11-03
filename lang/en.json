@@ -305,5 +305,17 @@
     "complaint": "Complaint",
     "explore": "Explore",
     "sos": "SOS"
+  },
+  "support": "Support & Feedback",
+  "supportModule": {
+    "title": "Support & Feedback",
+    "subtitle": "Report bugs, suggest features, or flag mistakes to the Avadi City Municipal Tech Team.",
+    "selectFeature": "Select Feature or Service",
+    "selectSubCategory": "Sub-Category",
+    "description": "Detailed Description",
+    "attachScreenshot": "Attach Screenshot / Photo",
+    "submitBtn": "Submit Support & Feedback",
+    "successTitle": "Report Registered",
+    "ticketRef": "Ticket Ref"
   }
 }

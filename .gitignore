@@ -47,6 +47,7 @@ next-env.d.ts
 certificates
 
 # IDE / AI assistants
+.vscode/
 .windsurf/
 .agents/
 .claude/
