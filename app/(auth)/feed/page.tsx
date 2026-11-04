@@ -28,6 +28,7 @@ import {
   Trash2,
   Lock,
   Zap,
+  Phone,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import useToast from "@/hooks/useToast";
@@ -130,6 +131,7 @@ export const FeedPage: React.FC = () => {
   const router = useRouter();
   const {
     authUser,
+    isAuthenticated,
     activeWard,
     feeds,
     isLoadingFeeds,
@@ -487,6 +489,332 @@ export const FeedPage: React.FC = () => {
     }
   };
 
+  // Helper to render inline markdown bold (**bold**) cleanly as bold text
+  const renderFormattedText = (raw: string) => {
+    if (!raw) return null;
+    const clean = raw.replace(/^---$/gm, "").trim();
+    if (!clean) return null;
+    const parts = clean.split(/(\b\*\*[^*]+\*\*|\*\*[^*]+\*\*)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return (
+          <strong key={i} className="font-bold text-slate-900 dark:text-white">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      return <React.Fragment key={i}>{part}</React.Fragment>;
+    });
+  };
+
+  // Helper to parse and render feed body with high-contrast readable styling & rich emojis
+  const renderFeedBody = (feed: FeedData, isBloodRequest: boolean) => {
+    const text = feed.text || "";
+
+    // 1. BLOOD REQUEST SOS CARD
+    if (isBloodRequest) {
+      const bgMatch = text.match(/(?:🩸s*)?(?:\*\*)?Blood Group(?: Needed)?:(?:\*\*)?\s*([^\n\r]+)/i);
+      const urgencyMatch = text.match(/(?:🚨s*)?(?:\*\*)?Urgency:(?:\*\*)?\s*([^\n\r]+)/i);
+      const hospitalMatch = text.match(/(?:🏥s*)?(?:\*\*)?Hospital(?: \/ Location)?:(?:\*\*)?\s*([^\n\r]+)/i);
+      const unitsMatch = text.match(/(?:📦s*)?(?:\*\*)?Units(?: Needed)?:(?:\*\*)?\s*([^\n\r]+)/i);
+      const dateMatch = text.match(/(?:📅s*)?(?:\*\*)?Required By:(?:\*\*)?\s*([^\n\r]+)/i);
+      const phoneMatch = text.match(/(?:📞s*)?(?:\*\*)?(?:Emergency )?Contact:(?:\*\*)?\s*([^\n\r]+)/i);
+
+      const descriptionPart = text.split(/---|\n(?=🩸|\*\*Blood|Blood Group)/)[0].replace(/\*\*/g, "").trim();
+
+      if (bgMatch || hospitalMatch || phoneMatch) {
+        const bloodGroup = bgMatch ? bgMatch[1].replace(/\*\*/g, "").trim() : null;
+        const urgency = urgencyMatch ? urgencyMatch[1].replace(/\*\*/g, "").trim() : null;
+        const hospital = hospitalMatch ? hospitalMatch[1].replace(/\*\*/g, "").trim() : null;
+        const units = unitsMatch ? unitsMatch[1].replace(/\*\*/g, "").trim() : null;
+        const requiredDate = dateMatch ? dateMatch[1].replace(/\*\*/g, "").trim() : null;
+        const phone = phoneMatch ? phoneMatch[1].replace(/\*\*/g, "").trim() : null;
+        const cleanPhone = phone ? phone.replace(/[^0-9+]/g, "") : null;
+
+        return (
+          <div className="mt-3 space-y-3">
+            {descriptionPart && (
+              <p className="text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line font-medium">
+                {renderFormattedText(descriptionPart)}
+              </p>
+            )}
+
+            <div className="p-4 rounded-2xl bg-rose-500/10 dark:bg-rose-950/30 border border-rose-500/30 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                {bloodGroup && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                      Group:
+                    </span>
+                    <span className="px-3 py-1 rounded-xl bg-rose-600 text-white font-black text-sm tracking-wide shadow-xs">
+                      {bloodGroup}
+                    </span>
+                  </div>
+                )}
+                {urgency && (
+                  <span className="px-2.5 py-1 rounded-lg bg-rose-600/20 text-rose-700 dark:text-rose-300 font-bold text-xs">
+                    🚨 {urgency}
+                  </span>
+                )}
+                {units && (
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    📦 {units}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-rose-500/20 text-xs">
+                {hospital && (
+                  <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                    <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">🏥 Hospital:</span>
+                    <span className="font-extrabold text-slate-900 dark:text-white">{hospital}</span>
+                  </div>
+                )}
+                {requiredDate && (
+                  <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                    <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">📅 Required By:</span>
+                    <span className="font-semibold">{requiredDate}</span>
+                  </div>
+                )}
+              </div>
+
+              {phone && (
+                <div className="pt-2 border-t border-rose-500/20 flex items-center justify-between flex-wrap gap-2">
+                  <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                    Attendant: <strong className="text-slate-900 dark:text-white font-extrabold">{phone}</strong>
+                  </span>
+                  {cleanPhone && (
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs shadow-xs transition active:scale-95 cursor-pointer"
+                    >
+                      <Phone size={13} />
+                      <span>Call Now</span>
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
+    }
+
+    // 2. CIVIC COMPLAINT CARD
+    const complaintIssueMatch = text.match(/(?:⚠️|🚧|💡|🗑️|🚰|🌊|🐕|🌳|🚫)?s*(?:\*\*)?Civic Issue(?: Type)?:(?:\*\*)?\s*([^\n\r]+)/i);
+    const complaintAreaMatch = text.match(/(?:📍s*)?(?:\*\*)?Affected (?:Area|Locality|Street):(?:\*\*)?\s*([^\n\r]+)/i);
+    const complaintStatusMatch = text.match(/(?:📢s*)?(?:\*\*)?Status:(?:\*\*)?\s*([^\n\r]+)/i);
+
+    if (complaintIssueMatch || getFeedCategory(feed) === "Complaint") {
+      const issueType = complaintIssueMatch ? complaintIssueMatch[1].replace(/\*\*/g, "").trim() : "";
+      const affectedArea = complaintAreaMatch ? complaintAreaMatch[1].replace(/\*\*/g, "").trim() : "";
+      const status = complaintStatusMatch ? complaintStatusMatch[1].replace(/\*\*/g, "").trim() : "Community Grievance Submitted";
+
+      const userMessage = text
+        .split(/---|\n(?=⚠️|🚧|💡|🗑️|🚰|🌊|🐕|🌳|🚫|📍|📢|\*\*Civic|Civic Issue)/)[0]
+        .replace(/\*\*/g, "")
+        .trim();
+
+      const getIssueEmoji = (type: string) => {
+        if (/road|pothole/i.test(type)) return "🚧";
+        if (/street|light|dark/i.test(type)) return "💡";
+        if (/garbage|waste/i.test(type)) return "🗑️";
+        if (/water|leak/i.test(type)) return "🚰";
+        if (/drain|sew/i.test(type)) return "🌊";
+        if (/animal|dog/i.test(type)) return "🐕";
+        if (/park|play/i.test(type)) return "🌳";
+        if (/encroach/i.test(type)) return "🚫";
+        return "⚠️";
+      };
+
+      return (
+        <div className="mt-3 space-y-3">
+          {userMessage && (
+            <p className="text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line font-medium">
+              {renderFormattedText(userMessage)}
+            </p>
+          )}
+
+          {/* Structured Civic Grievance Details Box (No markdown syntax) */}
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 dark:bg-amber-950/20 border border-amber-500/25 space-y-2.5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">{getIssueEmoji(issueType)}</span>
+                <span className="text-xs font-black text-amber-700 dark:text-amber-400 uppercase tracking-wide">
+                  Civic Grievance Details
+                </span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-[11px] flex items-center gap-1">
+                📢 {status}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-amber-500/20 text-xs">
+              {issueType && (
+                <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">Issue:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white flex items-center gap-1">
+                    <span>{getIssueEmoji(issueType)}</span>
+                    <span>{issueType}</span>
+                  </span>
+                </div>
+              )}
+              {affectedArea && (
+                <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">📍 Area:</span>
+                  <span className="font-semibold text-slate-900 dark:text-white truncate">{affectedArea}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // 3. CURRENT OUTAGE CARD
+    const outageTypeMatch = text.match(/(?:⚡s*)?(?:\*\*)?Interruption Type:(?:\*\*)?\s*([^\n\r]+)/i) ||
+                             text.match(/(?:⚡s*)?(?:\*\*)?Outage Type:(?:\*\*)?\s*([^\n\r]+)/i);
+    const outageAreaMatch = text.match(/(?:📍s*)?(?:\*\*)?Affected Locality:(?:\*\*)?\s*([^\n\r]+)/i) ||
+                            text.match(/(?:📍s*)?(?:\*\*)?Locality:(?:\*\*)?\s*([^\n\r]+)/i);
+    const outageStartedMatch = text.match(/(?:🕒s*)?(?:\*\*)?(?:Interruption )?Started:(?:\*\*)?\s*([^\n\r]+)/i);
+    const outageScopeMatch = text.match(/(?:📐s*)?(?:\*\*)?(?:Outage )?Scope:(?:\*\*)?\s*([^\n\r]+)/i);
+    const outageNotesMatch = text.match(/(?:ℹ️s*)?(?:\*\*)?(?:Resident )?Notes:(?:\*\*)?\s*([^\n\r]+)/i);
+
+    if (outageTypeMatch || getFeedCategory(feed) === "Current Outage") {
+      const interruptionType = outageTypeMatch ? outageTypeMatch[1].replace(/\*\*/g, "").trim() : "";
+      const affectedArea = outageAreaMatch ? outageAreaMatch[1].replace(/\*\*/g, "").trim() : "";
+      const started = outageStartedMatch ? outageStartedMatch[1].replace(/\*\*/g, "").trim() : "";
+      const scope = outageScopeMatch ? outageScopeMatch[1].replace(/\*\*/g, "").trim() : "";
+      const notes = outageNotesMatch ? outageNotesMatch[1].replace(/\*\*/g, "").trim() : "";
+
+      const userMessage = text
+        .split(/---|\n(?=⚡|📍|🕒|📐|📋|ℹ️|⚠️|\*\*Interruption|\*\*Outage)/)[0]
+        .replace(/\*\*/g, "")
+        .trim();
+
+      return (
+        <div className="mt-3 space-y-3">
+          {userMessage && (
+            <p className="text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line font-medium">
+              {renderFormattedText(userMessage)}
+            </p>
+          )}
+
+          {/* Structured Outage Details Box */}
+          <div className="p-3.5 rounded-2xl bg-amber-500/10 dark:bg-yellow-950/20 border border-amber-500/25 space-y-2.5">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="flex items-center gap-1.5 font-black text-xs text-amber-600 dark:text-yellow-400 uppercase tracking-wide">
+                <span>⚡</span>
+                <span>Power Interruption Report</span>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 font-bold text-[11px]">
+                📋 Community Reported
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-amber-500/20 text-xs">
+              {interruptionType && (
+                <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">⚡ Type:</span>
+                  <span className="font-extrabold text-slate-900 dark:text-white">{interruptionType}</span>
+                </div>
+              )}
+              {affectedArea && (
+                <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">📍 Locality:</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{affectedArea}</span>
+                </div>
+              )}
+              {started && (
+                <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">🕒 Started:</span>
+                  <span className="font-semibold">{started}</span>
+                </div>
+              )}
+              {scope && (
+                <div className="flex items-start gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400 shrink-0">📐 Scope:</span>
+                  <span className="font-semibold">{scope}</span>
+                </div>
+              )}
+            </div>
+
+            {notes && (
+              <p className="text-xs text-slate-600 dark:text-slate-400 pt-1.5 border-t border-amber-500/10 italic">
+                ℹ️ {notes}
+              </p>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // 4. NEWS CARD
+    const newsLocationMatch = text.match(/(?:📍s*)?(?:\*\*)?News Location:(?:\*\*)?\s*([^\n\r]+)/i);
+    const newsSourceMatch = text.match(/(?:🔗s*)?(?:\*\*)?Source(?: \/ Reference)?:(?:\*\*)?\s*([^\n\r]+)/i);
+
+    if (newsLocationMatch || newsSourceMatch || getFeedCategory(feed) === "News") {
+      const newsLocation = newsLocationMatch ? newsLocationMatch[1].replace(/\*\*/g, "").trim() : "";
+      const newsSource = newsSourceMatch ? newsSourceMatch[1].replace(/\*\*/g, "").trim() : "";
+      const userMessage = text
+        .split(/---|\n(?=📍|🔗|\*\*News|\*\*Source)/)[0]
+        .replace(/\*\*/g, "")
+        .trim();
+
+      return (
+        <div className="mt-3 space-y-3">
+          {userMessage && (
+            <p className="text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-relaxed whitespace-pre-line font-medium">
+              {renderFormattedText(userMessage)}
+            </p>
+          )}
+
+          {(newsLocation || newsSource) && (
+            <div className="p-3 rounded-2xl bg-indigo-500/10 dark:bg-indigo-950/20 border border-indigo-500/25 space-y-2 text-xs">
+              {newsLocation && (
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400">📍 Location:</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">{newsLocation}</span>
+                </div>
+              )}
+              {newsSource && (
+                <div className="flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
+                  <span className="font-bold text-slate-500 dark:text-slate-400">🔗 Source:</span>
+                  <a
+                    href={newsSource.startsWith("http") ? newsSource : `https://${newsSource}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-indigo-500 hover:underline truncate"
+                  >
+                    {newsSource}
+                  </a>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // 5. STANDARD FALLBACK POST (Stripping any raw markdown --- and ** tokens)
+    const cleanLines = text
+      .split("\n")
+      .filter((line) => line.trim() !== "---");
+
+    return (
+      <div className="mt-3 space-y-2">
+        {cleanLines.map((line, idx) => (
+          <p
+            key={idx}
+            className="text-sm sm:text-base text-slate-900 dark:text-slate-100 leading-relaxed font-normal"
+          >
+            {renderFormattedText(line)}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
   const tabs = [
     {
       id: "all-avadi",
@@ -628,6 +956,10 @@ export const FeedPage: React.FC = () => {
                 authUser?.id === feed.authorId ||
                 authUser?.name === feed.authorName;
 
+              const isBloodRequest =
+                Boolean(feed.isEmergency) ||
+                getFeedCategory(feed) === "Blood Request";
+
               // Dynamic SEO descriptive alt tags
               const avatarAlt = `Profile photo of Avadi Ward ${feed.ward} resident ${feed.authorName}`;
               const imageAlt = `${getFeedCategory(feed)} update in Avadi Ward ${feed.ward} by ${feed.authorName}: ${feed.text ? feed.text.slice(0, 50).replace(/\n/g, " ") : "attachment"}...`;
@@ -642,22 +974,25 @@ export const FeedPage: React.FC = () => {
                 >
                   <Card
                     className={`p-4 sm:p-5 transition-all duration-300 shadow-xs relative ${
-                      feed.isEmergency
-                        ? "bg-rose-500/5 dark:bg-rose-950/10 border-2 border-rose-500/30"
+                      isBloodRequest
+                        ? "border-2 border-rose-500 dark:border-rose-500 ring-2 ring-rose-500/20 shadow-lg shadow-rose-500/10 bg-white dark:bg-slate-900"
                         : "border border-slate-200/80 dark:border-slate-800/80 bg-white dark:bg-slate-900"
                     }`}
                   >
-                    {/* Emergency Badge (Unchanged) */}
-                    {feed.isEmergency && (
-                      <div className="flex items-center justify-between px-3 py-1.5 rounded-xl bg-rose-100/80 dark:bg-rose-950/40 border border-rose-200 text-rose-700 dark:text-rose-300 font-extrabold text-[10px] uppercase tracking-wider mb-3.5">
+                    {/* Emergency Badge (Highlighted for Blood Requests) */}
+                    {isBloodRequest && (
+                      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-rose-600 to-red-600 text-white font-black text-xs uppercase tracking-wider mb-3.5 shadow-xs">
                         <div className="flex items-center space-x-2">
-                          <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600 dark:bg-rose-500"></span>
+                          <span className="relative flex h-2.5 w-2.5">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-90"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
                           </span>
-                          <span>🩸 Urgent Blood Request</span>
+                          <span className="flex items-center gap-1.5 font-black tracking-wide">
+                            <Heart size={14} className="fill-white" />
+                            URGENT BLOOD REQUEST
+                          </span>
                         </div>
-                        <span className="text-[9px] font-black bg-rose-600 text-white px-2 py-0.5 rounded-md uppercase tracking-widest">
+                        <span className="text-[10px] font-black bg-white/25 backdrop-blur-xs text-white px-2.5 py-0.5 rounded-md uppercase tracking-widest border border-white/30">
                           Live Alert
                         </span>
                       </div>
@@ -685,7 +1020,7 @@ export const FeedPage: React.FC = () => {
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
-                              className="font-bold text-sm text-slate-900 dark:text-white leading-tight truncate hover:underline cursor-pointer text-left"
+                              className="font-bold text-sm leading-tight truncate hover:underline cursor-pointer text-left text-slate-900 dark:text-white"
                             >
                               {feed.authorName}
                             </button>
@@ -706,7 +1041,7 @@ export const FeedPage: React.FC = () => {
                             </span>
                           </div>
 
-                          {/* Line 2: Visibility (Public vs Ward), Street Hint, and Subtle Category */}
+                          {/* Line 2: Visibility (Public vs Ward), Street Hint, and Category */}
                           <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium select-none">
                             {/* Visibility Indicator */}
                             <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
@@ -746,7 +1081,7 @@ export const FeedPage: React.FC = () => {
                             </span>
 
                             {/* Subtle Category Tag */}
-                            <span className="text-primary dark:text-orange-400 font-semibold">
+                            <span className={isBloodRequest ? "text-rose-600 dark:text-rose-400 font-bold" : "text-primary dark:text-orange-400 font-semibold"}>
                               #{getFeedCategory(feed)}
                             </span>
                           </div>
@@ -778,21 +1113,20 @@ export const FeedPage: React.FC = () => {
                           {activeMenuId === feed.id && (
                             <>
                               {/* 🟢 1. INVISIBLE BACKDROP OVERLAY */}
-                              {/* Catches any click outside the menu and closes it immediately */}
                               <div
                                 className="fixed inset-0 z-10 cursor-default"
                                 onClick={(e) => {
-                                  e.stopPropagation(); // Prevents clicking through to cards underneath
+                                  e.stopPropagation();
                                   setActiveMenuId(null);
                                 }}
                               />
 
-                              {/* 🟢 2. DROPDOWN MENU (Sat at z-20 above the backdrop) */}
+                              {/* 🟢 2. DROPDOWN MENU */}
                               <div className="absolute right-0 mt-1 w-36 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-20 py-1 text-xs font-bold animate-in fade-in zoom-in-95 duration-100 origin-top-right">
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null); // Close menu when option is clicked
+                                    setActiveMenuId(null);
                                     openEditModal(feed);
                                   }}
                                   className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition text-left cursor-pointer"
@@ -807,7 +1141,7 @@ export const FeedPage: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setActiveMenuId(null); // Close menu when option is clicked
+                                    setActiveMenuId(null);
                                     handleDeleteFeed(feed.id);
                                   }}
                                   className="w-full flex items-center gap-2 px-3 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 transition text-left cursor-pointer"
@@ -821,10 +1155,9 @@ export const FeedPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    {/* Feed Text */}
-                    <p className="text-sm sm:text-base text-slate-800 dark:text-slate-300 leading-relaxed mt-3 whitespace-pre-line font-normal">
-                      {feed.text}
-                    </p>
+
+                    {/* Feed Body & High-Contrast Blood Details */}
+                    {renderFeedBody(feed, isBloodRequest)}
                     {/* Media Attachment */}
                     {feed.imageUrl && (
                       <div className="mt-3 overflow-hidden rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-950 aspect-video relative shadow-2xs">
@@ -842,6 +1175,11 @@ export const FeedPage: React.FC = () => {
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
+                            if (!isAuthenticated && !authUser) {
+                              toast.error("Please log in to like posts");
+                              router.push("/login?redirect=/feed");
+                              return;
+                            }
                             likeFeed(feed.id);
                             // optimistic feedback
                             if (feed.likedByMe) toast.info("Removed like");
@@ -888,7 +1226,9 @@ export const FeedPage: React.FC = () => {
                       </button>
                     </div>
                     {feed.comments && feed.comments.length > 0 && (
-                      <div className="mt-3.5 pt-3 border-t border-slate-100 dark:border-slate-800/60 space-y-2">
+                      <div className={`mt-3.5 pt-3 border-t space-y-2 ${
+                        isBloodRequest ? "border-rose-200" : "border-slate-100 dark:border-slate-800/60"
+                      }`}>
                         {/* Shows up to 3 most recent comments */}
                         {feed.comments
                           .slice(-3)
@@ -900,7 +1240,11 @@ export const FeedPage: React.FC = () => {
                           .map((comment: any) => (
                             <div
                               key={comment.id}
-                              className="flex items-start gap-2 text-xs bg-slate-50 dark:bg-slate-950/60 p-2.5 rounded-xl border border-slate-200/50 dark:border-slate-800/50"
+                              className={`flex items-start gap-2 text-xs p-2.5 rounded-xl border ${
+                                isBloodRequest
+                                  ? "bg-white/90 border-rose-200/80 text-slate-900"
+                                  : "bg-slate-50 dark:bg-slate-950/60 border-slate-200/50 dark:border-slate-800/50"
+                              }`}
                             >
                               {/* Commenter Avatar */}
                               <div className="relative w-6 h-6 rounded-full overflow-hidden bg-slate-200 dark:bg-slate-800 shrink-0 mt-0.5">
@@ -918,14 +1262,20 @@ export const FeedPage: React.FC = () => {
 
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="font-extrabold text-slate-900 dark:text-white truncate">
+                                  <span className={`font-extrabold truncate ${
+                                    isBloodRequest ? "text-slate-900" : "text-slate-900 dark:text-white"
+                                  }`}>
                                     {comment.author}
                                   </span>
-                                  <span className="text-[10px] text-slate-400 font-normal">
+                                  <span className={`text-[10px] font-normal ${
+                                    isBloodRequest ? "text-slate-500" : "text-slate-400"
+                                  }`}>
                                     {getRelativeTime(comment.timestamp)}
                                   </span>
                                 </div>
-                                <p className="text-slate-600 dark:text-slate-300 font-normal leading-snug wrap-break-word mt-0.5">
+                                <p className={`font-normal leading-snug wrap-break-word mt-0.5 ${
+                                  isBloodRequest ? "text-slate-800" : "text-slate-600 dark:text-slate-300"
+                                }`}>
                                   {comment.text}
                                 </p>
                               </div>
@@ -937,7 +1287,9 @@ export const FeedPage: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setSelectedFeed(feed)}
-                            className="text-[11px] font-bold text-primary hover:underline pl-1 cursor-pointer block"
+                            className={`text-[11px] font-bold hover:underline pl-1 cursor-pointer block ${
+                              isBloodRequest ? "text-rose-700" : "text-primary"
+                            }`}
                           >
                             View all {feed.comments.length} comments →
                           </button>
@@ -964,19 +1316,12 @@ export const FeedPage: React.FC = () => {
             title={`No feeds in Ward ${activeWard.id} yet`}
             description="Be the first one to share updates or ask queries!"
             actionText="Create First Feed"
-            onAction={openCreateModal}
+            onAction={() => router.push("/feed/create")}
           />
         )}
       </AnimatePresence>
 
-      {/* 4. Mobile FAB */}
-      <button
-        onClick={openCreateModal}
-        className="sm:hidden fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all cursor-pointer"
-        aria-label="Create New Feed"
-      >
-        <Plus size={26} className="stroke-[2.5]" />
-      </button>
+      
 
       {/* 5. CREATE & EDIT FEED MODAL */}
       <Modal
@@ -1353,13 +1698,13 @@ export const FeedPage: React.FC = () => {
         </Modal>
       )}
 
-      {/* Mobile Floating Action Button */}
+      {/* Mobile Floating Action Button (Single Clean FAB) */}
       <button
         onClick={() => router.push("/feed/create")}
-        className="sm:hidden fixed bottom-24 right-4 z-40 w-14 h-14 bg-orange-500 hover:bg-orange-600 active:scale-95 text-white rounded-full shadow-2xl flex items-center justify-center transition cursor-pointer border-2 border-white/20"
-        aria-label="New Feed"
+        className="md:hidden fixed bottom-20 right-4 z-40 w-14 h-14 rounded-full bg-linear-to-tr from-orange-600 via-orange-500 to-amber-500 text-white shadow-xl shadow-orange-500/35 border-2 border-white/30 dark:border-slate-900/40 flex items-center justify-center active:scale-95 hover:scale-105 transition-all duration-200 cursor-pointer"
+        aria-label="New Feed Post"
       >
-        <Plus size={28} strokeWidth={2.5} />
+        <Plus size={28} className="stroke-[2.5]" />
       </button>
     </div>
   );
