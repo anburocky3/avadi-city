@@ -94,9 +94,18 @@ export async function GET(request: Request) {
       }
 
       // Format response so frontend receives expected property names
-      const formattedFeeds = deduplicatedFeeds.map((feed) => ({
-        ...feed,
-        authorName: feed.author?.name || "Avadi Resident",
+      const formattedFeeds = deduplicatedFeeds.map((feed) => {
+        const effectiveWard =
+          feed.ward >= 1 && feed.ward <= 48
+            ? feed.ward
+            : feed.author?.wardNumber && feed.author.wardNumber >= 1 && feed.author.wardNumber <= 48
+            ? feed.author.wardNumber
+            : 1;
+
+        return {
+          ...feed,
+          ward: effectiveWard,
+          authorName: feed.author?.name || "Avadi Resident",
         authorAvatar: feed.author?.avatar || "/default-avatar.png",
         authorWard: feed.author?.wardNumber,
         authorStreet: feed.author?.streetName,
@@ -135,7 +144,8 @@ export async function GET(request: Request) {
           author: c.user?.name || c.author || "Resident",
           authorAvatar: c.user?.avatar || c.authorAvatar || "/default-avatar.png",
         })),
-      }));
+      };
+    });
 
       return NextResponse.json(formattedFeeds, { status: 200 });
     }
@@ -239,11 +249,24 @@ export async function POST(request: Request) {
       r2ImageUrl = base64Image;
     }
 
+    // Ensure ward is a valid Avadi ward (1-48), never save 0
+    let effectiveWard = Number(ward);
+    if (!effectiveWard || effectiveWard < 1 || effectiveWard > 48) {
+      const author = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { wardNumber: true },
+      });
+      effectiveWard =
+        author?.wardNumber && author.wardNumber >= 1 && author.wardNumber <= 48
+          ? author.wardNumber
+          : 1;
+    }
+
     const newFeed = await prisma.feed.create({
       data: {
         text: finalContent,
         category: category || "General",
-        ward: Number(ward) || 0,
+        ward: effectiveWard,
         isEmergency: Boolean(isEmergency),
         imageUrl: r2ImageUrl,
         authorId: payload.userId,

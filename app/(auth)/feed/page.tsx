@@ -961,8 +961,18 @@ export const FeedPage: React.FC = () => {
                 getFeedCategory(feed) === "Blood Request";
 
               // Dynamic SEO descriptive alt tags
-              const avatarAlt = `Profile photo of Avadi Ward ${feed.ward} resident ${feed.authorName}`;
-              const imageAlt = `${getFeedCategory(feed)} update in Avadi Ward ${feed.ward} by ${feed.authorName}: ${feed.text ? feed.text.slice(0, 50).replace(/\n/g, " ") : "attachment"}...`;
+              const resolvedWard =
+                Number(feed.ward) >= 1 && Number(feed.ward) <= 48
+                  ? Number(feed.ward)
+                  : (feed as any).authorWard && Number((feed as any).authorWard) >= 1 && Number((feed as any).authorWard) <= 48
+                  ? Number((feed as any).authorWard)
+                  : activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48
+                  ? activeWard.id
+                  : 1;
+
+              // Dynamic SEO descriptive alt tags
+              const avatarAlt = `Profile photo of Avadi Ward ${resolvedWard} resident ${feed.authorName}`;
+              const imageAlt = `${getFeedCategory(feed)} update in Avadi Ward ${resolvedWard} by ${feed.authorName}: ${feed.text ? feed.text.slice(0, 50).replace(/\n/g, " ") : "attachment"}...`;
 
               return (
                 <motion.div
@@ -1045,23 +1055,13 @@ export const FeedPage: React.FC = () => {
                           <div className="flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium select-none">
                             {/* Visibility Indicator */}
                             <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
-                              {feed.ward === "all" || feed.ward === "avadi" ? (
-                                <>
-                                  <Globe
-                                    size={11}
-                                    className="text-teal-500 shrink-0"
-                                  />
-                                  <span>Public</span>
-                                </>
-                              ) : (
-                                <>
+                              <>
                                   <MapPin
                                     size={11}
                                     className="text-orange-500 shrink-0"
                                   />
-                                  <span>Ward {feed.ward}</span>
+                                  <span>Ward {resolvedWard}</span>
                                 </>
-                              )}
                             </span>
 
                             {/* Street Location Hint */}
@@ -1530,21 +1530,19 @@ export const FeedPage: React.FC = () => {
 
                   <div className="flex items-center flex-wrap gap-x-1.5 text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
                     <span className="inline-flex items-center gap-1 text-slate-700 dark:text-slate-300 font-semibold">
-                      {selectedFeed.ward === "all" ||
-                      selectedFeed.ward === "avadi" ? (
-                        <>
-                          <Globe size={11} className="text-teal-500 shrink-0" />
-                          <span>Public</span>
-                        </>
-                      ) : (
-                        <>
-                          <MapPin
-                            size={11}
-                            className="text-orange-500 shrink-0"
-                          />
-                          <span>Ward {selectedFeed.ward}</span>
-                        </>
-                      )}
+                      <>
+                        <MapPin
+                          size={11}
+                          className="text-orange-500 shrink-0"
+                        />
+                        <span>Ward {
+                          Number(selectedFeed.ward) >= 1 && Number(selectedFeed.ward) <= 48
+                            ? Number(selectedFeed.ward)
+                            : (selectedFeed as any).authorWard && Number((selectedFeed as any).authorWard) >= 1 && Number((selectedFeed as any).authorWard) <= 48
+                            ? Number((selectedFeed as any).authorWard)
+                            : activeWard?.id || 1
+                        }</span>
+                      </>
                     </span>
                     <span className="text-slate-300 dark:text-slate-700">
                       ·

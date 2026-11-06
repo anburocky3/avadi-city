@@ -12,8 +12,7 @@ import {
   X,
   AlertCircle,
   Loader2,
-  CheckCircle2,
-  Zap,
+    Zap,
   Heart,
   Newspaper,
   AlertTriangle,
@@ -220,6 +219,7 @@ export default function NewFeedCreationPage() {
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
   const [showComplaintStreetDropdown, setShowComplaintStreetDropdown] = useState(false);
   const [showOutageStreetDropdown, setShowOutageStreetDropdown] = useState(false);
+  const [showNewsStreetDropdown, setShowNewsStreetDropdown] = useState(false);
 
   // Close street dropdowns on outside click
   useEffect(() => {
@@ -229,6 +229,7 @@ export default function NewFeedCreationPage() {
         setShowStreetDropdown(false);
         setShowComplaintStreetDropdown(false);
         setShowOutageStreetDropdown(false);
+        setShowNewsStreetDropdown(false);
       }
     };
     document.addEventListener('click', handleGlobalClick);
@@ -280,8 +281,7 @@ export default function NewFeedCreationPage() {
   // Confirmation & submission state
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Clean up object URLs
   useEffect(() => {
@@ -323,7 +323,7 @@ export default function NewFeedCreationPage() {
   // Street Search / Autocomplete Handler
   const handleStreetSearchChange = (
     val: string,
-    target: "audience" | "complaint" | "outage" = "audience",
+    target: "audience" | "complaint" | "outage" | "news" = "audience",
   ) => {
     setStreetQuery(val);
     setStreetArea(val);
@@ -347,6 +347,7 @@ export default function NewFeedCreationPage() {
       setShowStreetDropdown(false);
       setShowComplaintStreetDropdown(false);
       setShowOutageStreetDropdown(false);
+      setShowNewsStreetDropdown(false);
       return;
     }
 
@@ -358,14 +359,22 @@ export default function NewFeedCreationPage() {
       setShowComplaintStreetDropdown(matches.length > 0);
       setShowStreetDropdown(false);
       setShowOutageStreetDropdown(false);
+      setShowNewsStreetDropdown(false);
     } else if (target === "outage") {
       setShowOutageStreetDropdown(matches.length > 0);
       setShowStreetDropdown(false);
       setShowComplaintStreetDropdown(false);
+      setShowNewsStreetDropdown(false);
+    } else if (target === "news") {
+      setShowNewsStreetDropdown(matches.length > 0);
+      setShowStreetDropdown(false);
+      setShowComplaintStreetDropdown(false);
+      setShowOutageStreetDropdown(false);
     } else {
       setShowStreetDropdown(matches.length > 0);
       setShowComplaintStreetDropdown(false);
       setShowOutageStreetDropdown(false);
+      setShowNewsStreetDropdown(false);
     }
   };
 
@@ -377,6 +386,7 @@ export default function NewFeedCreationPage() {
     setShowStreetDropdown(false);
     setShowComplaintStreetDropdown(false);
     setShowOutageStreetDropdown(false);
+    setShowNewsStreetDropdown(false);
     if (
       fieldErrors.streetArea ||
       fieldErrors.street ||
@@ -568,11 +578,21 @@ export default function NewFeedCreationPage() {
           : structuredDetails
         : description.trim();
 
+      // Determine proper Avadi Ward (1-48), never assign Ward 0
+      const effectiveWard =
+        selectedWard && selectedWard >= 1 && selectedWard <= 48
+          ? selectedWard
+          : authUser?.wardNumber && authUser.wardNumber >= 1 && authUser.wardNumber <= 48
+          ? authUser.wardNumber
+          : activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48
+          ? activeWard.id
+          : 1;
+
       const postPayload = {
         title: "",
         text: fullText,
         category: category,
-        ward: audience === "entire-avadi" ? 0 : selectedWard,
+        ward: effectiveWard,
         isEmergency: category === "Blood Request",
         imageUrl: imagePreview || null,
       };
@@ -592,8 +612,9 @@ export default function NewFeedCreationPage() {
       // Refresh feeds in WardContext
       await refreshFeeds();
 
-      // Show success confirmation modal
-      setShowSuccessModal(true);
+      // Show success notification and navigate directly to community feed
+      toast.success("Feed published successfully!");
+      router.push("/feed");
     } catch (err: any) {
       console.error("Submission Error:", err);
       toast.error(
@@ -608,21 +629,19 @@ export default function NewFeedCreationPage() {
 
   return (
     <div className="p-3 sm:p-6 md:p-8 max-w-2xl mx-auto space-y-4 pb-24">
-      {/* 1. Header (Reference Style: Close on Left, Centered Title, Back on Right) */}
+      {/* 1. Header: New post title on left, X button on right */}
       <div className="flex items-center justify-between pb-1">
+        <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+          New post
+        </h1>
+
         <Link
           href="/feed"
-          className="p-2 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+          className="p-2 -mr-1 text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
           aria-label="Close composer"
         >
           <X size={22} />
         </Link>
-
-        <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white text-center">
-          New post
-        </h1>
-
-        <div className="w-9" />
       </div>
 
       {/* 2. Main Facebook-Style Post Composer Card */}
@@ -769,13 +788,50 @@ export default function NewFeedCreationPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  type="text"
-                  value={newsLocation}
-                  onChange={(e) => setNewsLocation(e.target.value)}
-                  placeholder="News Location / Locality (e.g. Avadi Checkpost)"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <div className="relative street-dropdown-container">
+                  <div className="relative">
+                    <Search
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"
+                    />
+                    <input
+                      type="text"
+                      value={newsLocation}
+                      onChange={(e) => {
+                        setNewsLocation(e.target.value);
+                        handleStreetSearchChange(e.target.value, "news");
+                      }}
+                      onFocus={() => {
+                        if (streetResults.length > 0) setShowNewsStreetDropdown(true);
+                      }}
+                      placeholder="News Location / Street (e.g. JB Estate, Avadi Checkpost)"
+                      className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  {showNewsStreetDropdown && streetResults.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 z-30 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl max-h-48 overflow-y-auto p-1 space-y-0.5">
+                      {streetResults.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => {
+                            setNewsLocation(item.streetName);
+                            handleSelectStreet(item);
+                            setShowNewsStreetDropdown(false);
+                          }}
+                          className="px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-xs text-slate-800 dark:text-slate-200 cursor-pointer flex items-center justify-between"
+                        >
+                          <span className="font-semibold truncate">
+                            {item.streetName}
+                          </span>
+                          <span className="text-[10px] text-indigo-500 font-bold bg-indigo-500/10 px-2 py-0.5 rounded-full shrink-0 ml-2">
+                            Ward {item.wardNo}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 <input
                   type="text"
                   value={newsSourceUrl}
@@ -1306,35 +1362,7 @@ export default function NewFeedCreationPage() {
         </div>
       </form>
 
-      {/* 3. Success Modal Popup */}
-      {showSuccessModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl text-center space-y-4">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mx-auto flex items-center justify-center">
-              <CheckCircle2 size={36} />
-            </div>
-
-            <div className="space-y-2">
-              <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                Feed Published Successfully!
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 font-semibold leading-relaxed">
-                ✅ Your post has been published to the Avadi Community Feed under #{category}.
-              </p>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="button"
-                onClick={() => router.push("/feed")}
-                className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs sm:text-sm shadow-sm transition cursor-pointer active:scale-98"
-              >
-                Go to Community Feed
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      
     </div>
   );
 }
