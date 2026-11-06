@@ -46,6 +46,14 @@ const nextConfig: NextConfig = {
         destination: "/foods",
       },
       {
+        source: "/community-feed/create",
+        destination: "/feed/create",
+      },
+      {
+        source: "/community-feed",
+        destination: "/feed",
+      },
+      {
         source: "/hospitals",
         destination: "/healthcare",
       },

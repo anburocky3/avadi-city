@@ -22,7 +22,37 @@ export async function GET(request: Request) {
     });
 
     if (complaints && complaints.length > 0) {
-      return NextResponse.json(complaints, { status: 200 });
+      const sanitizedComplaints = complaints.map((c) => {
+        const address =
+          c.address &&
+          c.address.trim() !== "" &&
+          c.address !== "Selected Location"
+            ? c.address
+            : `Ward ${c.incidentWard || c.userWard}, Avadi`;
+
+        let description = c.description || "";
+        if (description.includes("Selected Location")) {
+          description = description.replace(
+            /Location:\s*Selected Location\.?/gi,
+            `Location: ${address}.`,
+          );
+        }
+
+        let title = c.title || "";
+        if (title.includes("Selected Location")) {
+          title = title.replace(/Selected Location/g, address);
+        }
+
+        return {
+          ...c,
+          ward: c.incidentWard || c.userWard,
+          address,
+          title,
+          description,
+        };
+      });
+
+      return NextResponse.json(sanitizedComplaints, { status: 200 });
     }
 
     const filtered =
@@ -117,6 +147,25 @@ export async function POST(request: Request) {
     );
     const incidentWard = matchedStreet?.wardNo || validData.userWard;
 
+    // Ensure street name is clean and meaningful - never "Selected Location"
+    let cleanStreetName = validData.streetName.trim();
+    if (cleanStreetName === "Selected Location" || cleanStreetName === "") {
+      cleanStreetName = `Ward ${incidentWard}, Avadi`;
+    }
+
+    let cleanTitle = validData.title.trim();
+    if (cleanTitle.includes("Selected Location")) {
+      cleanTitle = cleanTitle.replace(/Selected Location/g, cleanStreetName);
+    }
+
+    let cleanDescription = validData.description.trim();
+    if (cleanDescription.includes("Selected Location")) {
+      cleanDescription = cleanDescription.replace(
+        /Selected Location/g,
+        cleanStreetName,
+      );
+    }
+
     // Process Images
     const rawFiles = formData.getAll("images") as File[];
     const validImageFiles = rawFiles
@@ -158,6 +207,32 @@ export async function POST(request: Request) {
     const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
     const issueId = `AVD-${new Date().getFullYear()}-${uniqueNumber}`;
 
+    // Server-side duplicate protection (e.g., rapid repeat clicks / duplicate submissions)
+    if (userId) {
+      const recentDuplicate = await prisma.complaint.findFirst({
+        where: {
+          userId,
+          title: validData.title.trim(),
+          category: validData.category,
+          subCategory: validData.subCategory,
+          createdAt: {
+            gte: new Date(Date.now() - 15000), // Within the last 15 seconds
+          },
+        },
+      });
+
+      if (recentDuplicate) {
+        return NextResponse.json(
+          {
+            success: true,
+            message: "Grievance registered successfully",
+            complaint: recentDuplicate,
+          },
+          { status: 200 },
+        );
+      }
+    }
+
     // Execute Database Transaction
     const [newComplaint] = await prisma.$transaction(async (tx) => {
       // 1. Create Complaint
@@ -168,11 +243,11 @@ export async function POST(request: Request) {
           subCategory: validData.subCategory,
           incidentWard: incidentWard,
           userWard: validData.userWard,
-          address: validData.streetName,
+          address: cleanStreetName,
           lat: validData.lat,
           lng: validData.lng,
-          title: validData.title.trim(),
-          description: validData.description.trim(),
+          title: cleanTitle,
+          description: cleanDescription,
           imageUrl: imageUrls[0] || null,
           imageUrls: imageUrls,
           author: authorName,
@@ -182,32 +257,25 @@ export async function POST(request: Request) {
         },
       });
 
-      // 2. Create Community Feed Post (Linked directly to the complaint)
+      // 2. Create Community Feed Post (Linked directly to the complaint - exactly once)
       if (validData.shareOnFeed && userId) {
-        await tx.feed.create({
-          data: {
-            authorId: userId,
-            ward: incidentWard, // Ward is stored as Int in your updated schema
-            text: `🚨 **Civic Issue Reported [${issueId}]**\n\n**${validData.title.trim()}**\n${validData.description.trim()}`,
-            imageUrl: imageUrls[0] || null,
-            category: "complaint", // Custom category for frontend filtering
-            isEmergency: false,
-            complaintId: complaint.id, // Direct relational link
-          },
+        const existingFeed = await tx.feed.findFirst({
+          where: { complaintId: complaint.id },
         });
 
-        await tx.feed.create({
-          data: {
-            authorId: userId,
-            ward: incidentWard,
-            // Pass a system flag since your Prisma schema requires the text field
-            text: "SYSTEM_GENERATED_COMPLAINT_POINTER",
-            imageUrl: null, // DO NOT DUPLICATE THE IMAGE
-            category: "complaint",
-            isEmergency: false,
-            complaintId: complaint.id, // THE ONLY THING THAT MATTERS
-          },
-        });
+        if (!existingFeed) {
+          await tx.feed.create({
+            data: {
+              authorId: userId,
+              ward: incidentWard, // Ward is stored as Int in your updated schema
+              text: `🚨 **Civic Issue Reported [${issueId}]**\n\n**${cleanTitle}**\n${cleanDescription}`,
+              imageUrl: imageUrls[0] || null,
+              category: "complaint", // Custom category for frontend filtering
+              isEmergency: false,
+              complaintId: complaint.id, // Direct relational link
+            },
+          });
+        }
       }
 
       return [complaint];

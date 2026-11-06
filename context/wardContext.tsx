@@ -62,8 +62,10 @@ export interface Feed {
   likes: number;
   likedByMe: boolean;
   comments: Comment[];
+  complaintId?: string | null;
 
   complaint?: {
+    id?: string;
     issueId: string;
     title: string;
     description: string;
@@ -422,7 +424,10 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
       const res = await fetch(`/api/feeds/${feedId}/like`, {
         method: "POST",
       });
-      if (!res.ok) throw new Error("Database like sync failed");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Database like sync failed");
+      }
       return res.json(); // Returns { success: true, likedByMe: boolean, likes: number }
     },
     onMutate: async (feedId) => {
@@ -460,20 +465,21 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
         }),
       );
     },
-    onError: (err, feedId, context) => {
-      console.error("Like sync error, reverting:", err);
+    onError: (err: any, feedId, context) => {
+      console.warn("Like sync notice, reverting:", err?.message || err);
       if (context?.previousFeeds) {
         queryClient.setQueryData(["feeds"], context.previousFeeds);
       }
     },
     onSettled: () => {
-      // Optional: you can remove invalidateQueries if success handles it,
-      // or keep it to ensure fresh data across other tabs/users.
       queryClient.invalidateQueries({ queryKey: ["feeds"] });
     },
   });
 
   const likeFeed = async (feedId: string | number) => {
+    if (!isAuthenticated) {
+      return;
+    }
     likeMutation.mutate(feedId);
   };
 
@@ -603,6 +609,11 @@ export const WardProvider: React.FC<{ children: ReactNode }> = ({
 
     if (!res.ok) {
       throw new Error(result.message || "Failed to submit grievance report");
+    }
+
+    queryClient.invalidateQueries({ queryKey: ["complaints"] });
+    if (data.shareOnFeed) {
+      queryClient.invalidateQueries({ queryKey: ["feeds"] });
     }
 
     return result.complaint;

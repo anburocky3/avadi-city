@@ -29,12 +29,18 @@ import {
   Lightbulb,
   Trash2,
   TreePine,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Complaint, useWard } from "@/context/wardContext";
 import { Modal } from "@/components/shared-components";
 import { toast } from "@/utils/toast";
-import { ALL_AVADI_STREETS } from "@/lib/wards";
+import {
+  ALL_AVADI_STREETS,
+  getAvadiStreetCoordinates,
+  reverseGeocodeAvadi,
+  detectAvadiWard,
+} from "@/lib/wards";
 import MapLocationPicker from "../MapLocationPicker";
 
 // --- RICH CATEGORY & GCC DATA MAPPING ---
@@ -236,7 +242,10 @@ const complaintSchema = zod.object({
     .min(6, { message: "Title must be at least 6 characters long" }),
   description: zod
     .string()
-    .min(15, { message: "Description must be at least 15 characters long" }),
+    .min(15, { message: "Description must be at least 15 characters long" })
+    .refine((val) => val.trim().length >= 15, {
+      message: "Description must contain at least 15 meaningful characters",
+    }),
   shareOnFeed: zod.boolean().default(true),
 });
 
@@ -244,7 +253,7 @@ type ComplaintFormData = zod.infer<typeof complaintSchema>;
 
 export default function ReportWizard({ onClose }: { onClose: () => void }) {
   const router = useRouter();
-  const { userProfile, activeWard, addComplaint } = useWard();
+  const { userProfile, activeWard, selectWard, addComplaint } = useWard();
 
   const [reportStep, setReportStep] = useState<number>(1);
   const [selectedGroup, setSelectedGroup] = useState<
@@ -264,6 +273,13 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
   const [submittedComplaint, setSubmittedComplaint] =
     useState<Complaint | null>(null);
   const [copiedId, setCopiedId] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [userEditedDescription, setUserEditedDescription] = useState(false);
+  const [userEditedTitle, setUserEditedTitle] = useState(false);
+  const [reverseGeocodedAddress, setReverseGeocodedAddress] = useState<
+    string | null
+  >(null);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
 
   // Need to store actual File objects alongside preview URLs to send to backend
   const [imageFiles, setImageFiles] = useState<File[]>([]);
@@ -308,21 +324,86 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
   const watchSubCategory = watch("subCategory");
   const watchStreetName = watch("streetName");
 
-  useEffect(() => {
-    if (watchSubCategory && reportStep === 2) {
-      const locationContext = watchStreetName || "Selected Location";
+  // Auto-draft title and description only when first entering Step 2,
+  // unless the user has already manually edited them.
+  const hasAutoDrafted = useRef(false);
+
+  const updateLocationInForm = (newLocation: string) => {
+    if (
+      !newLocation ||
+      !newLocation.trim() ||
+      newLocation === "Selected Location"
+    )
+      return;
+    const cleanLoc = newLocation.trim();
+
+    if (!userEditedTitle) {
       setValue(
         "title",
-        `Request for ${watchSubCategory} at ${locationContext}`,
+        `Request for ${watchSubCategory || "Civic Issue"} at ${cleanLoc}`,
         { shouldValidate: true },
       );
+    } else {
+      const currentTitle = watch("title");
+      if (currentTitle && currentTitle.includes("Selected Location")) {
+        setValue(
+          "title",
+          currentTitle.replace(/Selected Location/g, cleanLoc),
+          { shouldValidate: true },
+        );
+      }
+    }
+
+    if (!userEditedDescription) {
       setValue(
         "description",
-        `Reporting an issue regarding ${watchSubCategory}.\n\nLocation: ${locationContext}.\n\nPlease arrange for an inspection and resolve at the earliest.`,
+        `Reporting an issue regarding ${watchSubCategory || "Civic Issue"}.\n\nLocation: ${cleanLoc}.\n\nPlease arrange for an inspection and resolve at the earliest.`,
         { shouldValidate: true },
       );
+    } else {
+      const currentDesc = watch("description");
+      if (currentDesc && currentDesc.includes("Selected Location")) {
+        setValue(
+          "description",
+          currentDesc.replace(/Selected Location/g, cleanLoc),
+          { shouldValidate: true },
+        );
+      }
     }
-  }, [watchSubCategory, watchStreetName, mapCoords, setValue, reportStep]);
+  };
+
+  useEffect(() => {
+    if (reportStep === 2 && watchSubCategory && !hasAutoDrafted.current) {
+      const locationContext =
+        watchStreetName &&
+        watchStreetName.trim() !== "" &&
+        watchStreetName !== "Selected Location"
+          ? watchStreetName.trim()
+          : activeWard.name
+            ? `Ward ${activeWard.id} (${activeWard.name})`
+            : `Ward ${activeWard.id}, Avadi`;
+
+      if (!userEditedTitle) {
+        setValue(
+          "title",
+          `Request for ${watchSubCategory} at ${locationContext}`,
+          { shouldValidate: true },
+        );
+      }
+      if (!userEditedDescription) {
+        setValue(
+          "description",
+          `Reporting an issue regarding ${watchSubCategory}.\n\nLocation: ${locationContext}.\n\nPlease arrange for an inspection and resolve at the earliest.`,
+          { shouldValidate: true },
+        );
+      }
+      hasAutoDrafted.current = true;
+    }
+    // Reset the auto-draft flag when going back to step 1
+    if (reportStep === 1) {
+      hasAutoDrafted.current = false;
+    }
+  }, [reportStep, watchSubCategory]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
@@ -345,44 +426,118 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
     setSelectedStreetItem(street);
     setValue("streetName", street.streetName, { shouldValidate: true });
     setStreetResults([]);
+
+    // Auto-select the ward based on the street's ward number
+    if (street.wardNo) {
+      selectWard(street.wardNo);
+    }
+
+    // Move map marker to the selected street's coordinates
+    const coords = getAvadiStreetCoordinates(street);
+    if (coords) {
+      setValue("lat", coords.lat);
+      setValue("lng", coords.lng);
+      setMapCoords({ lat: coords.lat, lng: coords.lng });
+    }
+    setReverseGeocodedAddress(street.streetName);
+    updateLocationInForm(street.streetName);
+  };
+
+  // Reverse-geocode when map marker is placed or dragged
+  const handleMapReverseGeocode = async (lat: number, lng: number) => {
+    setIsReverseGeocoding(true);
+    try {
+      const result = await reverseGeocodeAvadi(lat, lng);
+      const locName = result.address || result.streetName;
+      if (result.streetName) {
+        setReverseGeocodedAddress(locName);
+        // Auto-fill the street name if the user hasn't selected a specific street
+        if (!selectedStreetItem) {
+          setValue("streetName", result.streetName, { shouldValidate: true });
+        }
+      }
+      if (locName) {
+        updateLocationInForm(locName);
+      }
+      // Auto-select ward detected from coordinates/address
+      if (result.wardNo) {
+        selectWard(result.wardNo);
+      }
+    } catch {
+      // Silently fail reverse geocoding — it's a convenience feature
+      setReverseGeocodedAddress(null);
+    } finally {
+      setIsReverseGeocoding(false);
+    }
   };
 
   const handleReportSubmit: SubmitHandler<ComplaintFormData> = async (data) => {
+    if (isSubmitting) return;
     if (mapError || imageFiles.length === 0) return;
 
-    const defaultImage =
-      RICH_CIVIC_CATEGORIES.find((c) => c.id === data.category)?.image ||
-      "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=60";
+    setIsSubmitting(true);
+    try {
+      const defaultImage =
+        RICH_CIVIC_CATEGORIES.find((c) => c.id === data.category)?.image ||
+        "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=60";
 
-    const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
-    const generatedIssueId = `AVD-${new Date().getFullYear()}-${uniqueNumber}`;
+      const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
+      const generatedIssueId = `AVD-${new Date().getFullYear()}-${uniqueNumber}`;
 
-    const newComplaint = {
-      title: data.title,
-      description: data.description,
-      category: data.category,
-      subCategory: data.subCategory,
-      userWard: activeWard.id,
-      streetName: data.streetName,
-      address: data.streetName,
-      lat: data.lat,
-      lng: data.lng,
-      shareOnFeed: data.shareOnFeed,
-      status: "Submitted" as const,
-      isUserSubmitted: true,
-      images: imageFiles, // Pass the actual File objects to the API context handler
-      imageUrl: imagePreviews[0] || defaultImage,
-      author: userProfile.name || "Avadi Resident",
-      date: new Date().toISOString(),
-      upvotes: 1,
-      issueId: generatedIssueId,
-    };
+      const finalStreetName =
+        data.streetName &&
+        data.streetName.trim() !== "" &&
+        data.streetName !== "Selected Location"
+          ? data.streetName.trim()
+          : reverseGeocodedAddress ||
+            (activeWard.name
+              ? `Ward ${activeWard.id} (${activeWard.name})`
+              : `Ward ${activeWard.id}, Avadi`);
 
-    // Assume `addComplaint` makes the API request to `/api/complaints` and returns the object
-    const created = await addComplaint(newComplaint);
-    setSubmittedComplaint(created as unknown as Complaint);
-    setReportStep(3);
-    toast.success("Complaint submitted successfully!");
+      let finalTitle = data.title.trim();
+      if (finalTitle.includes("Selected Location")) {
+        finalTitle = finalTitle.replace(/Selected Location/g, finalStreetName);
+      }
+
+      let finalDescription = data.description.trim();
+      if (finalDescription.includes("Selected Location")) {
+        finalDescription = finalDescription.replace(
+          /Selected Location/g,
+          finalStreetName,
+        );
+      }
+
+      const newComplaint = {
+        title: finalTitle,
+        description: finalDescription,
+        category: data.category,
+        subCategory: data.subCategory,
+        userWard: activeWard.id,
+        streetName: finalStreetName,
+        address: finalStreetName,
+        lat: data.lat,
+        lng: data.lng,
+        shareOnFeed: data.shareOnFeed,
+        status: "Submitted" as const,
+        isUserSubmitted: true,
+        images: imageFiles, // Pass the actual File objects to the API context handler
+        imageUrl: imagePreviews[0] || defaultImage,
+        author: userProfile.name || "Avadi Resident",
+        date: new Date().toISOString(),
+        upvotes: 1,
+        issueId: generatedIssueId,
+      };
+
+      // Assume `addComplaint` makes the API request to `/api/complaints` and returns the object
+      const created = await addComplaint(newComplaint);
+      setSubmittedComplaint(created as unknown as Complaint);
+      setReportStep(3);
+      toast.success("Complaint submitted successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to submit grievance");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -673,6 +828,33 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                             .includes(val.toLowerCase().trim()),
                         ).slice(0, 15);
                         setStreetResults(filtered);
+
+                        // Auto-detect and select ward when searching or typing
+                        const exact = ALL_AVADI_STREETS.find(
+                          (s) =>
+                            s.streetName.toLowerCase() ===
+                            val.trim().toLowerCase(),
+                        );
+                        if (exact) {
+                          setSelectedStreetItem(exact);
+                          if (exact.wardNo) selectWard(exact.wardNo);
+                          const coords = getAvadiStreetCoordinates(exact);
+                          if (coords) {
+                            setValue("lat", coords.lat);
+                            setValue("lng", coords.lng);
+                            setMapCoords({ lat: coords.lat, lng: coords.lng });
+                          }
+                          updateLocationInForm(exact.streetName);
+                        } else {
+                          updateLocationInForm(val);
+                          const detected = detectAvadiWard(val);
+                          if (
+                            detected &&
+                            !detected.matchedReason.startsWith("Default")
+                          ) {
+                            selectWard(detected.wardNo);
+                          }
+                        }
                       },
                     })}
                     className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
@@ -689,10 +871,15 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                           <li
                             key={idx}
                             onClick={() => handleSelectStreet(street)}
-                            className="px-4 py-3.5 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-500/10 hover:text-primary cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-none flex items-center gap-2"
+                            className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-500/10 hover:text-primary cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-none flex items-center justify-between transition-colors"
                           >
-                            <MapPin size={14} className="text-slate-400" />
-                            {street.streetName}
+                            <div className="flex items-center gap-2 truncate pr-2">
+                              <MapPin size={14} className="text-slate-400 shrink-0" />
+                              <span className="truncate">{street.streetName}</span>
+                            </div>
+                            <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0">
+                              Ward {street.wardNo}
+                            </span>
                           </li>
                         ))}
                       </motion.ul>
@@ -703,6 +890,29 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                       {errors.streetName.message}
                     </p>
                   )}
+                  {/* Auto-selected Ward indicator badge */}
+                  <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                      <Building2 size={15} className="text-primary" />
+                      <span className="font-bold">Assigned Ward:</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-slate-900 dark:text-white">
+                        Ward {activeWard.id}
+                      </span>
+                      {activeWard.name && (
+                        <>
+                          <span className="text-slate-400">·</span>
+                          <span className="text-slate-600 dark:text-slate-300 font-semibold truncate max-w-44">
+                            {activeWard.name}
+                          </span>
+                        </>
+                      )}
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Auto-Selected
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="space-y-2 pt-2">
@@ -713,16 +923,31 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                     Pinpoint Location on Map
                   </label>
                   <MapLocationPicker
+                    defaultLat={mapCoords.lat}
+                    defaultLng={mapCoords.lng}
                     onLocationSelect={(lat: number, lng: number) => {
                       setValue("lat", lat);
                       setValue("lng", lng);
                       setMapCoords({ lat, lng });
                     }}
                     onError={(msg) => setMapError(msg)}
+                    onReverseGeocode={handleMapReverseGeocode}
                   />
                   {mapError && (
                     <p className="text-xs text-rose-500 font-bold bg-rose-50 dark:bg-rose-900/20 p-2 rounded-lg border border-rose-200 dark:border-rose-800/50">
                       {mapError}
+                    </p>
+                  )}
+                  {isReverseGeocoding && (
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
+                      <Loader2 size={11} className="animate-spin" />
+                      Detecting address from map location...
+                    </p>
+                  )}
+                  {reverseGeocodedAddress && !mapError && !isReverseGeocoding && (
+                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                      <MapPin size={13} className="text-emerald-500 shrink-0" />
+                      <span>{reverseGeocodedAddress}</span>
                     </p>
                   )}
                 </div>
@@ -743,7 +968,10 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                   </div>
                   <input
                     type="text"
-                    {...register("title")}
+                    {...register("title", {
+                      onChange: () => setUserEditedTitle(true),
+                    })}
+                    placeholder="Brief summary of the issue"
                     className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-black shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
                   />
                   {errors.title && (
@@ -762,7 +990,10 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                   </label>
                   <textarea
                     rows={4}
-                    {...register("description")}
+                    {...register("description", {
+                      onChange: () => setUserEditedDescription(true),
+                    })}
+                    placeholder="Describe the problem you are experiencing..."
                     className="w-full flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400 resize-none min-h-32"
                   />
                   {errors.description && (
@@ -857,11 +1088,18 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                 <button
                   type="submit"
                   disabled={
-                    !isValid || mapError !== null || imageFiles.length === 0
+                    !isValid || mapError !== null || imageFiles.length === 0 || isSubmitting
                   }
-                  className="w-full sm:w-auto sm:float-right min-w-64 py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase"
+                  className="w-full sm:w-auto sm:float-right min-w-64 py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase flex items-center justify-center space-x-2"
                 >
-                  Submit Grievance Report
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Submitting Report...</span>
+                    </>
+                  ) : (
+                    <span>Submit Grievance Report</span>
+                  )}
                 </button>
                 <div className="clear-both" />
               </div>
