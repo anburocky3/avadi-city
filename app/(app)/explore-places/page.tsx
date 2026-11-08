@@ -8,8 +8,6 @@ import { prisma } from "@/lib/prisma";
 import Head from "next/head";
 import { Metadata } from "next";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Explore Places",
 };

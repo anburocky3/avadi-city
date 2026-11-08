@@ -220,9 +220,12 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
   const fetchReviews = useCallback(async () => {
     setReviewsLoading(true);
     try {
-      const res = await fetch(`/api/explore/reviews?placeId=${place.id}`, {
-        credentials: "include",
-      });
+      const res = await fetch(
+        `/api/explore-places/reviews?placeId=${place.id}`,
+        {
+          credentials: "include",
+        },
+      );
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
@@ -261,7 +264,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
 
     setIsSubmittingReview(true);
     try {
-      const res = await fetch("/api/explore/reviews", {
+      const res = await fetch("/api/explore-places/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -299,7 +302,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
       {/* Navigation Header */}
       <div className="flex items-center justify-between gap-4">
         <Link
-          href="/explore"
+          href="/explore-places"
           className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-slate-600 dark:text-slate-400 hover:text-primary transition"
         >
           <ArrowLeft size={16} />

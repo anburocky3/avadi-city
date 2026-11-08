@@ -296,7 +296,7 @@ const BEST_TIME_GROUPS: BestTimeGroup[] = [
   },
 ];
 
-export default function PostPlacePage() {
+export default function PlaceCreateClient() {
   const router = useRouter();
   const toast = useToast();
   const { activeWard, isAuthenticated, isLoadingAuth } = useWard();
@@ -318,7 +318,6 @@ export default function PostPlacePage() {
 
   // Authentication Guard
   useEffect(() => {
-    document.title = "Add your Place to Avadi City";
     if (!isLoadingAuth && !isAuthenticated) {
       router.replace("/login?redirect=/explore/create");
     }
@@ -853,7 +852,7 @@ export default function PostPlacePage() {
 
       formData.append("termsAccepted", "true");
 
-      const response = await fetch("/api/explore", {
+      const response = await fetch("/api/explore-places", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -909,7 +908,7 @@ export default function PostPlacePage() {
       {/* 1. Back to Explore Places Link */}
       <div>
         <Link
-          href="/explore"
+          href="/explore-places"
           className="inline-flex items-center space-x-2 text-xs sm:text-sm font-black text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition py-1 px-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60"
         >
           <ArrowLeft size={16} />
@@ -2183,7 +2182,7 @@ export default function PostPlacePage() {
             <div className="pt-2">
               <button
                 type="button"
-                onClick={() => router.push("/explore")}
+                onClick={() => router.push("/explore-places")}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs sm:text-sm shadow-sm transition cursor-pointer active:scale-98"
               >
                 Back to Explore Places

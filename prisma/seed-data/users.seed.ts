@@ -1,3 +1,5 @@
+import bcrypt from "bcryptjs";
+
 export const adminUsers = [
   {
     id: "admin_1",
@@ -31,7 +33,8 @@ export const regularUsers = [
     phone: "8939738801",
     avatar: null,
     email: "anbuceo@gmail.com",
-    password: "$2b$10$Vdlynccuch7J5JAOBLw5lOrZOrFdytMKIequHc975TawErte8xsi.",
+    password: bcrypt.hash("123456", 10), // Hash the password before seeding
+    role: "USER", // Assuming you have a role field
     wardNumber: 39, // Cast your string '39' to a Number if your schema uses Int
     streetName: "2ND STREET, RAMALINGAPURAM",
     notificationEnabled: true, // Converts '1' to boolean true

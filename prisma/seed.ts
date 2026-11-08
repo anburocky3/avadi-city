@@ -53,7 +53,7 @@ async function main() {
       update: {}, // Leave empty to avoid overwriting modified dev data, or pass updates
       create: {
         ...user,
-        gender: user.gender || "Male",
+        gender: "Male",
         dob: new Date("1995-05-15"),
         bloodGroup: "A_POS",
         streetName: "Avadi Main Rd",
@@ -80,7 +80,7 @@ async function main() {
   // 4. Seed Independent Tables (Places)
   console.log(`📍 Seeding ${seedPlaces.length} locations...`);
   for (const place of seedPlaces) {
-    await prisma.place.upsert({
+    await prisma.explorePlace.upsert({
       where: { id: place.id },
       update: {},
       create: place,

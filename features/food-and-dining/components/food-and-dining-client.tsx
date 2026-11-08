@@ -202,7 +202,9 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   // 1. Fetch Dynamic Spots & Review Stats from Server
   const fetchDynamicSpots = async () => {
     try {
-      const res = await fetch("/api/foods", { credentials: "include" });
+      const res = await fetch("/api/food-and-dining", {
+        credentials: "include",
+      });
       if (res.ok) {
         const json = await res.json();
         if (json.success && Array.isArray(json.data)) {
@@ -370,7 +372,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
 
     if (!isAuthenticated) {
       toast.error("Please sign in to save your favorite food spots.");
-      router.push("/login?redirect=/foods");
+      router.push("/login?redirect=/food-and-dining");
       return;
     }
 
@@ -506,7 +508,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
 
     if (!isAuthenticated) {
       toast.error("Please sign in to submit a review.");
-      router.push("/login?redirect=/foods");
+      router.push("/login?redirect=/food-and-dining");
       return;
     }
 
@@ -750,7 +752,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
             {t("foodTitle")}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 flex items-center font-medium">
-            <ChefHat size={14} className="text-primary mr-1 animate-bounce" />
+            {/* <ChefHat size={14} className="text-primary mr-1" /> */}
             <span>{t("foodSubtitle")}</span>
           </p>
         </div>
@@ -777,13 +779,13 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
             <Moon size={18} className="animate-pulse" />
           </div>
           <div className="min-w-0 space-y-0.5">
-            <h3 className="font-black text-xs text-white leading-tight flex items-center space-x-1.5">
+            <h3 className="font-black text-sm text-white leading-tight flex items-center space-x-1.5">
               <span>Late Night Cravings in Avadi?</span>
-              <span className="text-[9px] font-bold text-amber-300 bg-amber-400/10 px-1.5 rounded border border-amber-400/30">
+              <span className="text-[10px] font-bold text-amber-300 bg-amber-400/10 px-1.5 rounded border border-amber-400/30">
                 Past 11 PM
               </span>
             </h3>
-            <p className="text-[10px] text-indigo-200/80 font-medium truncate">
+            <p className="mt-1 text-[12px] text-indigo-200/80 font-medium truncate">
               24/7 Tea Stalls, 4:00 AM Biryani, &amp; Midnight Ice Creams
             </p>
           </div>
@@ -863,7 +865,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
           onClick={() => {
             if (!isAuthenticated && !myFavoritesOnly) {
               toast.error("Please sign in to view your favorite food spots.");
-              router.push("/login?redirect=/foods");
+              router.push("/login?redirect=/food-and-dining");
               return;
             }
             setMyFavoritesOnly((prev) => !prev);

@@ -8,7 +8,7 @@ import {
   PlaceCardDetailsClient,
   PlaceDetails,
   ReviewStats,
-} from "@/features/explore-places/components/place_card_detail";
+} from "@/features/explore-places/components/place-card-detail";
 
 export const dynamic = "force-dynamic";
 
@@ -125,7 +125,7 @@ export default async function PlaceCardDetailsPage({ params }: PageProps) {
         </p>
         <div>
           <Link
-            href="/explore"
+            href="/explore-places"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-primary hover:bg-orange-600 text-white text-xs font-bold transition shadow-sm cursor-pointer"
           >
             <ArrowLeft size={14} />
