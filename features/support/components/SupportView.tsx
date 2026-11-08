@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { LifeBuoy, Send, Clock } from "lucide-react";
+import { LifeBuoy, Send, Clock, HelpCircle } from "lucide-react";
 import SupportForm from "./SupportForm";
 import SupportHistory from "./SupportHistory";
+import Link from "next/link";
 
 export default function SupportView() {
   const [activeTab, setActiveTab] = useState<"form" | "history">("form");
@@ -18,19 +19,26 @@ export default function SupportView() {
             Support & Feedback
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
-            Notice a bug, incorrect transit schedule, or want to track the cleared status of past reports?
+            Notice a bug, incorrect transit schedule, or want to track the
+            cleared status of past reports?
           </p>
         </div>
 
         {/* Citizen Helpdesk Pill */}
-        <span className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-black border border-primary/20 shrink-0 w-fit">
-          <LifeBuoy size={14} className="text-primary" />
-          <span>Citizen Helpdesk</span>
-        </span>
+        <Link
+          href="/credits"
+          className="inline-flex items-center space-x-2 px-4 py-2 rounded-full bg-primary/10 text-primary text-xs font-black border border-primary/20 shrink-0 w-fit"
+        >
+          <span>Who created this</span>
+          <HelpCircle size={14} className="text-primary" />
+        </Link>
       </header>
 
       {/* Main Tabs Navigation */}
-      <nav aria-label="Support Navigation" className="grid grid-cols-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 max-w-md w-full gap-1.5">
+      <nav
+        aria-label="Support Navigation"
+        className="grid grid-cols-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 max-w-md w-full gap-1.5"
+      >
         <button
           type="button"
           onClick={() => setActiveTab("form")}
@@ -40,7 +48,10 @@ export default function SupportView() {
               : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
-          <Send size={14} className={activeTab === "form" ? "text-primary" : ""} />
+          <Send
+            size={14}
+            className={activeTab === "form" ? "text-primary" : ""}
+          />
           <span>Submit Feedback</span>
         </button>
 
@@ -53,7 +64,10 @@ export default function SupportView() {
               : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
           }`}
         >
-          <Clock size={14} className={activeTab === "history" ? "text-emerald-500" : ""} />
+          <Clock
+            size={14}
+            className={activeTab === "history" ? "text-emerald-500" : ""}
+          />
           <span>History & Status</span>
         </button>
       </nav>

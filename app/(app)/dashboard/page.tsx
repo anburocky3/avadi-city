@@ -2,7 +2,7 @@ import { Metadata } from "next";
 import DashboardClient from "@/features/dashboard/components/dashboard-client";
 
 export const metadata: Metadata = {
-  title: "Dashboard | Avadi City App",
+  title: "Dashboard",
   description:
     "Hyperlocal civic services, ward feeds, alerts, and schedules for Avadi residents.",
 };

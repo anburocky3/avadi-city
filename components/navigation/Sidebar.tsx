@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -37,6 +37,7 @@ import { WardSelector } from "../ward-selector";
 
 export interface SidebarProps {
   isOpen: boolean;
+  isCollapsed?: boolean;
   onClose: () => void;
 }
 
@@ -67,34 +68,17 @@ interface WardContextType {
   logout: () => Promise<void>;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  isCollapsed = false,
+  onClose,
+}) => {
   const router = useRouter();
   const pathname = usePathname();
   const t = useTranslations();
 
   // --- All Hooks Must Be Declared at the Top Level ---
-  const [mounted, setMounted] = useState(false);
-  const [isDark, setIsDark] = useState(false);
   const [isWardModalOpen, setIsWardModalOpen] = useState<boolean>(false);
-
-  // --- Theme Setup ---
-  useEffect(() => {
-    setMounted(true);
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setIsDark(isDarkMode);
-  }, []);
-
-  const toggleTheme = () => {
-    const newDark = !isDark;
-    setIsDark(newDark);
-    if (newDark) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  };
 
   // --- Ward Context ---
   const {
@@ -105,13 +89,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     readAlerts = [],
     dismissedAlerts = [],
   } = useWard();
-
-  // Safe Guard Return AFTER all hooks have been declared
-  if (!mounted) {
-    return (
-      <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 w-12 h-12 opacity-0" />
-    );
-  }
 
   // Calculate unread alerts
   const unreadAlertsCount = alerts.filter(
@@ -168,18 +145,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* Sidebar Panel */}
       <motion.aside
         initial={false}
-        animate={{
-          x:
-            isOpen ||
-            (typeof window !== "undefined" && window.innerWidth >= 768)
-              ? 0
-              : "-100%",
-        }}
         transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="fixed md:sticky top-0 left-0 z-50 md:z-auto flex flex-col w-72 sm:w-80 h-screen bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800/80 p-5 sm:p-6 select-none shrink-0 shadow-2xl md:shadow-none"
+        data-collapsed={isCollapsed}
+        className={`${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"} group fixed md:sticky top-0 left-0 z-50 md:z-auto flex flex-col w-72 sm:w-80 md:w-72 h-screen bg-white dark:bg-slate-950 border-r border-slate-200/80 dark:border-slate-800/80 p-5 sm:p-6 md:p-4 select-none shrink-0 shadow-2xl md:shadow-none transition-[width,transform] duration-200 md:data-[collapsed=true]:w-20`}
       >
         {/* Logo & Mobile Close X */}
-        <div className="flex items-center justify-between mb-6 px-1">
+        <div
+          className={`flex items-center justify-between mb-6 px-1 ${isCollapsed ? "justify-center" : ""}`}
+        >
           <div
             className="flex items-center space-x-3 cursor-pointer group"
             onClick={() => {
@@ -187,14 +160,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               if (onClose) onClose();
             }}
           >
-            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 shadow-md flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
+            <div
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0.5 shadow-md flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-transform ${isCollapsed ? "h-11 w-11" : ""}`}
+            >
               <img
                 src="/logo.png"
                 alt="AVADI CITY Official Logo"
                 className="w-full h-full object-cover object-center rounded-xl"
               />
             </div>
-            <div className="flex flex-col">
+            <div className={`flex flex-col ${isCollapsed ? "hidden" : ""}`}>
               <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
                 AVADI <span className="text-primary font-black">CITY</span>
               </span>
@@ -221,13 +196,19 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             setIsWardModalOpen(true);
             if (onClose) onClose();
           }}
-          className="w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-gradient-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border"
+          title={`Ward ${activeWard.id}`}
+          aria-label={`Select Ward ${activeWard.id}`}
+          className={`w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""}`}
         >
-          <div className="flex items-center space-x-3 min-w-0 flex-1 pr-2">
-            <div className="w-10 h-10 rounded-xl bg-orange-500 text-white flex items-center justify-center font-black text-xs sm:text-sm shadow-md shadow-orange-500/20 shrink-0">
+          <div
+            className={`flex items-center space-x-3 min-w-0 flex-1 pr-2 ${isCollapsed ? "flex-none p-0" : ""}`}
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 font-black text-xs text-white shadow-md shadow-orange-500/20 sm:text-sm">
               W{activeWard.id}
             </div>
-            <div className="flex flex-col min-w-0 flex-1">
+            <div
+              className={`flex flex-col min-w-0 flex-1 ${isCollapsed ? "hidden" : ""}`}
+            >
               <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug truncate">
                 Ward {activeWard.id || "Active Municipal Ward"}
               </span>
@@ -237,14 +218,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-0.5 text-primary shrink-0 group-hover:translate-x-1 transition-transform pl-1">
+          <div
+            className={`flex items-center space-x-0.5 text-primary shrink-0 group-hover:translate-x-1 transition-transform pl-1 ${isCollapsed ? "hidden" : ""}`}
+          >
             <span className="text-[11px] font-extrabold">{t("edit")}</span>
             <ChevronRight size={14} />
           </div>
         </motion.button>
 
         {/* Navigation - Main Group */}
-        <div className="flex-1 space-y-6 overflow-y-auto pr-1 custom-scrollbar">
+        <div className="flex-1 min-h-0 space-y-6 overflow-x-hidden overflow-y-auto pr-1 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <div>
             <nav className="mt-2.5 space-y-1.5">
               {mainNav.map((item) => {
@@ -256,7 +239,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     key={item.path}
                     href={item.path}
                     onClick={onClose}
-                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${
+                    title={item.name}
+                    aria-label={item.name}
+                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center pl-8" : ""} ${
                       item.isSOS
                         ? isActive
                           ? "bg-rose-600 text-white shadow-lg shadow-rose-600/30"
@@ -266,11 +251,17 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                           : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
                     }`}
                   >
-                    <Icon
-                      size={18}
-                      className={item.isSOS ? "animate-pulse" : ""}
-                    />
-                    <span>{item.name}</span>
+                    <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                      <Icon
+                        size={20}
+                        strokeWidth={2.25}
+                        aria-hidden="true"
+                        className={item.isSOS ? "animate-pulse" : ""}
+                      />
+                    </span>
+                    <span className={isCollapsed ? "hidden" : ""}>
+                      {item.name}
+                    </span>
                   </Link>
                 );
               })}
@@ -278,7 +269,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           <div>
-            <span className="px-2 text-[11px] font-extrabold tracking-widest text-slate-400 dark:text-slate-500 uppercase">
+            <span
+              className={`px-2 text-[11px] font-extrabold tracking-widest text-slate-400 dark:text-slate-500 uppercase ${isCollapsed ? "hidden" : ""}`}
+            >
               {t("quickUtilities")}
             </span>
             <nav className="mt-2.5 space-y-1.5">
@@ -291,15 +284,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     key={item.path}
                     href={item.path}
                     onClick={onClose}
-                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${
+                    title={item.name}
+                    aria-label={item.name}
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""} ${
                       isActive
                         ? "bg-teal-700 text-white shadow-lg shadow-teal-700/25"
                         : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
                     }`}
                   >
                     <div className="flex items-center space-x-3.5">
-                      <Icon size={18} />
-                      <span>{item.name}</span>
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center">
+                        <Icon size={20} strokeWidth={2.25} aria-hidden="true" />
+                      </span>
+                      <span className={isCollapsed ? "hidden" : ""}>
+                        {item.name}
+                      </span>
                     </div>
                     {item.badge && (
                       <span className="w-5 h-5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center animate-pulse shadow-sm">
@@ -318,17 +317,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 await logout();
                 if (onClose) onClose();
               }}
-              className="w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer text-left active:scale-95"
+              title={t("logout")}
+              aria-label={t("logout")}
+              className={`w-full flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all cursor-pointer text-left active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""}`}
             >
               <LogOut size={18} className="shrink-0" />
-              <span>{t("logout")}</span>
+              <span className={isCollapsed ? "hidden" : ""}>{t("logout")}</span>
             </button>
           </div>
         </div>
 
         {/* Footer Settings / Theme Toggle */}
         <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800/80 mt-auto flex items-center justify-between">
-          <div className="flex items-center space-x-3">
+          <div
+            className={`flex items-center space-x-3 ${isCollapsed ? "justify-center" : ""}`}
+          >
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
               {authUser?.avatar ? (
                 <img
@@ -340,7 +343,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 <span>{authUser?.name?.charAt(0)}</span>
               )}
             </div>
-            <div className="flex flex-col">
+            <div className={isCollapsed ? "hidden" : "flex flex-col"}>
               <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-tight">
                 {authUser?.name || "Guest"}
               </span>
@@ -350,7 +353,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          <div className="flex items-center space-x-1.5">
+          <div
+            className={isCollapsed ? "hidden" : "flex items-center space-x-1.5"}
+          >
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={async () => {

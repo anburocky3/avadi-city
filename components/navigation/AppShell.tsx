@@ -10,17 +10,31 @@ export interface AppShellProps {
 }
 
 export const AppShell: React.FC<AppShellProps> = ({ children }) => {
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  const handleMenuClick = () => {
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      setIsSidebarCollapsed((collapsed) => !collapsed);
+      return;
+    }
+
+    setIsSidebarOpen((open) => !open);
+  };
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-250">
       {/* 1. Left Navigation Sidebar: Displayed on Desktop and Tablet */}
-      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Sidebar
+        isOpen={isSidebarOpen}
+        isCollapsed={isSidebarCollapsed}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
       {/* 2. Main Page View Container */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         {/* Mobile top header: Active ward switcher, notification bell, theme toggle */}
-        <Navbar onMenuClick={() => setIsSidebarOpen(true)} />
+        <Navbar onMenuClick={handleMenuClick} />
 
         {/* Center content slot: Scrollable with dynamic pages */}
         <main className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-950 transition-colors pb-24 md:pb-8">

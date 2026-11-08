@@ -64,7 +64,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "General / Suggestions",
     icon: HelpCircle,
     badge: "Ideas",
-    description: "Suggest a new civic feature, UI improvements, or general feedback",
+    description:
+      "Suggest a new civic feature, UI improvements, or general feedback",
     subCategories: [
       "Feature suggestion / New idea",
       "Dark mode or UI glitch",
@@ -78,7 +79,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Civic Complaints",
     icon: AlertTriangle,
     badge: "Grievances",
-    description: "Garbage, streetlights, drainage, roads, or drinking water issues",
+    description:
+      "Garbage, streetlights, drainage, roads, or drinking water issues",
     subCategories: [
       "Cannot upload photo proof",
       "Street name or ward not matching",
@@ -93,7 +95,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Community Feed",
     icon: MessageSquare,
     badge: "Town Hall",
-    description: "Ward posts, discussion threads, commenting, and neighborhood news",
+    description:
+      "Ward posts, discussion threads, commenting, and neighborhood news",
     subCategories: [
       "Post failed to publish",
       "Comments not loading or posting",
@@ -108,7 +111,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Explore Places",
     icon: Compass,
     badge: "Places",
-    description: "Parks, lake viewpoints, Vijayanta Tank memorial, and heritage spots",
+    description:
+      "Parks, lake viewpoints, Vijayanta Tank memorial, and heritage spots",
     subCategories: [
       "Location / GPS coordinates inaccurate",
       "Opening timings incorrect",
@@ -139,7 +143,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Hospitals & Pharmacies",
     icon: HeartPulse,
     badge: "Health",
-    description: "24/7 hospitals, clinics, diagnostic centers, and medical stores",
+    description:
+      "24/7 hospitals, clinics, diagnostic centers, and medical stores",
     subCategories: [
       "Hospital phone number not reachable",
       "Ambulance / ICU emergency contact invalid",
@@ -155,7 +160,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Local Services",
     icon: Wrench,
     badge: "Services",
-    description: "Electricians, plumbers, carpenters, AC mechanics, and appliance technicians",
+    description:
+      "Electricians, plumbers, carpenters, AC mechanics, and appliance technicians",
     subCategories: [
       "Service worker phone not reachable",
       "Incorrect service category / skills",
@@ -171,7 +177,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Rent & Properties",
     icon: Building2,
     badge: "Rentals",
-    description: "Houses, flats, bachelor rooms, and commercial rentals in Avadi",
+    description:
+      "Houses, flats, bachelor rooms, and commercial rentals in Avadi",
     subCategories: [
       "Property already rented / unavailable",
       "Rent amount or advance deposit incorrect",
@@ -186,7 +193,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Local Job Vacancies",
     icon: Briefcase,
     badge: "Jobs",
-    description: "Hyperlocal jobs, retail openings, and delivery / office vacancies",
+    description:
+      "Hyperlocal jobs, retail openings, and delivery / office vacancies",
     subCategories: [
       "Job vacancy expired / position filled",
       "Employer contact number not working",
@@ -201,7 +209,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Donations",
     icon: Gift,
     badge: "Donations",
-    description: "Urgent blood requests, community relief drives, and volunteer aid",
+    description:
+      "Urgent blood requests, community relief drives, and volunteer aid",
     subCategories: [
       "Urgent blood request fulfilled (close alert)",
       "Blood donor contact number invalid",
@@ -231,7 +240,8 @@ const CATEGORIES: CategoryMeta[] = [
     label: "Lost & Found",
     icon: PackageSearch,
     badge: "Lost & Found",
-    description: "Reported lost keys, wallets, documents, pets, and recovered items",
+    description:
+      "Reported lost keys, wallets, documents, pets, and recovered items",
     subCategories: [
       "Item already claimed or retrieved",
       "Cannot upload proof photo",
@@ -252,16 +262,22 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
   const fileInputId = useId();
 
   // Form states
-  const [featureCategory, setFeatureCategory] = useState<SupportFeatureKey | "">("");
+  const [featureCategory, setFeatureCategory] = useState<
+    SupportFeatureKey | ""
+  >("");
   const [subCategory, setSubCategory] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(
+    null,
+  );
   const [screenshotFile, setScreenshotFile] = useState<File | null>(null);
 
   // Submission & feedback states
   const [isPending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [submittedTicketId, setSubmittedTicketId] = useState<string | null>(null);
+  const [submittedTicketId, setSubmittedTicketId] = useState<string | null>(
+    null,
+  );
   const [isPopupModalOpen, setIsPopupModalOpen] = useState<boolean>(false);
 
   // Active category metadata
@@ -319,7 +335,9 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
     }
 
     if (description.trim().length < 10) {
-      setErrorMessage("Please provide at least 10 characters explaining the issue or idea.");
+      setErrorMessage(
+        "Please provide at least 10 characters explaining the issue or idea.",
+      );
       return;
     }
 
@@ -328,7 +346,10 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
       formData.append("featureCategory", featureCategory);
       formData.append("subCategory", subCategory);
       formData.append("description", description.trim());
-      formData.append("wardId", String(activeWard?.id || authUser?.wardNumber || 1));
+      formData.append(
+        "wardId",
+        String(activeWard?.id || authUser?.wardNumber || 1),
+      );
 
       if (screenshotFile) {
         formData.append("screenshot", screenshotFile);
@@ -347,7 +368,10 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
             const list: string[] = raw ? JSON.parse(raw) : [];
             if (!list.includes(res.ticketId)) {
               list.unshift(res.ticketId);
-              localStorage.setItem("avadi_user_support_tickets", JSON.stringify(list));
+              localStorage.setItem(
+                "avadi_user_support_tickets",
+                JSON.stringify(list),
+              );
             }
           } catch {
             // ignore localStorage error
@@ -355,7 +379,8 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
         }
         toast.success("Feedback submitted successfully!");
       } else {
-        const errorText = res.error || "Unable to submit your ticket. Please try again.";
+        const errorText =
+          res.error || "Unable to submit your ticket. Please try again.";
         setErrorMessage(errorText);
         toast.error(errorText);
       }
@@ -400,7 +425,8 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
               Feedback Submitted Successfully!
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed max-w-xs mx-auto">
-              Your report has been logged with the Avadi City Municipal technical team and queued for inspection.
+              Your report has been logged with the Avadi City Municipal
+              technical team and queued for inspection.
             </p>
           </div>
 
@@ -499,12 +525,16 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
           </h3>
 
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto mt-2 leading-relaxed">
-            Your feedback has been logged into the municipal issue queue. Our technical and ward administration team will review this report and clear it once resolved.
+            Your feedback has been logged into the municipal issue queue. Our
+            technical and ward administration team will review this report and
+            clear it once resolved.
           </p>
 
           <div className="my-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-700 dark:text-slate-200">
             <span className="text-slate-400">Report ID:</span>
-            <span className="font-bold text-primary tracking-wider">{submittedTicketId}</span>
+            <span className="font-bold text-primary tracking-wider">
+              {submittedTicketId}
+            </span>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
@@ -539,244 +569,257 @@ export default function SupportForm({ onViewHistory }: SupportFormProps = {}) {
           onSubmit={handleSubmit}
           className="rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm p-5 sm:p-7 space-y-6"
         >
-        {/* Feature Category Selector (No numbers) */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <label className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200">
-              Select Feature or Service <span className="text-primary">*</span>
-            </label>
-            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-              Which part of the app is this about?
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
-            {CATEGORIES.map((cat) => {
-              const Icon = cat.icon;
-              const isSelected = featureCategory === cat.key;
-
-              return (
-                <button
-                  key={cat.key}
-                  type="button"
-                  onClick={() => handleCategorySelect(cat.key)}
-                  className={`p-3.5 rounded-2xl text-left transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[92px] group border ${
-                    isSelected
-                      ? "bg-primary/5 dark:bg-primary/15 border-primary ring-2 ring-primary/30 shadow-xs"
-                      : "bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/80 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-2">
-                    <div
-                      className={`p-2 rounded-xl border transition-colors ${
-                        isSelected
-                          ? "bg-primary text-white border-primary shadow-xs"
-                          : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 group-hover:text-primary"
-                      }`}
-                    >
-                      <Icon size={16} />
-                    </div>
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                        isSelected
-                          ? "bg-primary/15 text-primary border-primary/30"
-                          : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
-                      }`}
-                    >
-                      {cat.badge}
-                    </span>
-                  </div>
-                  <div>
-                    <h4
-                      className={`text-xs font-black leading-tight ${
-                        isSelected
-                          ? "text-primary dark:text-white"
-                          : "text-slate-800 dark:text-slate-200 group-hover:text-primary"
-                      }`}
-                    >
-                      {cat.label}
-                    </h4>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Dynamic Sub-Category Dropdown (No numbers) */}
-        <AnimatePresence mode="wait">
-          {selectedMeta && (
-            <motion.div
-              key={selectedMeta.key}
-              initial={{ opacity: 0, height: 0, y: -4 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -4 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-              className="overflow-hidden space-y-2.5 pt-1"
-            >
-              <div className="flex items-center justify-between">
-                <label
-                  htmlFor="subCategory"
-                  className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200"
-                >
-                  Sub-Category for {selectedMeta.label} <span className="text-primary">*</span>
-                </label>
-                <span className="text-[11px] text-primary font-medium hidden sm:inline">
-                  {selectedMeta.description}
-                </span>
-              </div>
-
-              <div className="relative">
-                <select
-                  id="subCategory"
-                  value={subCategory}
-                  onChange={(e) => {
-                    setSubCategory(e.target.value);
-                    setErrorMessage(null);
-                  }}
-                  className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white font-medium text-xs border border-slate-200 dark:border-slate-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition appearance-none cursor-pointer"
-                >
-                  <option value="" disabled className="bg-white dark:bg-slate-900 text-slate-400">
-                    -- Select a specific issue or feedback topic --
-                  </option>
-                  {selectedMeta.subCategories.map((sub) => (
-                    <option key={sub} value={sub} className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-1">
-                      {sub}
-                    </option>
-                  ))}
-                </select>
-                <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">
-                  <ArrowRight size={14} className="rotate-90" />
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Detailed Description Field (No numbers) */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="description"
-              className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200"
-            >
-              Detailed Description <span className="text-primary">*</span>
-            </label>
-            <span
-              className={`text-[11px] font-mono ${
-                description.length > 2400
-                  ? "text-rose-500 font-bold"
-                  : "text-slate-400"
-              }`}
-            >
-              {description.length} / 2500
-            </span>
-          </div>
-
-          <textarea
-            id="description"
-            rows={4}
-            maxLength={2500}
-            value={description}
-            onChange={(e) => {
-              setDescription(e.target.value);
-              setErrorMessage(null);
-            }}
-            placeholder="Please describe the issue, what went wrong, or the feature you'd love to see in Avadi City..."
-            className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white text-xs leading-relaxed border border-slate-200 dark:border-slate-700 placeholder-slate-400 dark:placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition resize-y min-h-[110px]"
-          />
-        </div>
-
-        {/* Optional Screenshot Upload (No numbers) */}
-        <div className="space-y-2.5">
-          <label className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200">
-            Attach Screenshot / Photo <span className="text-slate-400 font-normal">(Optional)</span>
-          </label>
-
-          {screenshotPreview ? (
-            <div className="relative inline-block rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-1.5 shadow-xs">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={screenshotPreview}
-                alt="Screenshot preview"
-                className="max-h-48 rounded-xl object-contain bg-slate-100 dark:bg-black/50"
-              />
-              <button
-                type="button"
-                onClick={handleRemoveScreenshot}
-                className="absolute top-3 right-3 p-1.5 rounded-full bg-rose-600 text-white hover:bg-rose-500 transition shadow-md cursor-pointer"
-                aria-label="Remove image"
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ) : (
-            <div>
-              <label
-                htmlFor={fileInputId}
-                className="group flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition cursor-pointer text-center"
-              >
-                <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 group-hover:text-primary group-hover:border-primary/40 transition mb-2 shadow-2xs">
-                  <UploadCloud size={20} />
-                </div>
-                <p className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-primary transition">
-                  Click to attach a screenshot or photo
-                </p>
-                <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
-                  PNG, JPG or WebP up to 5MB (stored securely in Cloudflare R2)
-                </p>
+          {/* Feature Category Selector (No numbers) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200">
+                Select Feature or Service{" "}
+                <span className="text-primary">*</span>
               </label>
-              <input
-                id={fileInputId}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
+              <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                Which part of the app is this about?
+              </span>
             </div>
-          )}
-        </div>
 
-        {/* Error Notice */}
-        <AnimatePresence>
-          {errorMessage && (
-            <motion.div
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2.5 font-medium"
-            >
-              <AlertTriangle size={16} className="text-rose-500 shrink-0" />
-              <span>{errorMessage}</span>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {CATEGORIES.map((cat) => {
+                const Icon = cat.icon;
+                const isSelected = featureCategory === cat.key;
 
-        {/* Submit Button (Changed to "Submit") */}
-        <div className="pt-2">
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full py-4 px-6 rounded-2xl bg-primary hover:bg-orange-600 active:scale-[0.99] text-white font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
-          >
-            {isPending ? (
-              <>
-                <Loader2 size={16} className="animate-spin text-white" />
-                <span>Submitting...</span>
-              </>
-            ) : (
-              <>
-                <Send size={15} className="text-white" />
-                <span>Submit</span>
-              </>
+                return (
+                  <button
+                    key={cat.key}
+                    type="button"
+                    onClick={() => handleCategorySelect(cat.key)}
+                    className={`p-3.5 rounded-2xl text-left transition-all duration-200 cursor-pointer flex flex-col justify-between min-h-[92px] group border ${
+                      isSelected
+                        ? "bg-primary/5 dark:bg-primary/15 border-primary ring-2 ring-primary/30 shadow-xs"
+                        : "bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800/80 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-2">
+                      <div
+                        className={`p-2 rounded-xl border transition-colors ${
+                          isSelected
+                            ? "bg-primary text-white border-primary shadow-xs"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 group-hover:text-primary"
+                        }`}
+                      >
+                        <Icon size={16} />
+                      </div>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                          isSelected
+                            ? "bg-primary/15 text-primary border-primary/30"
+                            : "bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700"
+                        }`}
+                      >
+                        {cat.badge}
+                      </span>
+                    </div>
+                    <div>
+                      <h4
+                        className={`text-xs font-black leading-tight ${
+                          isSelected
+                            ? "text-primary dark:text-white"
+                            : "text-slate-800 dark:text-slate-200 group-hover:text-primary"
+                        }`}
+                      >
+                        {cat.label}
+                      </h4>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Dynamic Sub-Category Dropdown (No numbers) */}
+          <AnimatePresence mode="wait">
+            {selectedMeta && (
+              <motion.div
+                key={selectedMeta.key}
+                initial={{ opacity: 0, height: 0, y: -4 }}
+                animate={{ opacity: 1, height: "auto", y: 0 }}
+                exit={{ opacity: 0, height: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="overflow-hidden space-y-2.5 pt-1"
+              >
+                <div className="flex items-center justify-between">
+                  <label
+                    htmlFor="subCategory"
+                    className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200"
+                  >
+                    Sub-Category for {selectedMeta.label}{" "}
+                    <span className="text-primary">*</span>
+                  </label>
+                  <span className="text-[11px] text-primary font-medium hidden sm:inline">
+                    {selectedMeta.description}
+                  </span>
+                </div>
+
+                <div className="relative">
+                  <select
+                    id="subCategory"
+                    value={subCategory}
+                    onChange={(e) => {
+                      setSubCategory(e.target.value);
+                      setErrorMessage(null);
+                    }}
+                    className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white font-medium text-xs border border-slate-200 dark:border-slate-700 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition appearance-none cursor-pointer"
+                  >
+                    <option
+                      value=""
+                      disabled
+                      className="bg-white dark:bg-slate-900 text-slate-400"
+                    >
+                      -- Select a specific issue or feedback topic --
+                    </option>
+                    {selectedMeta.subCategories.map((sub) => (
+                      <option
+                        key={sub}
+                        value={sub}
+                        className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white py-1"
+                      >
+                        {sub}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center text-slate-400">
+                    <ArrowRight size={14} className="rotate-90" />
+                  </div>
+                </div>
+              </motion.div>
             )}
-          </button>
+          </AnimatePresence>
 
-          <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mt-3 font-medium">
-            Your feedback is reviewed directly by the Avadi City Municipal Administration.
-          </p>
-        </div>
-      </form>
+          {/* Detailed Description Field (No numbers) */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="description"
+                className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200"
+              >
+                Detailed Description <span className="text-primary">*</span>
+              </label>
+              <span
+                className={`text-[11px] font-mono ${
+                  description.length > 2400
+                    ? "text-rose-500 font-bold"
+                    : "text-slate-400"
+                }`}
+              >
+                {description.length} / 2500
+              </span>
+            </div>
+
+            <textarea
+              id="description"
+              rows={4}
+              maxLength={2500}
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setErrorMessage(null);
+              }}
+              placeholder="Please describe the issue, what went wrong, or the feature you'd love to see in Avadi City..."
+              className="w-full px-4 py-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 text-slate-900 dark:text-white text-xs leading-relaxed border border-slate-200 dark:border-slate-700 placeholder-slate-400 dark:placeholder-slate-500 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition resize-y min-h-[110px]"
+            />
+          </div>
+
+          {/* Optional Screenshot Upload (No numbers) */}
+          <div className="space-y-2.5">
+            <label className="block text-xs font-black tracking-wider uppercase text-slate-800 dark:text-slate-200">
+              Attach Screenshot / Photo{" "}
+              <span className="text-slate-400 font-normal">(Optional)</span>
+            </label>
+
+            {screenshotPreview ? (
+              <div className="relative inline-block rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 p-1.5 shadow-xs">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={screenshotPreview}
+                  alt="Screenshot preview"
+                  className="max-h-48 rounded-xl object-contain bg-slate-100 dark:bg-black/50"
+                />
+                <button
+                  type="button"
+                  onClick={handleRemoveScreenshot}
+                  className="absolute top-3 right-3 p-1.5 rounded-full bg-rose-600 text-white hover:bg-rose-500 transition shadow-md cursor-pointer"
+                  aria-label="Remove image"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <div>
+                <label
+                  htmlFor={fileInputId}
+                  className="group flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-primary dark:hover:border-primary bg-slate-50/70 dark:bg-slate-800/30 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition cursor-pointer text-center"
+                >
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 group-hover:text-primary group-hover:border-primary/40 transition mb-2 shadow-2xs">
+                    <UploadCloud size={20} />
+                  </div>
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300 group-hover:text-primary transition">
+                    Click to attach a screenshot or photo
+                  </p>
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    PNG, JPG or WebP up to 5MB (stored securely in Cloudflare
+                    R2)
+                  </p>
+                </label>
+                <input
+                  id={fileInputId}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Error Notice */}
+          <AnimatePresence>
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -4 }}
+                className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/50 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-2.5 font-medium"
+              >
+                <AlertTriangle size={16} className="text-rose-500 shrink-0" />
+                <span>{errorMessage}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Submit Button (Changed to "Submit") */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="w-full py-4 px-6 rounded-2xl bg-primary hover:bg-orange-600 active:scale-[0.99] text-white font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-md shadow-primary/25 hover:shadow-lg hover:shadow-primary/30 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 size={16} className="animate-spin text-white" />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <Send size={15} className="text-white" />
+                  <span>Submit</span>
+                </>
+              )}
+            </button>
+
+            <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mt-3 font-medium">
+              Your feedback is reviewed directly by the Avadi City Municipal
+              Administration.
+            </p>
+          </div>
+        </form>
       )}
     </>
   );

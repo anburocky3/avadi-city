@@ -1,9 +1,8 @@
-import React from "react";
 import { Metadata } from "next";
-import SupportView from "@/components/support/SupportView";
+import SupportView from "@/features/support/components/SupportView";
 
 export const metadata: Metadata = {
-  title: "Support & Feedback | Avadi City",
+  title: "Support & Feedback",
   description:
     "Report bugs, suggest new civic features, track ticket history, and monitor resolution status directly from the Avadi City Municipal Tech Team.",
 };
