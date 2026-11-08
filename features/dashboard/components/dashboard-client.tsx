@@ -28,6 +28,7 @@ import {
   CloudRain,
   CloudFog,
   PackageSearch,
+  LucideIcon,
 } from "lucide-react";
 
 import {
@@ -44,6 +45,7 @@ import {
 import { useWard } from "@/context/wardContext";
 import { trackEvent } from "@/lib/analytics";
 import { Feed } from "@/features/feeds/types";
+import { Route } from "next";
 
 // --- TYPESCRIPT DEFINITIONS ---
 
@@ -170,7 +172,7 @@ const QUICK_SHORTCUTS = [
   },
   {
     name: "Explore Spots",
-    path: "/explore",
+    path: "/explore-places",
     icon: Compass,
     desc: "Avadi landmarks & parks",
     badgeBg: "from-blue-500 to-indigo-600 shadow-blue-500/25",
@@ -186,16 +188,23 @@ const QUICK_SHORTCUTS = [
   },
 ];
 
-const WARD_SERVICES = [
+interface WardServiceData {
+  name: string;
+  path: Route;
+  icon: LucideIcon;
+  bg: string;
+}
+
+const WARD_SERVICES: WardServiceData[] = [
   {
     name: "Food & Dining",
-    path: "/foods",
+    path: "/food-and-dining",
     icon: ChefHat,
     bg: "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
   },
   {
     name: "Local Services",
-    path: "/services",
+    path: "/local-services",
     icon: Wrench,
     bg: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
   },
@@ -225,7 +234,7 @@ const WARD_SERVICES = [
   // },
   {
     name: "Lost & Found",
-    path: "/lost-found",
+    path: "/lost-and-found",
     icon: PackageSearch,
     bg: "bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400",
   },
@@ -953,7 +962,7 @@ export const DashboardClient: React.FC = () => {
           return (
             <Link
               key={tile.name}
-              href={tile.path}
+              href={tile.path as Route}
               className={`group p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 ${tile.borderHover} shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 flex flex-col justify-between space-y-3`}
             >
               <div className="flex items-center justify-between">
@@ -982,7 +991,7 @@ export const DashboardClient: React.FC = () => {
 
       {/* 5. Gourmet Culinary Local Food Spotlight Card */}
       <Link
-        href="/foods"
+        href="/food-and-dining"
         className="block p-5 sm:p-6 rounded-3xl bg-linear-to-r from-red-950 via-rose-900 to-amber-950 text-white border-2 border-amber-400/60 shadow-xl shadow-red-950/20 hover:border-amber-300 hover:scale-[1.005] transition-all duration-200 relative overflow-hidden group space-y-4"
       >
         <div className="flex items-center justify-between relative z-10">
@@ -1055,7 +1064,7 @@ export const DashboardClient: React.FC = () => {
             return (
               <Link
                 key={util.name}
-                href={util.path}
+                href={util.path as Route}
                 className="flex flex-col items-center justify-center p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/70 dark:border-slate-800 hover:-translate-y-0.5 active:scale-95 transition-all duration-200 shadow-xs group"
               >
                 <div

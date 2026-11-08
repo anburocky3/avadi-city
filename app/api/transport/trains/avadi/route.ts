@@ -16,6 +16,16 @@ const TARGET_DESTINATIONS = [
   "PRES",
 ];
 
+const ORIGIN_STATIONS = {
+  AVD: "Avadi",
+  PAB: "Pattabiram",
+  TMVL: "Tirumullaivoyal",
+  ANNR: "Annanur",
+  TI: "Tiruninravur",
+  NEC: "Nemilichery",
+} as const;
+type OriginCode = keyof typeof ORIGIN_STATIONS;
+
 // Reusable CORS headers for safe client-side consumption
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,16 +36,28 @@ const corsHeaders = {
 // In-Memory Fast-Path Cache (Survives across warm Node.js / serverless instances)
 let memoryCache: {
   timestamp: number;
+  origin: OriginCode;
   payload: SuburbanTrainSchedule[];
 } | null = null;
 const MEMORY_CACHE_TTL_MS = 3600 * 1000; // 1 Hour in milliseconds
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const requestedOrigin = new URL(request.url).searchParams
+      .get("origin")
+      ?.toUpperCase();
+    const origin: OriginCode =
+      requestedOrigin && requestedOrigin in ORIGIN_STATIONS
+        ? (requestedOrigin as OriginCode)
+        : "AVD";
     const now = Date.now();
 
     // 1. Check In-Memory Fast-Path Cache first
-    if (memoryCache && now - memoryCache.timestamp < MEMORY_CACHE_TTL_MS) {
+    if (
+      memoryCache &&
+      memoryCache.origin === origin &&
+      now - memoryCache.timestamp < MEMORY_CACHE_TTL_MS
+    ) {
       return NextResponse.json(
         {
           cache: "CACHED",
@@ -53,8 +75,8 @@ export async function GET() {
     // 2. Fire all 7 directional queries concurrently using the official AJAX endpoint
     const fetchPromises = TARGET_DESTINATIONS.map(async (destCode) => {
       try {
-        const targetUrl = `https://erail.in/rail/getTrains.aspx?Station_From=AVD&Station_To=${destCode}&DataSource=0&Language=0&Cache=true`;
-        const refererUrl = `https://erail.in/trains/avadi-AVD/${destCode.toLowerCase()}-${destCode}`;
+        const targetUrl = `https://erail.in/rail/getTrains.aspx?Station_From=${origin}&Station_To=${destCode}&DataSource=0&Language=0&Cache=true`;
+        const refererUrl = `https://erail.in/trains/${ORIGIN_STATIONS[origin].toLowerCase().replaceAll(" ", "-")}-${origin}/${destCode.toLowerCase()}-${destCode}`;
 
         const res = await fetch(targetUrl, {
           method: "GET",
@@ -105,7 +127,11 @@ export async function GET() {
 
     // 4. Combine caret-delimited text dumps and pass into unified TypeScript parser
     const combinedTextDump = rawResponses.join("^");
-    const allTrains = parseErailDump(combinedTextDump);
+    const allTrains = parseErailDump(
+      combinedTextDump,
+      ORIGIN_STATIONS[origin],
+      origin,
+    );
 
     // 5. Deduplicate by Train Number
     const uniqueTrainsMap = new Map<string, SuburbanTrainSchedule>();
@@ -122,6 +148,7 @@ export async function GET() {
     // Store in our local memory cache wrapper
     memoryCache = {
       timestamp: now,
+      origin,
       payload: sortedUniqueTrains,
     };
 

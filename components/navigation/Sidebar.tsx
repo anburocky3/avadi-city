@@ -27,6 +27,7 @@ import {
   PackageSearch,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { Route } from "next";
 
 // Adjust import paths according to your folder structure
 import { useWard } from "@/context/wardContext";
@@ -43,7 +44,7 @@ export interface SidebarProps {
 
 interface NavItem {
   name: string;
-  path: string;
+  path: Route;
   icon: LucideIcon;
   isSOS?: boolean;
   badge?: number | null;
@@ -201,7 +202,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           aria-label={
             isLoadingAuth ? "Loading ward" : `Select Ward ${activeWard.id}`
           }
-          className={`w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""}`}
+          className={`w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""}`}
         >
           <div
             className={`flex items-center space-x-3 min-w-0 flex-1 pr-2 ${isCollapsed ? "flex-none p-0" : ""}`}
@@ -257,7 +258,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={onClose}
                     title={item.name}
                     aria-label={item.name}
-                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""} ${
+                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""} ${
                       item.isSOS
                         ? isActive
                           ? "bg-rose-600 text-white shadow-lg shadow-rose-600/30"
@@ -302,7 +303,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={onClose}
                     title={item.name}
                     aria-label={item.name}
-                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""} ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""} ${
                       isActive
                         ? "bg-teal-700 text-white shadow-lg shadow-teal-700/25"
                         : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
