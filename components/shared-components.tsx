@@ -20,6 +20,7 @@ export interface ModalProps {
   maxWidth?: string;
   zIndex?: string;
   contentRef?: React.RefObject<any>;
+  showClose?: boolean;
 }
 
 export interface BadgeProps {
@@ -82,6 +83,7 @@ export const Modal: React.FC<ModalProps> = ({
   maxWidth = "sm:max-w-lg",
   zIndex = "z-[100]",
   contentRef,
+  showClose = true,
 }) => {
   return (
     <AnimatePresence>
@@ -113,12 +115,15 @@ export const Modal: React.FC<ModalProps> = ({
               <h3 className="text-lg font-black text-slate-900 dark:text-white tracking-tight w-full">
                 {title}
               </h3>
-              <button
-                onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
+              {showClose && (
+                <button
+                  onClick={onClose}
+                  aria-label="Close dialog"
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors cursor-pointer"
+                >
+                  ✕
+                </button>
+              )}
             </div>
 
             {/* Content (Scrollable) */}

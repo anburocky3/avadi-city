@@ -8,21 +8,21 @@ model FoodListing {
   phone             String
 
   // Optional fields
-  imageUrl          String?  @db.Text
-  openingTime       String?
-  closingTime       String?
-  foodType          String?
-  priceRange        String?
+  imageUrl          String?  @db.Text @map("image_url")
+  openingTime       String?  @map("opening_time")
+  closingTime       String?  @map("closing_time")
+  foodType          String?  @map("food_type")
+  priceRange        String?  @map("price_range")
   website           String?
-  additionalDetails String?  @db.Text
+  additionalDetails String?  @db.Text @map("additional_details")
 
   // Moderation & Ownership
   status            String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
-  ownerId           String
+  ownerId           String   @map("owner_id")
   user              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([category])
@@ -33,12 +33,12 @@ model FoodListing {
 
 model FoodReview {
   id         String   @id @default(cuid())
-  shopId     String
-  userId     String
+  shopId     String   @map("shop_id")
+  userId     String   @map("user_id")
   rating     Int      // 1 to 5
-  reviewText String?  @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  reviewText String?  @db.Text @map("review_text")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -50,9 +50,9 @@ model FoodReview {
 
 model FoodFavorite {
   id        String   @id @default(cuid())
-  shopId    String
-  userId    String
-  createdAt DateTime @default(now())
+  shopId    String   @map("shop_id")
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -64,9 +64,9 @@ model FoodFavorite {
 
 model FoodRecentlyViewed {
   id        String   @id @default(cuid())
-  shopId    String
-  userId    String
-  viewedAt  DateTime @default(now())
+  shopId    String   @map("shop_id")
+  userId    String   @map("user_id")
+  viewedAt  DateTime @default(now()) @map("viewed_at")
 
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -76,4 +76,3 @@ model FoodRecentlyViewed {
   @@index([viewedAt])
   @@map("food_recently_viewed")
 }
-

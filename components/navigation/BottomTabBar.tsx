@@ -7,10 +7,11 @@ import { usePathname } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Home, AlertTriangle, Compass, ShieldAlert, User } from "lucide-react";
 import { useWard } from "@/context/wardContext";
+import type { Route } from "next";
 
 interface TabItem {
   name: string;
-  path: string;
+  path: Route;
   icon: React.ElementType;
   isSOS?: boolean;
   isProfile?: boolean;
@@ -77,7 +78,7 @@ export const BottomTabBar: React.FC = () => {
     },
     {
       name: t("bottomTabs.explore") || "Explore",
-      path: "/explore",
+      path: "/explore-places",
       icon: Compass,
     },
     {

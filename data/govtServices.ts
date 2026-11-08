@@ -1,4 +1,4 @@
-import { GovtServiceItem } from "@/app/(auth)/govt-services/govt-services-client";
+import { GovtServiceItem } from "@/app/(app)/govt-services/govt-services-client";
 
 export const initialGovtServicesData: GovtServiceItem[] = [
   {

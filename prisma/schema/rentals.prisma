@@ -2,20 +2,20 @@ model RentalListing {
   id              String         @id @default(cuid())
   title           String
   type            String         // "Residential" | "Commercial"
-  propertyTypeTag String?
+  propertyTypeTag String?        @map("property_type_tag")
   rent            Int
   advance         Int
   contact         String
-  ownerName       String?
+  ownerName       String?        @map("owner_name")
   location        String?
   ward            Int
-  imageUrl        String?        @db.LongText
+  imageUrl        String?        @db.LongText @map("image_url")
   details         String         @db.Text
   features        String?        @db.LongText   // JSON-serialised string[]
   status          ApprovalStatus @default(PENDING)
 
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([status])

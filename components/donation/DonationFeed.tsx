@@ -48,7 +48,12 @@ const DONATION_TYPES: (DonationType | "All")[] = [
   "Other",
 ];
 
-const URGENCIES: (DonationUrgency | "All")[] = ["All", "Critical", "Urgent", "Normal"];
+const URGENCIES: (DonationUrgency | "All")[] = [
+  "All",
+  "Critical",
+  "Urgent",
+  "Normal",
+];
 
 // Format date in human-readable DD/MM/YYYY
 const formatDateDMY = (dateInput?: string | Date | null): string => {
@@ -87,7 +92,9 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<string>("approved"); // Default to approved community needs
   const [sortBy, setSortBy] = useState<"newest" | "urgent">("newest");
   const [showOnlyMyRequests, setShowOnlyMyRequests] = useState<boolean>(false);
-  const [myRequestsFilter, setMyRequestsFilter] = useState<"urgent" | "fulfilled">("urgent");
+  const [myRequestsFilter, setMyRequestsFilter] = useState<
+    "urgent" | "fulfilled"
+  >("urgent");
 
   // Track hydration mount state to eliminate SSR/client HTML divergence
   const [isMounted, setIsMounted] = useState<boolean>(false);
@@ -108,19 +115,23 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
   const checkIsOwner = (req: DonationRequest): boolean => {
     if (!isMounted) return false;
     if (req.id && myCreatedIds.includes(req.id)) return true;
-    if (currentUserId && req.createdBy && req.createdBy === currentUserId) return true;
-    if (authUser?.id && req.createdBy && req.createdBy === authUser.id) return true;
+    if (currentUserId && req.createdBy && req.createdBy === currentUserId)
+      return true;
+    if (authUser?.id && req.createdBy && req.createdBy === authUser.id)
+      return true;
     if (
       authUser?.name &&
       req.contact?.name &&
-      req.contact.name.trim().toLowerCase() === authUser.name.trim().toLowerCase()
+      req.contact.name.trim().toLowerCase() ===
+        authUser.name.trim().toLowerCase()
     ) {
       return true;
     }
     if (
       authUser?.name &&
       req.createdByName &&
-      req.createdByName.trim().toLowerCase() === authUser.name.trim().toLowerCase()
+      req.createdByName.trim().toLowerCase() ===
+        authUser.name.trim().toLowerCase()
     ) {
       return true;
     }
@@ -136,12 +147,14 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
 
   const myActiveCount = useMemo(() => {
     if (!isMounted) return 0;
-    return requests.filter((r) => checkIsOwner(r) && r.status !== "fulfilled").length;
+    return requests.filter((r) => checkIsOwner(r) && r.status !== "fulfilled")
+      .length;
   }, [requests, isMounted, myCreatedIds, authUser, currentUserId]);
 
   const myFulfilledCount = useMemo(() => {
     if (!isMounted) return 0;
-    return requests.filter((r) => checkIsOwner(r) && r.status === "fulfilled").length;
+    return requests.filter((r) => checkIsOwner(r) && r.status === "fulfilled")
+      .length;
   }, [requests, isMounted, myCreatedIds, authUser, currentUserId]);
 
   const myRequestsCount = useMemo(() => {
@@ -162,7 +175,8 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
           if (req.status === "fulfilled") return false;
         }
         if (selectedType !== "All" && req.type !== selectedType) return false;
-        if (selectedUrgency !== "All" && req.urgency !== selectedUrgency) return false;
+        if (selectedUrgency !== "All" && req.urgency !== selectedUrgency)
+          return false;
         return true;
       }
 
@@ -172,8 +186,7 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
       }
 
       // Type Filter
-      const matchesType =
-        selectedType === "All" || req.type === selectedType;
+      const matchesType = selectedType === "All" || req.type === selectedType;
 
       // Urgency Filter
       const matchesUrgency =
@@ -238,7 +251,10 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
 
     const text = `Hi ${req.contact.name}, I saw your civic request for "${req.title}" in Ward ${req.ward} on the Avadi City App. I would like to support: ${itemsList}. Please let me know how I can coordinate!`;
     const cleanPhone = req.contact.whatsapp.replace(/\D/g, "");
-    window.open(`https://wa.me/91${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+    window.open(
+      `https://wa.me/91${cleanPhone}?text=${encodeURIComponent(text)}`,
+      "_blank",
+    );
   };
 
   // Mark fulfilled -> Updates request status to fulfilled
@@ -289,7 +305,10 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
-          <Gift size={14} className={!showOnlyMyRequests ? "text-primary" : ""} />
+          <Gift
+            size={14}
+            className={!showOnlyMyRequests ? "text-primary" : ""}
+          />
           <span>Community Needs</span>
           <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 font-bold">
             {requests.length}
@@ -305,7 +324,10 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
           }`}
         >
-          <User size={14} className={showOnlyMyRequests ? "text-primary" : ""} />
+          <User
+            size={14}
+            className={showOnlyMyRequests ? "text-primary" : ""}
+          />
           <span>My Requests</span>
           {myRequestsCount > 0 && (
             <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-primary text-white font-bold">
@@ -346,7 +368,11 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
             >
               {URGENCIES.map((u) => (
                 <option key={u} value={u}>
-                  {u === "All" ? "All Urgencies" : u === "Critical" ? "Critical Needs" : u}
+                  {u === "All"
+                    ? "All Urgencies"
+                    : u === "Critical"
+                      ? "Critical Needs"
+                      : u}
                 </option>
               ))}
             </select>
@@ -449,7 +475,10 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                 {/* Header Row: Type Badge, Urgency, Ward Pill */}
                 <div className="flex items-start justify-between gap-2 flex-wrap">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="primary" className="text-[10px] font-extrabold uppercase">
+                    <Badge
+                      variant="primary"
+                      className="text-[10px] font-extrabold uppercase"
+                    >
                       {req.type}
                     </Badge>
                     <StatusBadge type="urgency" value={req.urgency} />
@@ -490,11 +519,14 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                   <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-3.5 space-y-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[9px] font-extrabold uppercase tracking-wider text-slate-400">
-                        {req.items && req.items.length > 0 ? "Needed Items" : "Timeline"}
+                        {req.items && req.items.length > 0
+                          ? "Needed Items"
+                          : "Timeline"}
                       </span>
                       {req.requiredBy && (
                         <span className="text-[10px] text-slate-400 flex items-center gap-1 font-semibold">
-                          <Clock size={11} /> Required by: {formatDateDMY(req.requiredBy)}
+                          <Clock size={11} /> Required by:{" "}
+                          {formatDateDMY(req.requiredBy)}
                         </span>
                       )}
                     </div>
@@ -518,7 +550,10 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                       <div className="pt-2 border-t border-slate-200/50 dark:border-slate-800/50 flex flex-wrap items-center justify-between text-[11px] text-slate-600 dark:text-slate-300">
                         {req.target.amount && (
                           <span>
-                            Target: <strong className="text-slate-800 dark:text-white">₹{req.target.amount}</strong>
+                            Target:{" "}
+                            <strong className="text-slate-800 dark:text-white">
+                              ₹{req.target.amount}
+                            </strong>
                           </span>
                         )}
                         {req.target.upi && (
@@ -530,11 +565,15 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                     )}
                   </div>
                 ) : (
-                  req.target && (req.target.amount || req.target.upi) && (
+                  req.target &&
+                  (req.target.amount || req.target.upi) && (
                     <div className="bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl p-3 flex flex-wrap items-center justify-between text-xs text-slate-600 dark:text-slate-300">
                       {req.target.amount && (
                         <span>
-                          Target: <strong className="text-slate-800 dark:text-white">₹{req.target.amount}</strong>
+                          Target:{" "}
+                          <strong className="text-slate-800 dark:text-white">
+                            ₹{req.target.amount}
+                          </strong>
                         </span>
                       )}
                       {req.target.upi && (
@@ -561,17 +600,21 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                 )}
 
                 {/* Owner Banner: Fulfilled state vs Mark as Fulfilled */}
-                {isOwner && (
-                  req.status === "fulfilled" ? (
+                {isOwner &&
+                  (req.status === "fulfilled" ? (
                     <div className="p-3 bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 rounded-xl flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="text-teal-600 dark:text-teal-400 shrink-0" size={16} />
+                        <CheckCircle
+                          className="text-teal-600 dark:text-teal-400 shrink-0"
+                          size={16}
+                        />
                         <div>
                           <p className="text-xs font-bold text-teal-800 dark:text-teal-300">
                             Request marked as Fulfilled
                           </p>
                           <p className="text-[10px] text-teal-600 dark:text-teal-400">
-                            This civic need was successfully fulfilled. Thank you for coordinating!
+                            This civic need was successfully fulfilled. Thank
+                            you for coordinating!
                           </p>
                         </div>
                       </div>
@@ -587,13 +630,17 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                   ) : (
                     <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="text-emerald-600 dark:text-emerald-400 shrink-0" size={16} />
+                        <CheckCircle
+                          className="text-emerald-600 dark:text-emerald-400 shrink-0"
+                          size={16}
+                        />
                         <div>
                           <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
                             Need fulfilled or completed?
                           </p>
                           <p className="text-[10px] text-emerald-600 dark:text-emerald-400">
-                            Touch &quot;Fulfilled&quot; to mark this request completed and move it to Fulfilled.
+                            Touch &quot;Fulfilled&quot; to mark this request
+                            completed and move it to Fulfilled.
                           </p>
                         </div>
                       </div>
@@ -606,14 +653,18 @@ export const DonationFeed: React.FC<DonationFeedProps> = ({
                         <span>Fulfilled</span>
                       </button>
                     </div>
-                  )
-                )}
+                  ))}
 
                 {/* Primary Action Button: WhatsApp to Donate or Fulfilled Status */}
                 {req.status === "fulfilled" ? (
                   <div className="w-full py-2.5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40 text-emerald-700 dark:text-emerald-400 rounded-xl font-bold text-xs flex items-center justify-center space-x-1.5">
-                    <CheckCircle size={14} className="text-emerald-600 dark:text-emerald-400" />
-                    <span>This donation request has been marked as fulfilled</span>
+                    <CheckCircle
+                      size={14}
+                      className="text-emerald-600 dark:text-emerald-400"
+                    />
+                    <span>
+                      This donation request has been marked as fulfilled
+                    </span>
                   </div>
                 ) : (
                   <button

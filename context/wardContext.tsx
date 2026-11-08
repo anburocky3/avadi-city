@@ -8,7 +8,7 @@ import React, {
   ReactNode,
 } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useRouter, usePathname } from "next/navigation"; // 👈 Added usePathname
+import { useRouter, usePathname } from "next/navigation";
 import { getWardName, getWardHints } from "@/data/wards";
 
 // APP VERSION

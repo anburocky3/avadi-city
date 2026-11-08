@@ -11,11 +11,48 @@ import { WardProvider } from "@/context/wardContext";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
+import { SeoJsonLd } from "@/components/seo/seo-json-ld";
+import RouteProgress from "@/components/navigation/RouteProgress";
 
 export const metadata: Metadata = {
-  title: "Avadi City App",
+  metadataBase: new URL("https://avadi.vercel.app"),
+  title: {
+    default: "Avadi City | Local Services and Civic Updates",
+    template: "%s | Avadi City",
+  },
   description:
-    "Explore things to do in Avadi, Chennai. Discover local attractions, events, and activities in Avadi. Plan your visit and make the most of your time in this vibrant city.",
+    "Connect with Avadi through local services, civic updates, community feeds, emergency contacts, and trusted resources.",
+  applicationName: "Avadi City",
+  authors: [{ name: "Avadi City" }],
+  creator: "Avadi City",
+  publisher: "Avadi City",
+  category: "community",
+  alternates: { canonical: "/" },
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: "Avadi City",
+    title: "Avadi City | Local Services and Civic Updates",
+    description:
+      "Connect with Avadi through local services, civic updates, community feeds, emergency contacts, and trusted resources.",
+    url: "https://avadi.vercel.app",
+    images: [
+      {
+        url: "/logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Avadi City",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Avadi City | Local Services and Civic Updates",
+    description:
+      "Connect with Avadi through local services, civic updates, community feeds, emergency contacts, and trusted resources.",
+    images: ["/logo.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -65,7 +102,12 @@ export default async function RootLayout({
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
             <WardProvider>
+              <SeoJsonLd
+                title="Avadi City | Local Services and Civic Updates"
+                description="Connect with Avadi through local services, civic updates, community feeds, emergency contacts, and trusted resources."
+              />
               <RegisterServiceWorker />
+              <RouteProgress />
               <ThemeProvider>
                 <ToastProvider>{children}</ToastProvider>
               </ThemeProvider>

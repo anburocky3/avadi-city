@@ -1,0 +1,20 @@
+"use client";
+
+import { Complaint, useWard } from "@/context/wardContext";
+import ComplaintList from "@/features/complaints/components/ComplaintList";
+
+export default function MyComplaintsClient() {
+  const { userProfile, complaints } = useWard();
+
+  // Filter for my complaints
+  const myComplaints = (complaints as Complaint[]).filter(
+    (c) => c.author === userProfile.name || c.isUserSubmitted === true,
+  );
+
+  return (
+    <ComplaintList
+      data={myComplaints}
+      emptyMessage="You haven't filed any complaints yet. Report a local civic issue if you notice one."
+    />
+  );
+}

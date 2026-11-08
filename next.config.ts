@@ -25,6 +25,7 @@ const nextConfig: NextConfig = {
     ],
   },
   serverExternalPackages: ["sharp"],
+  typedRoutes: true,
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -34,34 +35,6 @@ const nextConfig: NextConfig = {
       "@icons-pack/react-simple-icons",
       "framer-motion",
     ],
-  },
-  async rewrites() {
-    return [
-      {
-        source: "/food/add",
-        destination: "/foods/add",
-      },
-      {
-        source: "/food",
-        destination: "/foods",
-      },
-      {
-        source: "/community-feed/create",
-        destination: "/feed/create",
-      },
-      {
-        source: "/community-feed",
-        destination: "/feed",
-      },
-      {
-        source: "/hospitals",
-        destination: "/healthcare",
-      },
-      {
-        source: "/rental",
-        destination: "/rentals",
-      },
-    ];
   },
 };
 

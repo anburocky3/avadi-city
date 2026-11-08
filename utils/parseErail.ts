@@ -1,4 +1,4 @@
-import { SuburbanTrainSchedule } from "@/app/(auth)/transport/suburban-trains";
+import { SuburbanTrainSchedule } from "@/features/transport/components/suburban-trains";
 
 // Station codes that sit West of Avadi
 const WESTBOUND_CODES = new Set([
@@ -30,7 +30,11 @@ const TERMINAL_NAMES: Record<string, string> = {
   ENR: "Ennore",
 };
 
-export function parseErailDump(rawTextDump: string): SuburbanTrainSchedule[] {
+export function parseErailDump(
+  rawTextDump: string,
+  stationName = "Avadi",
+  stationCode = "AVD",
+): SuburbanTrainSchedule[] {
   if (!rawTextDump || !rawTextDump.includes("^")) return [];
 
   // Split by caret (^) to get individual train records
@@ -46,7 +50,7 @@ export function parseErailDump(rawTextDump: string): SuburbanTrainSchedule[] {
 
     const trainNo = fields[0]?.trim();
     const trainName = fields[1]?.trim() || "SUBURBAN LOCAL";
-    const originName = fields[2]?.trim() || "Avadi";
+    const originName = stationName;
     const destCode = fields[5]?.trim().toUpperCase() || "";
     const alightingCode = fields[9]?.trim().toUpperCase() || destCode;
 
@@ -74,7 +78,7 @@ export function parseErailDump(rawTextDump: string): SuburbanTrainSchedule[] {
       cleanDuration = h > 0 ? `${h}h ${m}m` : `${m}m`;
     }
 
-    // Fix Platform Logic for Avadi Station:
+    // Platform numbers are only reliable for the selected origin station.
     const isWestbound =
       WESTBOUND_CODES.has(destCode) || WESTBOUND_CODES.has(alightingCode);
     const isFast =
@@ -83,7 +87,6 @@ export function parseErailDump(rawTextDump: string): SuburbanTrainSchedule[] {
       trainName.includes("MAIL") ||
       trainName.includes("SF");
 
-    // Avadi Station Physical Layout Rules:
     let assignedPlatform: number | string = 2;
 
     if (isFast) {
@@ -100,13 +103,13 @@ export function parseErailDump(rawTextDump: string): SuburbanTrainSchedule[] {
     }
 
     parsedTrains.push({
-      id: `avd-${trainNo}-${cleanTime}`,
+      id: `${stationCode.toLowerCase()}-${trainNo}-${cleanTime}`,
       trainNo,
       time: cleanTime,
       arrivalTime: cleanArrival,
       avadiArriveTime: cleanAvadiArrive,
       direction: isWestbound ? "west" : "east",
-      origin: originName,
+      origin: originName || stationName,
       destination: TERMINAL_NAMES[destCode] || destCode,
       platform: assignedPlatform, // Exactly matches your layout rule
       type: trainName.includes("AC") ? "AC" : isFast ? "Fast" : "Slow",

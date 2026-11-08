@@ -1,46 +1,47 @@
 model Complaint {
   id            String      @id @default(cuid())
-  issueId         String   @unique // Formatted tracking ID (e.g., AVD-2026-482910)
+  issueId         String   @unique @map("issue_id") // Formatted tracking ID (e.g., AVD-2026-482910)
   title         String
   description   String   @db.Text // Allows for longer detailed descriptions
   category      String
-  subCategory   String
+  subCategory   String   @map("sub_category")
 
-  incidentWard    Int      // Where the issue is located
-  userWard        Int      // The user's home ward at the time of reporting
+  incidentWard    Int      @map("incident_ward") // Where the issue is located
+  userWard        Int      @map("user_ward") // The user's home ward at the time of reporting
   
   address       String
   lat           Float
   lng           Float
   status        String   @default("Submitted") // "Submitted", "Acknowledged", "In Progress", "Resolved"
   
-  imageUrl      String?  // Primary thumbnail image
-  imageUrls     Json?    // Array of up to 3 image URLs. (Use String[] if you are on PostgreSQL)
+  imageUrl      String?  @map("image_url") // Primary thumbnail image
+  imageUrls     Json?    @map("image_urls") // Array of up to 3 image URLs. (Use String[] if you are on PostgreSQL)
   
   author        String   // Snapshot of user's name at the time of submission
-  userId        String?  // Change this to Int? if your User.id is an Int
+  userId        String?  @map("user_id") // Change this to Int? if your User.id is an Int
   user          User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   feeds           Feed[]
-  shareOnFeed     Boolean  @default(true)
-  devicePlatform  String?  @default("Web") // Future-proofing
+  shareOnFeed     Boolean  @default(true) @map("share_on_feed")
+  devicePlatform  String?  @default("Web") @map("device_platform") // Future-proofing
 
   upvotes         Int      @default(0)
   upvotesList     ComplaintUpvote[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   @@index([incidentWard])
   @@index([status])
   @@index([issueId])
+  @@map("complaints")
 }
 
 model ComplaintUpvote {
   id          String   @id @default(cuid())
-  complaintId String   // Foreign key to Complaint
-  userId      String   // Foreign key to User
-  createdAt   DateTime @default(now())
+  complaintId String   @map("complaint_id") // Foreign key to Complaint
+  userId      String   @map("user_id") // Foreign key to User
+  createdAt   DateTime @default(now()) @map("created_at")
 
   complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)

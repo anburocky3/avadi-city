@@ -38,6 +38,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
     isAuthenticated,
     logout,
     activeWard,
+    isLoadingAuth,
     alerts = [],
     readAlerts = [],
     dismissedAlerts = [],
@@ -70,9 +71,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   const toggleTheme = () => setTheme(isDark ? "light" : "dark");
 
   // Derived user details from live backend auth state
-  const userName = authUser?.name || "Avadi Resident";
+  const userName = authUser?.name || "";
   const userInitial = userName.charAt(0).toUpperCase();
-  const currentWardId = authUser?.wardNumber || activeWard?.id || "00";
+  const currentWardId = authUser?.wardNumber || activeWard?.id;
 
   // Unread alerts calculation
   const unreadAlertsCount = alerts.filter(
@@ -198,7 +199,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
           </div>
 
           {/* User Profile Pill / Guest Sign-In Button */}
-          {isAuthenticated && authUser ? (
+          {isLoadingAuth ? (
+            <div className="h-10 w-24 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-800" />
+          ) : isAuthenticated && authUser ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}

@@ -1,0 +1,1231 @@
+"use client";
+
+import React, { useState, useEffect, useRef, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as zod from "zod";
+import "leaflet/dist/leaflet.css";
+
+import {
+  MapPin,
+  Camera,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Copy,
+  Map as MapIcon,
+  Share2,
+  Search,
+  CheckCircle,
+  Circle,
+  Info,
+  Edit3,
+  FileText,
+  Check,
+  Building2,
+  Droplets,
+  HeartPulse,
+  Lightbulb,
+  Trash2,
+  TreePine,
+  Loader2,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Complaint, useWard } from "@/context/wardContext";
+import { Modal } from "@/components/shared-components";
+import { toast } from "@/utils/toast";
+import {
+  ALL_AVADI_STREETS,
+  getAvadiStreetCoordinates,
+  reverseGeocodeAvadi,
+  detectAvadiWard,
+} from "@/lib/wards";
+import MapLocationPicker from "../../../components/ui/MapLocationPicker";
+
+// --- RICH CATEGORY & GCC DATA MAPPING ---
+export const RICH_CIVIC_CATEGORIES = [
+  {
+    id: "Garbage",
+    title: "Garbage & Sanitation",
+    badge: "SANITATION",
+    desc: "Overflowing bins, uncollected waste & street cleaning",
+    image:
+      "https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-emerald-500 to-teal-600",
+    icon: Trash2,
+    issues: [
+      "Removal of Garbage",
+      "Overflowing of Garbage Bin",
+      "Removal of Debris",
+      "Absenteeism of Sweepers",
+      "Absenteeism of Door to door garbage Collector",
+      "Improper Sweeping",
+      "Provison of Garbage Bin",
+      "Broken Bin",
+      "Shifting of Garbage Bin",
+      "Cleaning of Water Table",
+      "Nuisance by Garbage Tractor/Truck",
+      "Burning of Garbage",
+      "Garbage Lorry without Net",
+      "Spilling of Garbage from Lorry",
+      "Burning of Garbage at Dumping Ground",
+    ],
+  },
+  {
+    id: "Street Light",
+    title: "Streetlights & Electrical",
+    badge: "ELECTRICITY",
+    desc: "Non-functional lights, dark stretches & pole damage",
+    image:
+      "https://images.unsplash.com/photo-1517420879524-86d64ac2f339?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-amber-500 to-orange-600",
+    icon: Lightbulb,
+    issues: [
+      "Non burning of Street lights",
+      "Electric shock due to street light",
+      "Damage to the Electric pole",
+      "New Street lights",
+      "Shifting of Street light pole",
+      "Overhead cable wires running in a haphazard manner",
+      "Burning of street light in daytime",
+      "Inadequate light in a particular location or spot/ dark spots",
+    ],
+  },
+  {
+    id: "Water & Sewage",
+    title: "Water Logging & Sewage",
+    badge: "SEWAGE",
+    desc: "Drainage overflow, stagnant water & illegal draining",
+    image:
+      "https://images.unsplash.com/photo-1584464491033-06628f3a6b7b?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-cyan-500 to-blue-600",
+    icon: Droplets,
+    issues: [
+      "Water entering Home/Shop",
+      "EB wire cut/Spark seen",
+      "Stagnation of Water",
+      "Obstruction of Water Flow",
+      "Desilting of Drain",
+      "Desilting of Canal",
+      "Repairs to Storm Water Drain",
+      "Covering Manholes of Storm Water Drain",
+      "New Drain Construction",
+      "Disposal of Removed Silt on the Road",
+      "Insufficient Barricading",
+    ],
+  },
+  {
+    id: "Road and Footpath",
+    title: "Roads & Potholes",
+    badge: "ROAD WORKS",
+    desc: "Deep potholes, damaged tar roads & broken pavers",
+    image:
+      "https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-slate-600 to-slate-800",
+    icon: MapIcon,
+    issues: [
+      "Pot hole fill up / Repairs to the damaged surface",
+      "Relaying of Road",
+      "Formation of New Road",
+      "Repairs to existing Footpath",
+      "Request to provide Footpath",
+      "Removal of Shops in the Footpath",
+      "Illegal Parking on foot path",
+      "Milling/Scraping of Road before Relaying of Road",
+      "Cleanliness in footpath",
+      "Electrical wires/obstruction on footpath",
+      "Unsafe dark spots/ corners",
+    ],
+  },
+  {
+    id: "Public Health",
+    title: "Public Health & Animals",
+    badge: "HEALTH",
+    desc: "Street dogs, mosquito menace & health hazards",
+    image:
+      "https://images.unsplash.com/photo-1534361960057-19889db9621e?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-rose-500 to-red-600",
+    icon: HeartPulse,
+    issues: [
+      "Mosquito Menace",
+      "Street Dogs",
+      "Stray Cattle",
+      "Stray Pigs",
+      "Death of Stray Animals",
+      "Public Health / Dengue / Malaria / Gastro Enteritis",
+      "Open Defecation",
+      "Illegal Draining of Sewage",
+      "Unhygenic Restaurants",
+      "Quality of food in hotels",
+      "Road Side Eateries",
+      "Illegal Slaughtering",
+      "Biomedical waste removal",
+      "Complaints regarding Corporation Hospitals",
+      "Plastics Menace",
+    ],
+  },
+  {
+    id: "Parks and General",
+    title: "Parks & Municipal Fixes",
+    badge: "MUNICIPAL",
+    desc: "Fallen trees, encroachments & park maintenance",
+    image:
+      "https://images.unsplash.com/photo-1519331379826-f10be5486c6f?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-fuchsia-500 to-purple-600",
+    icon: TreePine,
+    issues: [
+      "Removal of Fallen Trees",
+      "Complaints regarding Park",
+      "Complaints regarding Playground",
+      "Unauthorized Tree Cutting",
+      "Cleanliness in Parks",
+      "Greenary in Parks",
+      "Play Equipment",
+      "Opening and closing hours",
+      "Toilets in parks",
+      "Non functional lights in parks",
+      "Tree Pruning",
+      "Encroachment on the Public Property",
+      "Unauthorized Advertisement Boards",
+    ],
+  },
+  {
+    id: "Revenue & Licensing",
+    title: "Tax, Building & Licensing",
+    badge: "ADMIN",
+    desc: "Property tax, building plan approvals & trade licenses",
+    image:
+      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-indigo-500 to-blue-700",
+    icon: Building2,
+    issues: [
+      "Building Plan Sanction",
+      "Violation of DCR/Building By laws",
+      "Unauthorized / Illegal Construction",
+      "Property Tax Complaints",
+      "Professional Tax Complaints",
+      "Trade Licence Complaints",
+      "Online Payment Issue",
+      "General Revision Objection",
+      "Issue of Birth and Death Certificate",
+      "Name Error (Spelling Related)",
+      "Change of Address in Electoral Roll",
+      "Issue of Voter ID",
+    ],
+  },
+  {
+    id: "Others",
+    title: "Others / Custom Issue",
+    badge: "MISCELLANEOUS",
+    desc: "Don't see your issue? Enter it manually here.",
+    image:
+      "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=600&auto=format&fit=crop",
+    gradient: "from-slate-800 to-slate-950",
+    icon: Edit3,
+    issues: [], // Empty implies custom text input
+  },
+];
+
+const complaintSchema = zod.object({
+  category: zod.string(),
+  subCategory: zod
+    .string()
+    .min(3, "Please select or describe the specific issue"),
+  streetName: zod
+    .string()
+    .min(3, "Please enter at least 3 characters for the street name"),
+  lat: zod.number(),
+  lng: zod.number(),
+  title: zod
+    .string()
+    .min(6, { message: "Title must be at least 6 characters long" }),
+  description: zod
+    .string()
+    .min(15, { message: "Description must be at least 15 characters long" })
+    .refine((val) => val.trim().length >= 15, {
+      message: "Description must contain at least 15 meaningful characters",
+    }),
+  shareOnFeed: zod.boolean().default(true),
+});
+
+type ComplaintFormData = zod.infer<typeof complaintSchema>;
+
+export default function ReportWizard({ onClose }: { onClose: () => void }) {
+  const router = useRouter();
+  const { userProfile, activeWard, selectWard, addComplaint } = useWard();
+
+  const [reportStep, setReportStep] = useState<number>(1);
+  const [selectedGroup, setSelectedGroup] = useState<
+    (typeof RICH_CIVIC_CATEGORIES)[0] | null
+  >(null);
+  const [subSearchQuery, setSubSearchQuery] = useState<string>("");
+  const [customSubCategory, setCustomSubCategory] = useState<string>("");
+  const [mapCoords, setMapCoords] = useState<{ lat: number; lng: number }>({
+    lat: 13.1169,
+    lng: 80.0972,
+  });
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [streetResults, setStreetResults] = useState<any[]>([]);
+  const [selectedStreetItem, setSelectedStreetItem] = useState<any | null>(
+    null,
+  );
+  const [submittedComplaint, setSubmittedComplaint] =
+    useState<Complaint | null>(null);
+  const [copiedId, setCopiedId] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [userEditedDescription, setUserEditedDescription] = useState(false);
+  const [userEditedTitle, setUserEditedTitle] = useState(false);
+  const [reverseGeocodedAddress, setReverseGeocodedAddress] = useState<
+    string | null
+  >(null);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+
+  // Need to store actual File objects alongside preview URLs to send to backend
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const modalTopRef = useRef<HTMLDivElement>(null);
+
+  const scrollToModalTop = () => {
+    if (modalTopRef.current) {
+      const scrollableParent = modalTopRef.current.closest(".overflow-y-auto");
+      if (scrollableParent) {
+        scrollableParent.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        modalTopRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    }
+  };
+
+  useEffect(() => {
+    scrollToModalTop();
+  }, [reportStep, selectedGroup]);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors, isValid },
+  } = useForm({
+    resolver: zodResolver(complaintSchema),
+    mode: "onChange",
+    defaultValues: {
+      category: "",
+      subCategory: "",
+      streetName: "",
+      lat: 13.1169,
+      lng: 80.0972,
+      title: "",
+      description: "",
+    },
+  });
+
+  const watchSubCategory = watch("subCategory");
+  const watchStreetName = watch("streetName");
+
+  // Auto-draft title and description only when first entering Step 2,
+  // unless the user has already manually edited them.
+  const hasAutoDrafted = useRef(false);
+
+  const updateLocationInForm = (newLocation: string) => {
+    if (
+      !newLocation ||
+      !newLocation.trim() ||
+      newLocation === "Selected Location"
+    )
+      return;
+    const cleanLoc = newLocation.trim();
+
+    if (!userEditedTitle) {
+      setValue(
+        "title",
+        `Request for ${watchSubCategory || "Civic Issue"} at ${cleanLoc}`,
+        { shouldValidate: true },
+      );
+    } else {
+      const currentTitle = watch("title");
+      if (currentTitle && currentTitle.includes("Selected Location")) {
+        setValue(
+          "title",
+          currentTitle.replace(/Selected Location/g, cleanLoc),
+          { shouldValidate: true },
+        );
+      }
+    }
+
+    if (!userEditedDescription) {
+      setValue(
+        "description",
+        `Reporting an issue regarding ${watchSubCategory || "Civic Issue"}.\n\nLocation: ${cleanLoc}.\n\nPlease arrange for an inspection and resolve at the earliest.`,
+        { shouldValidate: true },
+      );
+    } else {
+      const currentDesc = watch("description");
+      if (currentDesc && currentDesc.includes("Selected Location")) {
+        setValue(
+          "description",
+          currentDesc.replace(/Selected Location/g, cleanLoc),
+          { shouldValidate: true },
+        );
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (reportStep === 2 && watchSubCategory && !hasAutoDrafted.current) {
+      const locationContext =
+        watchStreetName &&
+        watchStreetName.trim() !== "" &&
+        watchStreetName !== "Selected Location"
+          ? watchStreetName.trim()
+          : activeWard.name
+            ? `Ward ${activeWard.id} (${activeWard.name})`
+            : `Ward ${activeWard.id}, Avadi`;
+
+      if (!userEditedTitle) {
+        setValue(
+          "title",
+          `Request for ${watchSubCategory} at ${locationContext}`,
+          { shouldValidate: true },
+        );
+      }
+      if (!userEditedDescription) {
+        setValue(
+          "description",
+          `Reporting an issue regarding ${watchSubCategory}.\n\nLocation: ${locationContext}.\n\nPlease arrange for an inspection and resolve at the earliest.`,
+          { shouldValidate: true },
+        );
+      }
+      hasAutoDrafted.current = true;
+    }
+    // Reset the auto-draft flag when going back to step 1
+    if (reportStep === 1) {
+      hasAutoDrafted.current = false;
+    }
+  }, [reportStep, watchSubCategory]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const files = Array.from(e.target.files).slice(0, 3 - imageFiles.length);
+
+    // Store actual files for backend processing
+    setImageFiles((prev) => [...prev, ...files]);
+
+    // Generate object URLs for UI previews
+    const urls = files.map((file) => URL.createObjectURL(file));
+    setImagePreviews((prev) => [...prev, ...urls]);
+  };
+
+  const handleRemoveImage = (index: number) => {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleSelectStreet = (street: any) => {
+    setSelectedStreetItem(street);
+    setValue("streetName", street.streetName, { shouldValidate: true });
+    setStreetResults([]);
+
+    // Auto-select the ward based on the street's ward number
+    if (street.wardNo) {
+      selectWard(street.wardNo);
+    }
+
+    // Move map marker to the selected street's coordinates
+    const coords = getAvadiStreetCoordinates(street);
+    if (coords) {
+      setValue("lat", coords.lat);
+      setValue("lng", coords.lng);
+      setMapCoords({ lat: coords.lat, lng: coords.lng });
+    }
+    setReverseGeocodedAddress(street.streetName);
+    updateLocationInForm(street.streetName);
+  };
+
+  // Reverse-geocode when map marker is placed or dragged
+  const handleMapReverseGeocode = async (lat: number, lng: number) => {
+    setIsReverseGeocoding(true);
+    try {
+      const result = await reverseGeocodeAvadi(lat, lng);
+      const locName = result.address || result.streetName;
+      if (result.streetName) {
+        setReverseGeocodedAddress(locName);
+        // Auto-fill the street name if the user hasn't selected a specific street
+        if (!selectedStreetItem) {
+          setValue("streetName", result.streetName, { shouldValidate: true });
+        }
+      }
+      if (locName) {
+        updateLocationInForm(locName);
+      }
+      // Auto-select ward detected from coordinates/address
+      if (result.wardNo) {
+        selectWard(result.wardNo);
+      }
+    } catch {
+      // Silently fail reverse geocoding — it's a convenience feature
+      setReverseGeocodedAddress(null);
+    } finally {
+      setIsReverseGeocoding(false);
+    }
+  };
+
+  const handleReportSubmit: SubmitHandler<ComplaintFormData> = async (data) => {
+    if (isSubmitting) return;
+    if (mapError || imageFiles.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const defaultImage =
+        RICH_CIVIC_CATEGORIES.find((c) => c.id === data.category)?.image ||
+        "https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=600&auto=format&fit=crop&q=60";
+
+      const uniqueNumber = Math.floor(100000 + Math.random() * 900000);
+      const generatedIssueId = `AVD-${new Date().getFullYear()}-${uniqueNumber}`;
+
+      const finalStreetName =
+        data.streetName &&
+        data.streetName.trim() !== "" &&
+        data.streetName !== "Selected Location"
+          ? data.streetName.trim()
+          : reverseGeocodedAddress ||
+            (activeWard.name
+              ? `Ward ${activeWard.id} (${activeWard.name})`
+              : `Ward ${activeWard.id}, Avadi`);
+
+      let finalTitle = data.title.trim();
+      if (finalTitle.includes("Selected Location")) {
+        finalTitle = finalTitle.replace(/Selected Location/g, finalStreetName);
+      }
+
+      let finalDescription = data.description.trim();
+      if (finalDescription.includes("Selected Location")) {
+        finalDescription = finalDescription.replace(
+          /Selected Location/g,
+          finalStreetName,
+        );
+      }
+
+      const newComplaint = {
+        title: finalTitle,
+        description: finalDescription,
+        category: data.category,
+        subCategory: data.subCategory,
+        userWard: activeWard.id,
+        streetName: finalStreetName,
+        address: finalStreetName,
+        lat: data.lat,
+        lng: data.lng,
+        shareOnFeed: data.shareOnFeed,
+        status: "Submitted" as const,
+        isUserSubmitted: true,
+        images: imageFiles, // Pass the actual File objects to the API context handler
+        imageUrl: imagePreviews[0] || defaultImage,
+        author: userProfile.name || "Avadi Resident",
+        date: new Date().toISOString(),
+        upvotes: 1,
+        issueId: generatedIssueId,
+      };
+
+      // Assume `addComplaint` makes the API request to `/api/complaints` and returns the object
+      const created = await addComplaint(newComplaint);
+      setSubmittedComplaint(created as unknown as Complaint);
+      setReportStep(3);
+      toast.success("Complaint submitted successfully!");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to submit grievance");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 2000);
+  };
+
+  return (
+    <Modal
+      isOpen={true} // Since it's an intercepted route, it's always open when rendered
+      onClose={onClose}
+      showClose={false}
+      maxWidth="sm:max-w-2xl md:max-w-4xl xl:max-w-5xl"
+      title={
+        reportStep === 3 ? (
+          <span className="text-lg font-black text-slate-900 dark:text-white truncate">
+            Grievance Registered
+          </span>
+        ) : (
+          ((
+            <div className="space-y-4 mr-5 w-full">
+              <div className="flex items-center gap-3 w-full pr-8">
+                <span className="px-3 py-1 bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black rounded-lg border border-orange-500/20 uppercase tracking-widest shrink-0">
+                  Step {reportStep} of 2
+                </span>
+                <span className="truncate text-base sm:text-lg font-black text-slate-900 dark:text-white">
+                  {reportStep === 1 && !selectedGroup && "Select Department"}
+                  {reportStep === 1 &&
+                    selectedGroup &&
+                    `Select Issue in ${selectedGroup.title}`}
+                  {reportStep === 2 && "Describe Issue & Pinpoint Location"}
+                </span>
+              </div>
+              <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full mt-0 shrink-0 overflow-hidden">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full"
+                  style={{ width: reportStep === 1 ? "50%" : "100%" }}
+                />
+              </div>
+            </div>
+          ) as any)
+        )
+      }
+    >
+      <div className="flex flex-col min-h-screen sm:min-h-0 sm:h-auto sm:max-h-128 lg:max-h-full bg-white dark:bg-slate-900 rounded-b-3xl">
+        <div ref={modalTopRef} className="h-0 w-0 -mt-5" />
+        {/* STEP 1 */}
+        {reportStep === 1 && (
+          <div className="flex flex-col flex-1 min-h-0 relative overflow-hidden mt-4">
+            <AnimatePresence mode="wait">
+              {!selectedGroup ? (
+                <motion.div
+                  key="master-grid"
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: -20, opacity: 0 }}
+                  className="flex flex-col flex-1 min-h-0"
+                >
+                  <p className="text-sm font-extrabold text-slate-700 dark:text-slate-300 shrink-0 mb-4 px-2">
+                    Select the department that handles your civic problem:
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 overflow-y-auto pr-2 px-2 custom-scrollbar pb-4">
+                    {RICH_CIVIC_CATEGORIES.map((cat) => {
+                      const CatIcon = cat.icon;
+                      return (
+                        <motion.div
+                          key={cat.id}
+                          whileHover={{ scale: 1.01 }}
+                          whileTap={{ scale: 0.99 }}
+                          onClick={() => {
+                            setSelectedGroup(cat);
+                            setValue("category", cat.id);
+                            setValue("subCategory", "");
+                            setSubSearchQuery("");
+                            setCustomSubCategory("");
+                          }}
+                          className="rounded-3xl overflow-hidden border-2 border-slate-200 dark:border-slate-800 hover:border-primary shadow-xs sm:hover:shadow-md transition-all cursor-pointer group flex flex-col bg-white dark:bg-slate-900"
+                        >
+                          <div className="relative h-32 md:h-36 w-full overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0">
+                            <img
+                              src={cat.image}
+                              alt={cat.title}
+                              className="w-full h-full object-cover sm:group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                              <div
+                                className={`p-2 rounded-xl bg-linear-to-br ${cat.gradient} text-white shadow-sm flex items-center space-x-2 px-3 border border-white/20`}
+                              >
+                                <CatIcon size={14} />
+                                <span className="text-xs font-black tracking-wider uppercase">
+                                  {cat.badge}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-4 space-y-1 border-t border-slate-200 dark:border-slate-800 flex-1 flex flex-col justify-between">
+                            <div>
+                              <h3 className="font-black text-base text-slate-900 dark:text-white leading-tight sm:group-hover:text-primary transition-colors">
+                                {cat.title}
+                              </h3>
+                              <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-relaxed mt-2 line-clamp-2">
+                                {cat.desc}
+                              </p>
+                            </div>
+                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-3 flex justify-between items-center">
+                              <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest">
+                                {cat.issues.length > 0
+                                  ? `${cat.issues.length} Issues`
+                                  : "Custom"}
+                              </span>
+                              <span className="px-4 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-xs font-black text-slate-700 dark:text-slate-300 sm:group-hover:bg-primary sm:group-hover:text-white transition-colors">
+                                SELECT
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="sub-list"
+                  initial={{ x: 20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  exit={{ x: 20, opacity: 0 }}
+                  className="flex flex-col flex-1 min-h-0 px-2"
+                >
+                  <div className="shrink-0 space-y-4 pb-4 border-b border-slate-100 dark:border-slate-800">
+                    <button
+                      onClick={() => setSelectedGroup(null)}
+                      className="flex items-center text-xs font-black text-slate-500 hover:text-primary transition cursor-pointer"
+                    >
+                      <ArrowLeft size={14} className="mr-1" /> Back to
+                      Departments
+                    </button>
+                    <div className="p-4 rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 flex items-center gap-3">
+                      <Info className="text-blue-500 shrink-0" size={20} />
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                        You have selected the{" "}
+                        <strong>{selectedGroup.title}</strong> department.{" "}
+                        {selectedGroup.id === "Others"
+                          ? " Please describe your issue below."
+                          : " Now search or pick a specific issue inside it."}
+                      </p>
+                    </div>
+                    {selectedGroup.id !== "Others" && (
+                      <div className="relative">
+                        <Search
+                          className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
+                          size={18}
+                        />
+                        <input
+                          type="text"
+                          placeholder={`Search inside ${selectedGroup.title}...`}
+                          value={subSearchQuery}
+                          onChange={(e) => setSubSearchQuery(e.target.value)}
+                          className="w-full pl-11 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-semibold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto py-4 pr-2 space-y-2 max-h-128 custom-scrollbar">
+                    {selectedGroup.id === "Others" ? (
+                      <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+                        <label className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 block">
+                          Please describe the exact nature of your issue:
+                        </label>
+                        <input
+                          type="text"
+                          autoFocus
+                          placeholder="E.g., Abandoned vehicle blocking the road"
+                          value={customSubCategory}
+                          onChange={(e) => {
+                            setCustomSubCategory(e.target.value);
+                            setValue("subCategory", e.target.value);
+                          }}
+                          className="w-full p-4 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        />
+                      </div>
+                    ) : (
+                      selectedGroup.issues
+                        .filter((sub) =>
+                          sub
+                            .toLowerCase()
+                            .includes(subSearchQuery.toLowerCase()),
+                        )
+                        .map((sub, i) => {
+                          const isSelected = watchSubCategory === sub;
+                          return (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => {
+                                setValue("subCategory", sub);
+                                setTimeout(() => setReportStep(2), 300);
+                              }}
+                              className={`w-full flex items-center justify-between p-4 rounded-2xl border text-left transition-all cursor-pointer ${isSelected ? "bg-orange-500/10 border-primary ring-1 ring-primary shadow-sm" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-600"}`}
+                            >
+                              <span
+                                className={`text-sm font-bold ${isSelected ? "text-primary dark:text-orange-400" : "text-slate-700 dark:text-slate-200"}`}
+                              >
+                                {sub}
+                              </span>
+                              {isSelected ? (
+                                <CheckCircle
+                                  className="text-primary"
+                                  size={20}
+                                />
+                              ) : (
+                                <Circle
+                                  className="text-slate-300 dark:text-slate-700"
+                                  size={20}
+                                />
+                              )}
+                            </button>
+                          );
+                        })
+                    )}
+                  </div>
+                  <div className="shrink-0 pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setReportStep(2)}
+                      disabled={!watchSubCategory}
+                      className="w-full sm:w-auto sm:float-right min-w-64 py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm flex items-center justify-center space-x-2 cursor-pointer tracking-wider uppercase"
+                    >
+                      <span>NEXT STEP</span>
+                      <ArrowRight size={18} />
+                    </button>
+                    <div className="clear-both" />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* STEP 2 */}
+        {reportStep === 2 && (
+          <form
+            onSubmit={handleSubmit(handleReportSubmit)}
+            className="flex flex-col flex-1 min-h-0 mt-4 px-2"
+          >
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4 shrink-0">
+              <button
+                type="button"
+                onClick={() => setReportStep(1)}
+                className="inline-flex items-center space-x-2 text-xs sm:text-sm font-extrabold text-primary hover:underline cursor-pointer"
+              >
+                <ArrowLeft size={16} />
+                <span>Change Issue</span>
+              </button>
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline-block px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-black border border-slate-200 dark:border-slate-700 truncate max-w-40">
+                  {selectedGroup?.title}
+                </span>
+                <span className="px-3 py-1.5 rounded-xl bg-orange-500/10 text-orange-600 dark:text-orange-400 text-xs font-black border border-orange-500/20 truncate max-w-48">
+                  {watchSubCategory}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto pr-2 py-4 space-y-6 max-h-[60vh] custom-scrollbar">
+              <div className="space-y-4">
+                <div className="space-y-2 relative">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <div className="p-1.5 bg-blue-100 dark:bg-blue-900/50 rounded-lg text-blue-600 dark:text-blue-400">
+                      <MapPin size={18} />
+                    </div>{" "}
+                    Street Name & Landmark
+                  </label>
+                  <input
+                    type="text"
+                    autoComplete="off"
+                    placeholder="e.g. Near Pattabiram Railway Station"
+                    {...register("streetName", {
+                      onChange: (e) => {
+                        setSelectedStreetItem(null);
+                        const val = e.target.value;
+                        if (val.trim().length < 3) {
+                          setStreetResults([]);
+                          return;
+                        }
+                        const filtered = ALL_AVADI_STREETS.filter((item) =>
+                          item.streetName
+                            .toLowerCase()
+                            .includes(val.toLowerCase().trim()),
+                        ).slice(0, 15);
+                        setStreetResults(filtered);
+
+                        // Auto-detect and select ward when searching or typing
+                        const exact = ALL_AVADI_STREETS.find(
+                          (s) =>
+                            s.streetName.toLowerCase() ===
+                            val.trim().toLowerCase(),
+                        );
+                        if (exact) {
+                          setSelectedStreetItem(exact);
+                          if (exact.wardNo) selectWard(exact.wardNo);
+                          const coords = getAvadiStreetCoordinates(exact);
+                          if (coords) {
+                            setValue("lat", coords.lat);
+                            setValue("lng", coords.lng);
+                            setMapCoords({ lat: coords.lat, lng: coords.lng });
+                          }
+                          updateLocationInForm(exact.streetName);
+                        } else {
+                          updateLocationInForm(val);
+                          const detected = detectAvadiWard(val);
+                          if (
+                            detected &&
+                            !detected.matchedReason.startsWith("Default")
+                          ) {
+                            selectWard(detected.wardNo);
+                          }
+                        }
+                      },
+                    })}
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  <AnimatePresence>
+                    {streetResults.length > 0 && (
+                      <motion.ul
+                        initial={{ opacity: 0, y: -5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -5 }}
+                        className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl custom-scrollbar top-full"
+                      >
+                        {streetResults.map((street, idx) => (
+                          <li
+                            key={idx}
+                            onClick={() => handleSelectStreet(street)}
+                            className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-500/10 hover:text-primary cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-none flex items-center justify-between transition-colors"
+                          >
+                            <div className="flex items-center gap-2 truncate pr-2">
+                              <MapPin
+                                size={14}
+                                className="text-slate-400 shrink-0"
+                              />
+                              <span className="truncate">
+                                {street.streetName}
+                              </span>
+                            </div>
+                            <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0">
+                              Ward {street.wardNo}
+                            </span>
+                          </li>
+                        ))}
+                      </motion.ul>
+                    )}
+                  </AnimatePresence>
+                  {errors.streetName && (
+                    <p className="text-xs text-rose-500 font-medium">
+                      {errors.streetName.message}
+                    </p>
+                  )}
+                  {/* Auto-selected Ward indicator badge */}
+                  <div className="flex items-center justify-between px-3.5 py-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-xl border border-slate-200 dark:border-slate-800 text-xs">
+                    <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                      <Building2 size={15} className="text-primary" />
+                      <span className="font-bold">Assigned Ward:</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-slate-900 dark:text-white">
+                        Ward {activeWard.id}
+                      </span>
+                      {activeWard.name && (
+                        <>
+                          <span className="text-slate-400">·</span>
+                          <span className="text-slate-600 dark:text-slate-300 font-semibold truncate max-w-44">
+                            {activeWard.name}
+                          </span>
+                        </>
+                      )}
+                      <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        Auto-Selected
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 pt-2">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <div className="p-1.5 bg-emerald-100 dark:bg-emerald-900/50 rounded-lg text-emerald-600 dark:text-emerald-400">
+                      <MapIcon size={18} />
+                    </div>{" "}
+                    Pinpoint Location on Map
+                  </label>
+                  <MapLocationPicker
+                    defaultLat={mapCoords.lat}
+                    defaultLng={mapCoords.lng}
+                    onLocationSelect={(lat: number, lng: number) => {
+                      setValue("lat", lat);
+                      setValue("lng", lng);
+                      setMapCoords({ lat, lng });
+                    }}
+                    onError={(msg) => setMapError(msg)}
+                    onReverseGeocode={handleMapReverseGeocode}
+                  />
+                  {mapError && (
+                    <p className="text-xs text-rose-500 font-bold bg-rose-50 dark:bg-rose-900/20 p-2 rounded-lg border border-rose-200 dark:border-rose-800/50">
+                      {mapError}
+                    </p>
+                  )}
+                  {isReverseGeocoding && (
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium flex items-center gap-1">
+                      <Loader2 size={11} className="animate-spin" />
+                      Detecting address from map location...
+                    </p>
+                  )}
+                  {reverseGeocodedAddress &&
+                    !mapError &&
+                    !isReverseGeocoding && (
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                        <MapPin
+                          size={13}
+                          className="text-emerald-500 shrink-0"
+                        />
+                        <span>{reverseGeocodedAddress}</span>
+                      </p>
+                    )}
+                </div>
+              </div>
+
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+                      <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg text-amber-600 dark:text-amber-400">
+                        <FileText size={18} />
+                      </div>{" "}
+                      Issue Summary Title
+                    </label>
+                    <span className="text-[10px] text-orange-500 font-extrabold px-2 py-0.5 bg-orange-500/10 rounded-md">
+                      Auto-Drafted
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    {...register("title", {
+                      onChange: () => setUserEditedTitle(true),
+                    })}
+                    placeholder="Brief summary of the issue"
+                    className="w-full px-4 py-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-white text-sm font-black shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  />
+                  {errors.title && (
+                    <p className="text-xs text-rose-500 font-medium">
+                      {errors.title.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2 flex-1 flex flex-col">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg text-indigo-600 dark:text-indigo-400">
+                      <Edit3 size={18} />
+                    </div>{" "}
+                    Detailed Problem Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    {...register("description", {
+                      onChange: () => setUserEditedDescription(true),
+                    })}
+                    placeholder="Describe the problem you are experiencing..."
+                    className="w-full flex-1 p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 placeholder-slate-400 resize-none min-h-32"
+                  />
+                  {errors.description && (
+                    <p className="text-xs text-rose-500 font-medium">
+                      {errors.description.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <label className="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+                    <div className="p-1.5 bg-purple-100 dark:bg-purple-900/50 rounded-lg text-purple-600 dark:text-purple-400">
+                      <Camera size={18} />
+                    </div>{" "}
+                    Upload Issue Photos (Max 3){" "}
+                    <span className="text-rose-500">*</span>
+                  </label>
+                </div>
+
+                <div className="flex flex-wrap gap-4 items-center pt-2">
+                  {imagePreviews.map((url, i) => (
+                    <div
+                      key={i}
+                      className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm"
+                    >
+                      <img
+                        src={url}
+                        alt="Attached issue"
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveImage(i)}
+                        className="absolute top-2 right-2 w-6 h-6 rounded-full bg-slate-950/80 text-white flex items-center justify-center font-bold text-xs hover:bg-slate-950 cursor-pointer shadow-md"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                  {imagePreviews.length < 3 && (
+                    <label className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center text-slate-400 hover:border-primary hover:text-primary hover:bg-primary/5 transition cursor-pointer bg-slate-50/50 dark:bg-slate-900/50">
+                      <Camera size={24} className="mb-1" />
+                      <span className="text-xs font-extrabold mt-1">
+                        Upload
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageUpload}
+                        className="sr-only"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {imageFiles.length === 0 && (
+                  <p className="text-xs text-rose-500 font-medium">
+                    At least one photo is required to submit a grievance.
+                  </p>
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 mt-4">
+                <label className="flex items-start gap-3 cursor-pointer group">
+                  <div className="relative flex items-center justify-center mt-0.5">
+                    <input
+                      type="checkbox"
+                      {...register("shareOnFeed")}
+                      className="peer appearance-none w-5 h-5 rounded-md border-2 border-slate-300 dark:border-slate-600 checked:bg-primary checked:border-primary transition-all cursor-pointer"
+                    />
+                    <Check
+                      size={14}
+                      className="absolute text-white opacity-0 peer-checked:opacity-100 pointer-events-none transition-opacity"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-primary transition-colors">
+                      Post to Community Feed
+                    </span>
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-tight">
+                      Allow other residents in Ward {activeWard.id} to see and
+                      upvote this issue to escalate priority.
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div className="shrink-0 pt-4 mt-4 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="submit"
+                  disabled={
+                    !isValid ||
+                    mapError !== null ||
+                    imageFiles.length === 0 ||
+                    isSubmitting
+                  }
+                  className="w-full sm:w-auto sm:float-right min-w-64 py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase flex items-center justify-center space-x-2"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Submitting Report...</span>
+                    </>
+                  ) : (
+                    <span>Submit Grievance Report</span>
+                  )}
+                </button>
+                <div className="clear-both" />
+              </div>
+            </div>
+          </form>
+        )}
+
+        {/* STEP 3: SUCCESS */}
+        {reportStep === 3 && submittedComplaint && (
+          <div className="flex flex-col flex-1 items-center justify-center space-y-5 text-center py-8 w-full max-w-xl mx-auto px-4">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center mx-auto">
+              <CheckCircle2 size={34} />
+            </div>
+            <div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                <Check size={12} />
+                Report received
+              </span>
+              <h3 className="mt-3 text-xl font-black text-slate-900 dark:text-white">
+                Your complaint is on its way
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed max-w-md mx-auto">
+                We have routed your report to the Municipal Corporation team.
+                Save the reference below to check progress.
+              </p>
+            </div>
+            <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 text-left">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Reference ID
+                  </span>
+                  <div className="mt-1 font-mono text-lg font-black tracking-widest text-slate-900 dark:text-white">
+                    {submittedComplaint.issueId}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyToClipboard(submittedComplaint.issueId || "")
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+                >
+                  <Copy size={14} />
+                  {copiedId ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
+                <div>
+                  <span className="text-slate-400">Department</span>
+                  <p className="mt-0.5 font-bold text-slate-700 dark:text-slate-200">
+                    {selectedGroup?.title || "Civic Services"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-400">Assigned ward</span>
+                  <p className="mt-0.5 font-bold text-slate-700 dark:text-slate-200">
+                    Ward {activeWard.id}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="w-full space-y-4 pt-2">
+              <span className="text-xs font-black uppercase tracking-wider text-slate-400 flex items-center justify-center gap-2">
+                <Share2 size={14} /> Share to Escalate Visibility
+              </span>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.open(
+                      `https://wa.me/?text=${encodeURIComponent(`I have registered a civic grievance (ID: ${submittedComplaint.issueId}) regarding ${watchSubCategory} via the Avadi City Portal. Let's build a better city! https://avadi.vercel.app 🏙️`)}`,
+                      "_blank",
+                    )
+                  }
+                  className="w-full sm:flex-1 py-3.5 bg-green-500/10 text-green-600 dark:text-green-500 hover:bg-green-500 hover:text-white border border-green-500/30 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                >
+                  WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.open(
+                      `https://twitter.com/intent/tweet?text=${encodeURIComponent(`I have registered a civic grievance (ID: ${submittedComplaint.issueId}) regarding ${watchSubCategory} via the Avadi City Portal. https://avadi.vercel.app @AvadiCorp`)}`,
+                      "_blank",
+                    )
+                  }
+                  className="w-full sm:flex-1 py-3.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-200 border border-slate-700 rounded-xl font-bold transition text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                >
+                  X (Twitter)
+                </button>
+              </div>
+            </div>
+            <div className="w-full pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  router.push("/complaints/active");
+                }}
+                className="w-full py-4 bg-primary hover:bg-orange-600 text-white rounded-2xl font-black shadow-md transition text-sm cursor-pointer flex items-center justify-center space-x-2 order-1 sm:order-2"
+              >
+                <FileText size={18} />
+                <span>Track Status</span>
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}

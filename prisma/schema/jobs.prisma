@@ -2,24 +2,24 @@ model JobVacancy {
   id                 String         @id @default(cuid())
   role               String         // Job Title
   category           String         // Job Category
-  jobType            String         // Employment Type: Full-Time, Part-Time, etc.
-  workMode           String         @default("On-site") // On-site, Hybrid, Remote
+  jobType            String         @map("job_type") // Employment Type: Full-Time, Part-Time, etc.
+  workMode           String         @default("On-site") @map("work_mode") // On-site, Hybrid, Remote
   experience         String         // Fresher, 1-3 Years, etc.
   salary             String         // Formatted salary string e.g. ₹15,000 - ₹25,000 / month
-  minSalary          Int?
-  maxSalary          Int?
-  salaryType         String?        @default("Per Month")
+  minSalary          Int?           @map("min_salary")
+  maxSalary          Int?           @map("max_salary")
+  salaryType         String?        @default("Per Month") @map("salary_type")
 
   // Company Details
-  businessName       String         // Company / Employer Name
-  companyDescription String?        @db.Text
+  businessName       String         @map("business_name") // Company / Employer Name
+  companyDescription String?        @db.Text @map("company_description")
   details            String         @db.Text // Job Description
   requirements       String?        @db.Text // JSON string array of skills/requirements
   qualifications     String?
   openings           Int            @default(1)
   gender             String?        @default("Any")
-  minAge             Int?
-  maxAge             Int?
+  minAge             Int?           @map("min_age")
+  maxAge             Int?           @map("max_age")
 
   // Location
   location           String         // Area / Street
@@ -27,32 +27,32 @@ model JobVacancy {
   address            String         @db.Text // Detailed Address
   latitude           Float?
   longitude          Float?
-  workingDays        String?        @db.Text
+  workingDays        String?        @db.Text @map("working_days")
   shift              String?        // Working Hours e.g. "9:00 AM - 6:00 PM"
 
   // Application
-  applicationMethods String?        // JSON string array e.g. ["Phone", "Email"]
+  applicationMethods String?        @map("application_methods") // JSON string array e.g. ["Phone", "Email"]
   contact            String         // Phone
   email              String?
   website            String?
-  interviewAddress   String?        @db.Text
-  interviewContactPerson String?
-  interviewDate      String?
-  interviewTime      String?
+  interviewAddress   String?        @db.Text @map("interview_address")
+  interviewContactPerson String?     @map("interview_contact_person")
+  interviewDate      String?         @map("interview_date")
+  interviewTime      String?         @map("interview_time")
   deadline           String?        // Application deadline
-  startDate          String?        // Joining date
-  imageUrl           String?        @db.Text
-  additionalInfo     String?        @db.Text
+  startDate          String?        @map("start_date") // Joining date
+  imageUrl           String?        @db.Text @map("image_url")
+  additionalInfo     String?        @db.Text @map("additional_info")
   featured           Boolean        @default(false)
 
   // Status & Ownership
   status             ApprovalStatus @default(PENDING)
-  ownerId            String
+  ownerId            String         @map("owner_id")
   user               User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   applications       JobApplication[]
 
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
+  createdAt          DateTime       @default(now()) @map("created_at")
+  updatedAt          DateTime       @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([category])
@@ -74,26 +74,26 @@ enum ApplicationStatus {
 
 model JobApplication {
   id              String            @id @default(cuid())
-  jobId           String
+  jobId           String            @map("job_id")
   job             JobVacancy        @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  applicantId     String?
+  applicantId     String?           @map("applicant_id")
   user            User?             @relation(fields: [applicantId], references: [id], onDelete: SetNull)
 
-  fullName        String
+  fullName        String            @map("full_name")
   email           String
   phone           String
-  resumeUrl       String            @db.Text
-  resumeFileName  String?
+  resumeUrl       String            @db.Text @map("resume_url")
+  resumeFileName  String?           @map("resume_file_name")
 
-  coverLetter     String?           @db.Text
+  coverLetter     String?            @db.Text @map("cover_letter")
   qualification   String?
   experience      String?           @db.Text
   skills          String?           @db.Text
-  portfolioUrl    String?
+  portfolioUrl    String?           @map("portfolio_url")
 
   status          ApplicationStatus @default(SUBMITTED)
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
 
   @@index([jobId])
   @@index([applicantId])
