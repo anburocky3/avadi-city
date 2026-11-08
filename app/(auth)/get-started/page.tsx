@@ -1,6 +1,13 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Loader2 } from "lucide-react";
 import GetStartedClient from "@/features/auth/components/get-started-client";
+
+export const metadata: Metadata = {
+  title: "Get Started with Avadi City",
+  description:
+    "Create your Avadi City profile and start using local civic and community services.",
+};
 
 export default function GetStartedPage() {
   return (

@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 
 import { SkeletonLoader } from "@/components/shared-components";
 import { getRentalListings } from "@/lib/rentals";
@@ -6,6 +7,11 @@ import { RentalsClient } from "@/features/rentals/components/rental-client";
 
 // Always fetch fresh data on request
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Rentals in Avadi",
+  description:
+    "Browse current rental homes and properties available across Avadi.",
+};
 
 export default async function RentalsPage() {
   const rentals = await getRentalListings();

@@ -1,20 +1,25 @@
-"use client";
+import type { Metadata } from "next";
+import { SeoJsonLd } from "@/components/seo/seo-json-ld";
+import ClientPage from "@/features/pages/complaints-active-page";
 
-import { Complaint, useWard } from "@/context/wardContext";
-import ComplaintList from "@/components/ui/complaints/ComplaintList";
+export const metadata: Metadata = {
+  title: "My Complaints",
+  description: "Track civic complaints and follow their progress in Avadi.",
+  alternates: { canonical: "/complaints/active" },
+  openGraph: {
+    title: "My Complaints",
+    description: "Track civic complaints and follow their progress in Avadi.",
+    url: "/complaints/active",
+    images: [{ url: "/logo.png", width: 1200, height: 630, alt: "My Complaints" }],
+  },
+  twitter: { card: "summary_large_image", title: "My Complaints", description: "Track civic complaints and follow their progress in Avadi.", images: ["/logo.png"] },
+};
 
 export default function MyComplaintsPage() {
-  const { userProfile, complaints } = useWard();
-
-  // Filter for my complaints
-  const myComplaints = (complaints as Complaint[]).filter(
-    (c) => c.author === userProfile.name || c.isUserSubmitted === true,
-  );
-
   return (
-    <ComplaintList
-      data={myComplaints}
-      emptyMessage="You haven't filed any complaints yet. Report a local civic issue if you notice one."
-    />
+    <>
+      <SeoJsonLd title="My Complaints" description="Track civic complaints and follow their progress in Avadi." path="/complaints/active" />
+      <ClientPage />
+    </>
   );
 }

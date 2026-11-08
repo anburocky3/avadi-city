@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 
 import { SkeletonLoader } from "@/components/shared-components";
 import {
@@ -10,6 +11,11 @@ import { WARD_COORDINATES } from "@/lib/healthcare-discovery";
 
 // Revalidate dynamically to reflect approved facilities
 export const revalidate = 0;
+export const metadata: Metadata = {
+  title: "Healthcare in Avadi",
+  description:
+    "Find verified hospitals, clinics, pharmacies, emergency units, and healthcare services in Avadi.",
+};
 
 export default async function HealthcarePage() {
   let approvedDbFacilities: HealthcareFacility[] = [];

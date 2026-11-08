@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 import { initialFoodSpots } from "@/data/foodSpots";
 import { SkeletonLoader } from "@/components/shared-components";
 import {
@@ -8,6 +9,11 @@ import {
 
 // Cache/revalidate interval for static generation or dynamic SSR
 export const revalidate = 3600; // 1 hour cache, or 0 for dynamic
+export const metadata: Metadata = {
+  title: "Food and Dining in Avadi",
+  description:
+    "Discover restaurants, cafes, and trusted local food spots across Avadi.",
+};
 
 export default async function FoodPage() {
   // SSR Data source fetch (Prisma query or local dataset import)

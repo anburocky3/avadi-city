@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowLeft, AlertCircle, CheckCircle2, Users } from "lucide-react";
@@ -11,6 +12,11 @@ import {
 } from "@/features/jobs/components/job-apply";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Apply for a Job in Avadi",
+  description:
+    "Submit an application for a local job opportunity listed on Avadi City.",
+};
 
 interface PageProps {
   params: Promise<{ jobId: string }>;

@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 import { initialSosContactsData } from "@/data/sosContacts";
 import { SkeletonLoader } from "@/components/shared-components";
 import {
@@ -7,6 +8,11 @@ import {
 } from "@/features/sos/components/sos-client";
 
 export const revalidate = 3600; // Cache for 1 hour or set 0 for dynamic SSR
+export const metadata: Metadata = {
+  title: "Emergency SOS Contacts in Avadi",
+  description:
+    "Access important emergency phone numbers and verified contacts for Avadi residents.",
+};
 
 export default async function SosPage() {
   const contacts: EmergencyContact[] = (initialSosContactsData ||

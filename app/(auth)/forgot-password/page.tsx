@@ -1,6 +1,13 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { Loader2 } from "lucide-react";
 import ForgotPasswordClient from "@/features/auth/components/forgot-password-client";
+
+export const metadata: Metadata = {
+  title: "Reset Your Password",
+  description:
+    "Securely reset your Avadi City account password and regain access to local services.",
+};
 
 export default function ForgotPasswordPage() {
   return (

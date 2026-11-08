@@ -1,10 +1,16 @@
 import React, { Suspense } from "react";
+import type { Metadata } from "next";
 
 import { initialGovtServicesData } from "@/data/govtServices";
 import { SkeletonLoader } from "@/components/shared-components";
 import { GovtServiceItem, GovtServicesClient } from "./govt-services-client";
 
 export const revalidate = 3600; // Cache for 1 hour or set 0 for full dynamic SSR
+export const metadata: Metadata = {
+  title: "Government Services in Avadi",
+  description:
+    "Find essential government services, offices, contacts, and civic resources for Avadi residents.",
+};
 
 export default async function GovtServicesPage() {
   const services: GovtServiceItem[] = (initialGovtServicesData ||

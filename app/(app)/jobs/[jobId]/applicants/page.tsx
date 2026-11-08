@@ -1,4 +1,5 @@
 import React from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
@@ -12,6 +13,11 @@ import ApplicantsClient, {
 } from "@/features/jobs/components/job-applicants";
 
 export const dynamic = "force-dynamic";
+export const metadata: Metadata = {
+  title: "Job Applicants",
+  description:
+    "Review applications for your Avadi City job listing and manage candidates.",
+};
 
 interface PageProps {
   params: Promise<{ jobId: string }>;
