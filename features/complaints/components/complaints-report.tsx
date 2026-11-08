@@ -1,9 +1,9 @@
 "use client";
 
-import ReportWizard from "@/components/ui/complaints/ReportWizard";
+import ReportWizard from "@/features/complaints/components/ReportWizard";
 import { useRouter } from "next/navigation";
 
-export default function ReportStandalonePage() {
+export default function ReportStandalonePageClient() {
   const router = useRouter();
 
   return (

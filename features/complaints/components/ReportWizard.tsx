@@ -41,7 +41,7 @@ import {
   reverseGeocodeAvadi,
   detectAvadiWard,
 } from "@/lib/wards";
-import MapLocationPicker from "../MapLocationPicker";
+import MapLocationPicker from "../../../components/ui/MapLocationPicker";
 
 // --- RICH CATEGORY & GCC DATA MAPPING ---
 export const RICH_CIVIC_CATEGORIES = [
@@ -292,7 +292,10 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
       if (scrollableParent) {
         scrollableParent.scrollTo({ top: 0, behavior: "smooth" });
       } else {
-        modalTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+        modalTopRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
     }
   };
@@ -550,6 +553,7 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true} // Since it's an intercepted route, it's always open when rendered
       onClose={onClose}
+      showClose={false}
       maxWidth="sm:max-w-2xl md:max-w-4xl xl:max-w-5xl"
       title={
         reportStep === 3 ? (
@@ -874,8 +878,13 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                             className="px-4 py-3 text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-orange-500/10 hover:text-primary cursor-pointer border-b border-slate-100 dark:border-slate-800 last:border-none flex items-center justify-between transition-colors"
                           >
                             <div className="flex items-center gap-2 truncate pr-2">
-                              <MapPin size={14} className="text-slate-400 shrink-0" />
-                              <span className="truncate">{street.streetName}</span>
+                              <MapPin
+                                size={14}
+                                className="text-slate-400 shrink-0"
+                              />
+                              <span className="truncate">
+                                {street.streetName}
+                              </span>
                             </div>
                             <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-600 dark:text-orange-400 border border-orange-500/20 shrink-0">
                               Ward {street.wardNo}
@@ -944,12 +953,17 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                       Detecting address from map location...
                     </p>
                   )}
-                  {reverseGeocodedAddress && !mapError && !isReverseGeocoding && (
-                    <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
-                      <MapPin size={13} className="text-emerald-500 shrink-0" />
-                      <span>{reverseGeocodedAddress}</span>
-                    </p>
-                  )}
+                  {reverseGeocodedAddress &&
+                    !mapError &&
+                    !isReverseGeocoding && (
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/20 px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                        <MapPin
+                          size={13}
+                          className="text-emerald-500 shrink-0"
+                        />
+                        <span>{reverseGeocodedAddress}</span>
+                      </p>
+                    )}
                 </div>
               </div>
 
@@ -1088,7 +1102,10 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                 <button
                   type="submit"
                   disabled={
-                    !isValid || mapError !== null || imageFiles.length === 0 || isSubmitting
+                    !isValid ||
+                    mapError !== null ||
+                    imageFiles.length === 0 ||
+                    isSubmitting
                   }
                   className="w-full sm:w-auto sm:float-right min-w-64 py-4 bg-primary hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black shadow-md hover:shadow-lg transition text-sm cursor-pointer tracking-wider uppercase flex items-center justify-center space-x-2"
                 >
@@ -1109,37 +1126,57 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
 
         {/* STEP 3: SUCCESS */}
         {reportStep === 3 && submittedComplaint && (
-          <div className="flex flex-col flex-1 items-center justify-center space-y-6 text-center py-8 w-full max-w-2xl mx-auto px-4">
-            <div className="w-24 h-24 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center mx-auto shadow-md animate-bounce">
-              <CheckCircle2 size={48} />
+          <div className="flex flex-col flex-1 items-center justify-center space-y-5 text-center py-8 w-full max-w-xl mx-auto px-4">
+            <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 flex items-center justify-center mx-auto">
+              <CheckCircle2 size={34} />
             </div>
             <div>
-              <h3 className="text-2xl font-black text-slate-900 dark:text-white">
-                Grievance Submitted Successfully!
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                <Check size={12} />
+                Report received
+              </span>
+              <h3 className="mt-3 text-xl font-black text-slate-900 dark:text-white">
+                Your complaint is on its way
               </h3>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed max-w-md mx-auto">
-                Your report has been securely logged and dispatched to the
-                Municipal Corporation & Zonal Officer.
+                We have routed your report to the Municipal Corporation team.
+                Save the reference below to check progress.
               </p>
             </div>
-            <div className="w-full p-6 rounded-3xl bg-orange-500/10 border border-orange-500/20 space-y-3">
-              <span className="text-sm font-extrabold uppercase tracking-wider text-orange-600 dark:text-orange-400 block">
-                Official Grievance ID
-              </span>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-                <span className="font-mono text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-widest">
-                  {submittedComplaint.issueId}
-                </span>
+            <div className="w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 p-4 text-left">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                    Reference ID
+                  </span>
+                  <div className="mt-1 font-mono text-lg font-black tracking-widest text-slate-900 dark:text-white">
+                    {submittedComplaint.issueId}
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() =>
                     copyToClipboard(submittedComplaint.issueId || "")
                   }
-                  className="px-4 py-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:text-primary transition text-xs font-extrabold flex items-center justify-center space-x-2 shadow-sm cursor-pointer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 shadow-sm transition hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                 >
-                  <Copy size={16} />
-                  <span>{copiedId ? "Copied!" : "Copy"}</span>
+                  <Copy size={14} />
+                  {copiedId ? "Copied" : "Copy"}
                 </button>
+              </div>
+              <div className="mt-4 grid grid-cols-2 gap-3 border-t border-slate-200 pt-3 text-xs dark:border-slate-800">
+                <div>
+                  <span className="text-slate-400">Department</span>
+                  <p className="mt-0.5 font-bold text-slate-700 dark:text-slate-200">
+                    {selectedGroup?.title || "Civic Services"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-slate-400">Assigned ward</span>
+                  <p className="mt-0.5 font-bold text-slate-700 dark:text-slate-200">
+                    Ward {activeWard.id}
+                  </p>
+                </div>
               </div>
             </div>
             <div className="w-full space-y-4 pt-2">
@@ -1173,14 +1210,7 @@ export default function ReportWizard({ onClose }: { onClose: () => void }) {
                 </button>
               </div>
             </div>
-            <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 pt-6 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-2xl font-black transition text-sm cursor-pointer order-2 sm:order-1"
-              >
-                Close Window
-              </button>
+            <div className="w-full pt-2">
               <button
                 type="button"
                 onClick={() => {

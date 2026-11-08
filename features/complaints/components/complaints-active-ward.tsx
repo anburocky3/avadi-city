@@ -3,9 +3,9 @@
 import React from "react";
 import { Complaint, useWard } from "@/context/wardContext";
 import { useParams } from "next/navigation";
-import ComplaintList from "@/components/ui/complaints/ComplaintList";
+import ComplaintList from "@/features/complaints/components/ComplaintList";
 
-export default function NearbyComplaintsPage() {
+export default function NearbyComplaintsPageClient() {
   const { complaints } = useWard();
   const params = useParams();
 

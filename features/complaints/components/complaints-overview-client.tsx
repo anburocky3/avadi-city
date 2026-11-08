@@ -26,7 +26,7 @@ import { useWardAdminProfile } from "@/hooks/useWardAdminProfile";
 import { OfficialAdminData, OFFICIALS_DIRECTORY } from "@/data/officialsData";
 import { ComplaintGuideSteps } from "@/features/complaints/components/complaint-guide-steps";
 
-export default function ComplaintsOverview() {
+export default function ComplaintsOverviewClient() {
   const router = useRouter();
   const { activeWard } = useWard();
 
@@ -404,6 +404,7 @@ export default function ComplaintsOverview() {
         isOpen={isGovtServicesModalOpen}
         onClose={() => setIsGovtServicesModalOpen(false)}
         title="Official Government & Municipal e-Services"
+        maxWidth="sm:max-w-4xl"
       >
         <div className="space-y-4 pt-1">
           <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">

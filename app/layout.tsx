@@ -12,6 +12,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { PageViewTracker } from "@/components/analytics/PageViewTracker";
 import { SeoJsonLd } from "@/components/seo/seo-json-ld";
+import RouteProgress from "@/components/navigation/RouteProgress";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://avadi.vercel.app"),
@@ -106,6 +107,7 @@ export default async function RootLayout({
                 description="Connect with Avadi through local services, civic updates, community feeds, emergency contacts, and trusted resources."
               />
               <RegisterServiceWorker />
+              <RouteProgress />
               <ThemeProvider>
                 <ToastProvider>{children}</ToastProvider>
               </ThemeProvider>

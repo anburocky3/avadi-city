@@ -2,7 +2,15 @@
 
 import React, { useState, useEffect, useMemo, MouseEvent } from "react";
 import { motion } from "framer-motion";
-import { MapPin, ThumbsUp, Check, AlertTriangle, ExternalLink } from "lucide-react";
+import {
+  MapPin,
+  ThumbsUp,
+  Check,
+  AlertTriangle,
+  ExternalLink,
+  CalendarDays,
+  UserRound,
+} from "lucide-react";
 import { Badge, Modal, EmptyState } from "@/components/shared-components";
 import { Complaint, useWard } from "@/context/wardContext";
 import { useRouter } from "next/navigation";
@@ -102,6 +110,20 @@ export default function ComplaintList({
     });
   }, [data]);
 
+  const getComplaintImages = (complaint: Complaint) => {
+    const imageUrls = Array.isArray(complaint.imageUrls)
+      ? complaint.imageUrls
+      : [];
+    return Array.from(
+      new Set(
+        [...imageUrls, complaint.imageUrl]
+          .filter((image): image is string => Boolean(image))
+          .map((image) => image.trim())
+          .filter(Boolean),
+      ),
+    );
+  };
+
   if (uniqueComplaints.length === 0) {
     return (
       <EmptyState
@@ -135,6 +157,7 @@ export default function ComplaintList({
                 `Location: ${cardAddress}.`,
               )
             : "";
+          const complaintImages = getComplaintImages(complaint);
 
           return (
             <motion.div
@@ -143,6 +166,19 @@ export default function ComplaintList({
               onClick={() => setSelectedComplaint(complaint)}
               className="p-4 sm:p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-primary hover:shadow-md transition cursor-pointer space-y-3"
             >
+              {complaintImages.length > 0 && (
+                <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                  {complaintImages.map((image, index) => (
+                    <img
+                      key={`${image}-${index}`}
+                      src={image}
+                      alt={`${complaint.title} photo ${index + 1}`}
+                      className="h-20 w-24 shrink-0 rounded-xl object-cover border border-slate-200 dark:border-slate-800"
+                      loading="lazy"
+                    />
+                  ))}
+                </div>
+              )}
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-start space-x-3 min-w-0">
                   <div className="min-w-0">
@@ -197,14 +233,22 @@ export default function ComplaintList({
           isOpen={!!selectedComplaint}
           onClose={() => setSelectedComplaint(null)}
           title="Track Grievance"
+          maxWidth="sm:max-w-4xl"
         >
           <div className="space-y-5">
+            {getComplaintImages(selectedComplaint).length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {getComplaintImages(selectedComplaint).map((image, index) => (
+                  <img
+                    key={`${image}-${index}`}
+                    src={image}
+                    alt={`${selectedComplaint.title} photo ${index + 1}`}
+                    className="h-32 w-full rounded-2xl object-cover border border-slate-200 dark:border-slate-800"
+                  />
+                ))}
+              </div>
+            )}
             <div className="flex items-start space-x-4">
-              <img
-                src={selectedComplaint.imageUrl}
-                alt={selectedComplaint.title}
-                className="w-24 h-24 rounded-2xl object-cover border border-slate-200 dark:border-slate-800 shrink-0 shadow-sm"
-              />
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-center space-x-2">
                   <span className="font-mono text-xs font-black text-orange-600 dark:text-orange-400 bg-orange-500/10 px-2 py-0.5 rounded-md border border-orange-500/20">
@@ -212,7 +256,10 @@ export default function ComplaintList({
                       `AVD-2026-${1000 + Number(selectedComplaint.id)}`}
                   </span>
                   <span className="text-xs font-extrabold px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
-                    Ward {selectedComplaint.ward || selectedComplaint.incidentWard || 14}
+                    Ward{" "}
+                    {selectedComplaint.ward ||
+                      selectedComplaint.incidentWard ||
+                      14}
                   </span>
                 </div>
                 <h3 className="font-black text-base sm:text-lg text-slate-900 dark:text-white leading-snug">
@@ -220,9 +267,7 @@ export default function ComplaintList({
                 </h3>
                 <p className="text-xs font-medium text-slate-500 flex items-center pt-1">
                   <MapPin size={12} className="mr-1 text-primary shrink-0" />
-                  <span className="truncate">
-                    {displayAddress}
-                  </span>
+                  <span className="truncate">{displayAddress}</span>
                 </p>
               </div>
             </div>
@@ -281,7 +326,12 @@ export default function ComplaintList({
                       {displayAddress}
                     </p>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      Ward {selectedComplaint.ward || selectedComplaint.incidentWard || selectedComplaint.userWard || 14} • Avadi Corporation
+                      Ward{" "}
+                      {selectedComplaint.ward ||
+                        selectedComplaint.incidentWard ||
+                        selectedComplaint.userWard ||
+                        14}{" "}
+                      • Avadi Corporation
                     </p>
                   </div>
                 </div>
@@ -307,6 +357,62 @@ export default function ComplaintList({
                 {cleanDescription}
               </p>
             </div>
+
+            <div className="space-y-2">
+              <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                Report Details
+              </h4>
+              <div className="grid grid-cols-2 gap-3 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900">
+                <div>
+                  <span className="text-xs text-slate-400">Category</span>
+                  <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {selectedComplaint.category || "Not specified"}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs text-slate-400">Issue type</span>
+                  <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {selectedComplaint.subCategory || "Not specified"}
+                  </p>
+                </div>
+                <div>
+                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <CalendarDays size={12} /> Reported
+                  </span>
+                  <p className="mt-1 text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {selectedComplaint.createdAt
+                      ? new Date(
+                          selectedComplaint.createdAt,
+                        ).toLocaleDateString()
+                      : "Date not available"}
+                  </p>
+                </div>
+                <div>
+                  <span className="flex items-center gap-1 text-xs text-slate-400">
+                    <UserRound size={12} /> Reported by
+                  </span>
+                  <p className="mt-1 truncate text-sm font-bold text-slate-700 dark:text-slate-200">
+                    {selectedComplaint.author || "Avadi resident"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {selectedComplaint.lat != null && selectedComplaint.lng != null && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">
+                  Map
+                </h4>
+                <div className="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <iframe
+                    title={`Map showing ${selectedComplaint.title}`}
+                    src={`https://www.openstreetmap.org/export/embed.html?bbox=${selectedComplaint.lng - 0.002}%2C${selectedComplaint.lat - 0.002}%2C${selectedComplaint.lng + 0.002}%2C${selectedComplaint.lat + 0.002}&layer=mapnik&marker=${selectedComplaint.lat}%2C${selectedComplaint.lng}`}
+                    className="h-72 w-full border-0"
+                    loading="lazy"
+                  />
+                </div>
+              </div>
+            )}
 
             <button
               onClick={() => setSelectedComplaint(null)}

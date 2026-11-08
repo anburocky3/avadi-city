@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+@keyframes route-progress {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(180%);
+  }
+  100% {
+    transform: translateX(360%);
+  }
+}
+
 @theme {
   --color-primary: #f97316;
   --color-secondary: #0f766e;

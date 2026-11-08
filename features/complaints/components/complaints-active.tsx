@@ -1,9 +1,9 @@
 "use client";
 
 import { Complaint, useWard } from "@/context/wardContext";
-import ComplaintList from "@/components/ui/complaints/ComplaintList";
+import ComplaintList from "@/features/complaints/components/ComplaintList";
 
-export default function MyComplaintsPage() {
+export default function MyComplaintsClient() {
   const { userProfile, complaints } = useWard();
 
   // Filter for my complaints

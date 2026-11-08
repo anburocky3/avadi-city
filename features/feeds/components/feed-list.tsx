@@ -66,6 +66,16 @@ export type FeedCategory =
   | "Current Outage"
   | "Announcement";
 
+const QUICK_UPDATE_MAX_WORDS = 100;
+
+const countWords = (value: string) =>
+  value.trim() ? value.trim().split(/\s+/).length : 0;
+
+const limitWords = (value: string, limit: number) => {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  return words.length > limit ? words.slice(0, limit).join(" ") : value;
+};
+
 const validateAndCompressImage = async (
   file: File,
   maxWidth = 1200,
@@ -131,6 +141,7 @@ export const FeedPage: React.FC = () => {
   const {
     authUser,
     isAuthenticated,
+    isLoadingAuth,
     activeWard,
     feeds,
     isLoadingFeeds,
@@ -161,6 +172,8 @@ export const FeedPage: React.FC = () => {
   const [isCompressing, setIsCompressing] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [quickUpdateText, setQuickUpdateText] = useState("");
+  const [isQuickUpdateSubmitting, setIsQuickUpdateSubmitting] = useState(false);
 
   // Actions Dropdown & Deletion State
   const [activeMenuId, setActiveMenuId] = useState<string | number | null>(
@@ -462,6 +475,46 @@ export const FeedPage: React.FC = () => {
       toast.error("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleQuickUpdateSubmit = async (e: SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const text = quickUpdateText.trim();
+    if (
+      !text ||
+      countWords(text) > QUICK_UPDATE_MAX_WORDS ||
+      isQuickUpdateSubmitting ||
+      isLoadingAuth
+    )
+      return;
+
+    if (!isAuthenticated || !authUser) {
+      router.push("/login?redirect=/feed");
+      return;
+    }
+
+    setIsQuickUpdateSubmitting(true);
+    try {
+      await addFeed({
+        authorId: authUser.id,
+        authorName: authUser.name || "Avadi Resident",
+        authorAvatar: authUser.avatar || "/default-avatar.png",
+        ward: "all",
+        text,
+        category: "General",
+        isEmergency: false,
+        likes: 0,
+        likedByMe: false,
+        comments: [],
+      });
+      setQuickUpdateText("");
+      toast.success("Update posted to the community feed");
+    } catch (error) {
+      console.error("Quick feed update failed:", error);
+      toast.error("Could not post your update. Please try again.");
+    } finally {
+      setIsQuickUpdateSubmitting(false);
     }
   };
 
@@ -1000,7 +1053,109 @@ export const FeedPage: React.FC = () => {
         </button>
       </div>
 
-      {/* 2. Filter Tabs */}
+      {/* 2. Quick Feed Update */}
+      <form
+        onSubmit={handleQuickUpdateSubmit}
+        className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+      >
+        <div className="flex items-start gap-3">
+          <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-orange-500/10 text-sm font-black text-orange-600 dark:text-orange-400">
+            {isLoadingAuth ? (
+              <span className="h-5 w-5 animate-pulse rounded-full bg-slate-200 dark:bg-slate-700" />
+            ) : (
+              <Image
+                src={authUser?.avatar || "/default-avatar.png"}
+                alt="Author Avatar"
+                fill
+                sizes="48px"
+                className="object-cover"
+              />
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <textarea
+              value={quickUpdateText}
+              onChange={(event) =>
+                setQuickUpdateText(
+                  limitWords(event.target.value, QUICK_UPDATE_MAX_WORDS),
+                )
+              }
+              disabled={isLoadingAuth || isQuickUpdateSubmitting}
+              rows={2}
+              maxLength={1000}
+              placeholder={
+                isLoadingAuth
+                  ? "Loading your account..."
+                  : "Share a quick update with Avadi..."
+              }
+              className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-orange-400 focus:ring-2 focus:ring-orange-500/20 disabled:cursor-wait disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+            />
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="min-w-45 flex-1">
+                <div className="flex items-center justify-between text-[11px] font-medium">
+                  <span className="text-slate-400">
+                    Quick updates are posted to the community feed.
+                  </span>
+                  <span
+                    className={`ml-2 tabular-nums ${
+                      countWords(quickUpdateText) >= QUICK_UPDATE_MAX_WORDS
+                        ? "font-bold text-orange-600 dark:text-orange-400"
+                        : "text-slate-400"
+                    }`}
+                    aria-live="polite"
+                  >
+                    {countWords(quickUpdateText)}/{QUICK_UPDATE_MAX_WORDS} words
+                  </span>
+                </div>
+                <div
+                  className="mt-1 h-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800"
+                  aria-hidden="true"
+                >
+                  <div
+                    className={`h-full rounded-full transition-[width,background-color] ${
+                      countWords(quickUpdateText) >= QUICK_UPDATE_MAX_WORDS
+                        ? "bg-orange-500"
+                        : "bg-teal-500"
+                    }`}
+                    style={{
+                      width: `${Math.min(
+                        (countWords(quickUpdateText) / QUICK_UPDATE_MAX_WORDS) *
+                          100,
+                        100,
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => router.push("/feed/create")}
+                  className="rounded-lg px-3 py-2 text-xs font-bold text-slate-600 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                >
+                  Detailed update
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    isLoadingAuth ||
+                    isQuickUpdateSubmitting ||
+                    !quickUpdateText.trim()
+                  }
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-2 text-xs font-black text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {isQuickUpdateSubmitting && (
+                    <Loader2 size={14} className="animate-spin" />
+                  )}
+                  Post update
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+
+      {/* 3. Filter Tabs */}
       <div className="flex bg-slate-100 dark:bg-slate-900/80 p-1.5 border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-x-auto scrollbar-none max-w-full gap-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;

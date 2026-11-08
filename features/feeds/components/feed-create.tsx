@@ -12,7 +12,7 @@ import {
   X,
   AlertCircle,
   Loader2,
-    Zap,
+  Zap,
   Heart,
   Newspaper,
   AlertTriangle,
@@ -31,11 +31,7 @@ import { ALL_AVADI_STREETS, StreetItem } from "@/lib/wards";
 
 // Category type definitions
 export type FeedCategoryType =
-  | "General"
-  | "News"
-  | "Complaint"
-  | "Blood Request"
-  | "Current Outage";
+  "General" | "News" | "Complaint" | "Blood Request" | "Current Outage";
 
 export type AudienceType = "entire-avadi" | "within-ward";
 
@@ -193,7 +189,7 @@ const validateAndCompressImage = async (
   });
 };
 
-export default function NewFeedCreationPage() {
+export default function FeedCreate() {
   const router = useRouter();
   const toast = useToast();
   const { authUser, activeWard, isAuthenticated, isLoadingAuth, refreshFeeds } =
@@ -217,23 +213,25 @@ export default function NewFeedCreationPage() {
   const [streetArea, setStreetArea] = useState("");
   const [streetResults, setStreetResults] = useState<StreetItem[]>([]);
   const [showStreetDropdown, setShowStreetDropdown] = useState(false);
-  const [showComplaintStreetDropdown, setShowComplaintStreetDropdown] = useState(false);
-  const [showOutageStreetDropdown, setShowOutageStreetDropdown] = useState(false);
+  const [showComplaintStreetDropdown, setShowComplaintStreetDropdown] =
+    useState(false);
+  const [showOutageStreetDropdown, setShowOutageStreetDropdown] =
+    useState(false);
   const [showNewsStreetDropdown, setShowNewsStreetDropdown] = useState(false);
 
   // Close street dropdowns on outside click
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       const target = e.target as HTMLElement;
-      if (!target.closest('.street-dropdown-container')) {
+      if (!target.closest(".street-dropdown-container")) {
         setShowStreetDropdown(false);
         setShowComplaintStreetDropdown(false);
         setShowOutageStreetDropdown(false);
         setShowNewsStreetDropdown(false);
       }
     };
-    document.addEventListener('click', handleGlobalClick);
-    return () => document.removeEventListener('click', handleGlobalClick);
+    document.addEventListener("click", handleGlobalClick);
+    return () => document.removeEventListener("click", handleGlobalClick);
   }, []);
 
   // Synchronize ward from activeWard when it loads
@@ -281,7 +279,7 @@ export default function NewFeedCreationPage() {
   // Confirmation & submission state
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // Clean up object URLs
   useEffect(() => {
@@ -449,7 +447,8 @@ export default function NewFeedCreationPage() {
     // Dynamic Audience Selection Validation: Locality / Street is required ONLY when Ward-Exclusive is selected
     if (audience === "within-ward") {
       if (!streetArea.trim() && !streetQuery.trim()) {
-        errors.street = "Locality / Street is required for Ward-Exclusive Feed.";
+        errors.street =
+          "Locality / Street is required for Ward-Exclusive Feed.";
       }
     }
 
@@ -483,15 +482,21 @@ export default function NewFeedCreationPage() {
         errors.outageInterruptionType = "Please select the interruption type.";
       }
       if (!streetArea.trim() && !streetQuery.trim()) {
-        errors.outageStreet = "Affected street or locality is required for outage reporting.";
+        errors.outageStreet =
+          "Affected street or locality is required for outage reporting.";
       }
     }
 
     // Dynamic Confirmation Checkbox Validation:
     // General and Blood Request posts do NOT require confirmation checkbox.
     // Mandatory for official civic categories (News, Complaint, Current Outage).
-    if (category !== "General" && category !== "Blood Request" && !termsAccepted) {
-      errors.terms = "Please confirm community guidelines agreement before publishing.";
+    if (
+      category !== "General" &&
+      category !== "Blood Request" &&
+      !termsAccepted
+    ) {
+      errors.terms =
+        "Please confirm community guidelines agreement before publishing.";
     }
 
     setFieldErrors(errors);
@@ -526,7 +531,9 @@ export default function NewFeedCreationPage() {
           `🕒 Interruption Started: ${effectiveStartTime}`,
           `📐 Outage Scope: ${outageScope}`,
           `📋 Status: Community Reported (Unverified by EB)`,
-          outageAdditionalNotes ? `ℹ️ Resident Notes: ${outageAdditionalNotes}` : "",
+          outageAdditionalNotes
+            ? `ℹ️ Resident Notes: ${outageAdditionalNotes}`
+            : "",
           outageInterruptionType === "Damaged electrical wire or equipment"
             ? "⚠️ HAZARD NOTICE: Damaged wires reported. Keep away and call 1912."
             : "",
@@ -545,15 +552,29 @@ export default function NewFeedCreationPage() {
           .filter(Boolean)
           .join("\n");
       } else if (category === "Complaint") {
-        const issueEmoji =
-          complaintIssueType.includes("Road") ? "🚧" :
-          complaintIssueType.includes("Streetlight") || complaintIssueType.includes("Dark") ? "💡" :
-          complaintIssueType.includes("Garbage") || complaintIssueType.includes("Waste") ? "🗑️" :
-          complaintIssueType.includes("Water") || complaintIssueType.includes("Leak") ? "🚰" :
-          complaintIssueType.includes("Drainage") || complaintIssueType.includes("Sewage") ? "🌊" :
-          complaintIssueType.includes("Animal") || complaintIssueType.includes("Dog") ? "🐕" :
-          complaintIssueType.includes("Park") || complaintIssueType.includes("Playground") ? "🌳" :
-          complaintIssueType.includes("Encroach") ? "🚫" : "⚠️";
+        const issueEmoji = complaintIssueType.includes("Road")
+          ? "🚧"
+          : complaintIssueType.includes("Streetlight") ||
+              complaintIssueType.includes("Dark")
+            ? "💡"
+            : complaintIssueType.includes("Garbage") ||
+                complaintIssueType.includes("Waste")
+              ? "🗑️"
+              : complaintIssueType.includes("Water") ||
+                  complaintIssueType.includes("Leak")
+                ? "🚰"
+                : complaintIssueType.includes("Drainage") ||
+                    complaintIssueType.includes("Sewage")
+                  ? "🌊"
+                  : complaintIssueType.includes("Animal") ||
+                      complaintIssueType.includes("Dog")
+                    ? "🐕"
+                    : complaintIssueType.includes("Park") ||
+                        complaintIssueType.includes("Playground")
+                      ? "🌳"
+                      : complaintIssueType.includes("Encroach")
+                        ? "🚫"
+                        : "⚠️";
 
         structuredDetails = [
           `${issueEmoji} Civic Issue: ${complaintIssueType}`,
@@ -582,11 +603,13 @@ export default function NewFeedCreationPage() {
       const effectiveWard =
         selectedWard && selectedWard >= 1 && selectedWard <= 48
           ? selectedWard
-          : authUser?.wardNumber && authUser.wardNumber >= 1 && authUser.wardNumber <= 48
-          ? authUser.wardNumber
-          : activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48
-          ? activeWard.id
-          : 1;
+          : authUser?.wardNumber &&
+              authUser.wardNumber >= 1 &&
+              authUser.wardNumber <= 48
+            ? authUser.wardNumber
+            : activeWard?.id && activeWard.id >= 1 && activeWard.id <= 48
+              ? activeWard.id
+              : 1;
 
       const postPayload = {
         title: "",
@@ -673,12 +696,18 @@ export default function NewFeedCreationPage() {
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-[11px] font-semibold">
                 {audience === "entire-avadi" ? (
                   <>
-                    <Globe size={11} className="text-teal-600 dark:text-teal-400" />
+                    <Globe
+                      size={11}
+                      className="text-teal-600 dark:text-teal-400"
+                    />
                     <span>Public · All Avadi</span>
                   </>
                 ) : (
                   <>
-                    <MapPin size={11} className="text-orange-600 dark:text-orange-400" />
+                    <MapPin
+                      size={11}
+                      className="text-orange-600 dark:text-orange-400"
+                    />
                     <span>Ward {selectedWard} Exclusive</span>
                   </>
                 )}
@@ -703,7 +732,10 @@ export default function NewFeedCreationPage() {
                       : "bg-slate-50 dark:bg-slate-800/80 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
                   }`}
                 >
-                  <Icon size={14} className={isSelected ? "text-white" : cat.color} />
+                  <Icon
+                    size={14}
+                    className={isSelected ? "text-white" : cat.color}
+                  />
                   <span>{cat.label}</span>
                   {cat.id === "Current Outage" && !isSelected && (
                     <span className="text-[9px] px-1 py-0.2 bg-amber-500/20 text-amber-600 dark:text-amber-400 rounded-sm font-black uppercase">
@@ -802,7 +834,8 @@ export default function NewFeedCreationPage() {
                         handleStreetSearchChange(e.target.value, "news");
                       }}
                       onFocus={() => {
-                        if (streetResults.length > 0) setShowNewsStreetDropdown(true);
+                        if (streetResults.length > 0)
+                          setShowNewsStreetDropdown(true);
                       }}
                       placeholder="News Location / Street (e.g. JB Estate, Avadi Checkpost)"
                       className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary"
@@ -878,9 +911,12 @@ export default function NewFeedCreationPage() {
                     <input
                       type="text"
                       value={streetArea || streetQuery}
-                      onChange={(e) => handleStreetSearchChange(e.target.value, "complaint")}
+                      onChange={(e) =>
+                        handleStreetSearchChange(e.target.value, "complaint")
+                      }
                       onFocus={() => {
-                        if (streetResults.length > 0) setShowComplaintStreetDropdown(true);
+                        if (streetResults.length > 0)
+                          setShowComplaintStreetDropdown(true);
                       }}
                       placeholder="Affected Street / Area *"
                       className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -968,9 +1004,15 @@ export default function NewFeedCreationPage() {
                   onChange={(e) => setBloodUrgency(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white cursor-pointer"
                 >
-                  <option value="Critical / Immediate">🚨 Critical / Immediate (2-4 hrs)</option>
-                  <option value="Within 24 Hours">⚡ Urgent (Within 24 hrs)</option>
-                  <option value="Planned (2-3 Days)">📅 Planned (Next 2-3 Days)</option>
+                  <option value="Critical / Immediate">
+                    🚨 Critical / Immediate (2-4 hrs)
+                  </option>
+                  <option value="Within 24 Hours">
+                    ⚡ Urgent (Within 24 hrs)
+                  </option>
+                  <option value="Planned (2-3 Days)">
+                    📅 Planned (Next 2-3 Days)
+                  </option>
                 </select>
 
                 <select
@@ -981,7 +1023,9 @@ export default function NewFeedCreationPage() {
                   <option value="1 unit">1 unit needed</option>
                   <option value="2 units">2 units needed</option>
                   <option value="3+ units">3+ units needed</option>
-                  <option value="Platelets">Single Donor Platelets (SDP)</option>
+                  <option value="Platelets">
+                    Single Donor Platelets (SDP)
+                  </option>
                 </select>
               </div>
 
@@ -993,7 +1037,10 @@ export default function NewFeedCreationPage() {
                     onChange={(e) => {
                       setBloodHospital(e.target.value);
                       if (fieldErrors.bloodHospital) {
-                        setFieldErrors((prev) => ({ ...prev, bloodHospital: "" }));
+                        setFieldErrors((prev) => ({
+                          ...prev,
+                          bloodHospital: "",
+                        }));
                       }
                     }}
                     placeholder="Hospital / Clinic Name *"
@@ -1059,11 +1106,16 @@ export default function NewFeedCreationPage() {
                 </span>
               </div>
 
-              {outageInterruptionType === "Damaged electrical wire or equipment" && (
+              {outageInterruptionType ===
+                "Damaged electrical wire or equipment" && (
                 <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/40 text-rose-800 dark:text-rose-200 text-xs font-semibold flex items-start gap-2">
-                  <ShieldAlert size={16} className="text-rose-600 shrink-0 mt-0.5" />
+                  <ShieldAlert
+                    size={16}
+                    className="text-rose-600 shrink-0 mt-0.5"
+                  />
                   <span>
-                    DANGER: Downed power line hazard! Keep back and notify TANGEDCO / TNEB 24/7 helpline at <strong>1912</strong>.
+                    DANGER: Downed power line hazard! Keep back and notify
+                    TANGEDCO / TNEB 24/7 helpline at <strong>1912</strong>.
                   </span>
                 </div>
               )}
@@ -1095,9 +1147,12 @@ export default function NewFeedCreationPage() {
                     <input
                       type="text"
                       value={streetArea || streetQuery}
-                      onChange={(e) => handleStreetSearchChange(e.target.value, "outage")}
+                      onChange={(e) =>
+                        handleStreetSearchChange(e.target.value, "outage")
+                      }
                       onFocus={() => {
-                        if (streetResults.length > 0) setShowOutageStreetDropdown(true);
+                        if (streetResults.length > 0)
+                          setShowOutageStreetDropdown(true);
                       }}
                       placeholder="Affected Street / Locality *"
                       className={`w-full pl-9 pr-3 py-2.5 rounded-xl border text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -1149,10 +1204,16 @@ export default function NewFeedCreationPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white cursor-pointer"
                 >
                   <option value="Just now">Started: Just now</option>
-                  <option value="15 minutes ago">Started: 15 minutes ago</option>
-                  <option value="30 minutes ago">Started: 30 minutes ago</option>
+                  <option value="15 minutes ago">
+                    Started: 15 minutes ago
+                  </option>
+                  <option value="30 minutes ago">
+                    Started: 30 minutes ago
+                  </option>
                   <option value="1 hour ago">Started: 1 hour ago</option>
-                  <option value="Over 2 hours ago">Started: Over 2 hours ago</option>
+                  <option value="Over 2 hours ago">
+                    Started: Over 2 hours ago
+                  </option>
                   <option value="Custom">Specify custom date & time</option>
                 </select>
 
@@ -1162,10 +1223,16 @@ export default function NewFeedCreationPage() {
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white cursor-pointer"
                 >
                   <option value="Entire Street">Scope: Entire Street</option>
-                  <option value="Single Phase Only">Scope: Single Phase Only</option>
-                  <option value="Multiple Streets">Scope: Multiple Streets</option>
+                  <option value="Single Phase Only">
+                    Scope: Single Phase Only
+                  </option>
+                  <option value="Multiple Streets">
+                    Scope: Multiple Streets
+                  </option>
                   <option value="Entire Ward">Scope: Entire Ward</option>
-                  <option value="Streetlights Only">Scope: Streetlights Only</option>
+                  <option value="Streetlights Only">
+                    Scope: Streetlights Only
+                  </option>
                 </select>
               </div>
 
@@ -1238,9 +1305,12 @@ export default function NewFeedCreationPage() {
                     <input
                       type="text"
                       value={streetQuery}
-                      onChange={(e) => handleStreetSearchChange(e.target.value, "audience")}
+                      onChange={(e) =>
+                        handleStreetSearchChange(e.target.value, "audience")
+                      }
                       onFocus={() => {
-                        if (streetResults.length > 0) setShowStreetDropdown(true);
+                        if (streetResults.length > 0)
+                          setShowStreetDropdown(true);
                       }}
                       placeholder="Search Avadi streets (e.g. JB Estate, Muthapudupet...)"
                       className={`w-full pl-9 pr-3 py-2 rounded-xl border text-xs sm:text-sm bg-white dark:bg-slate-950 text-slate-900 dark:text-white ${
@@ -1326,7 +1396,8 @@ export default function NewFeedCreationPage() {
                   htmlFor="feed-terms-checkbox"
                   className="text-xs text-slate-700 dark:text-slate-300 leading-snug cursor-pointer select-none font-medium"
                 >
-                  I confirm that the information provided is accurate and appropriate for the Avadi community.
+                  I confirm that the information provided is accurate and
+                  appropriate for the Avadi community.
                 </label>
               </div>
 
@@ -1342,9 +1413,19 @@ export default function NewFeedCreationPage() {
           <div className="pt-2">
             <button
               type="submit"
-              disabled={isSubmitting || isCompressing || (category !== "General" && category !== "Blood Request" && !termsAccepted)}
+              disabled={
+                isSubmitting ||
+                isCompressing ||
+                (category !== "General" &&
+                  category !== "Blood Request" &&
+                  !termsAccepted)
+              }
               className={`w-full py-3.5 rounded-2xl font-black text-sm transition flex items-center justify-center space-x-2 shadow-sm ${
-                !isSubmitting && !isCompressing && (category === "General" || category === "Blood Request" || termsAccepted)
+                !isSubmitting &&
+                !isCompressing &&
+                (category === "General" ||
+                  category === "Blood Request" ||
+                  termsAccepted)
                   ? "bg-primary hover:bg-primary/90 text-white cursor-pointer active:scale-98"
                   : "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed"
               }`}
@@ -1361,8 +1442,6 @@ export default function NewFeedCreationPage() {
           </div>
         </div>
       </form>
-
-      
     </div>
   );
 }
