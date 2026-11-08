@@ -96,6 +96,7 @@ interface WardContextType {
   dismissedAlerts: (string | number)[];
   dismissAlert: (id: string | number) => void;
   markAlertAsRead: (id: string | number) => void;
+  isLoadingAuth: boolean;
 }
 
 interface HourlyForecast {
@@ -371,6 +372,7 @@ export const DashboardClient: React.FC = () => {
     dismissedAlerts = [],
     dismissAlert = () => {},
     markAlertAsRead = () => {},
+    isLoadingAuth = true,
   } = (useWard() as unknown as WardContextType) || {};
 
   // Component States
@@ -693,9 +695,9 @@ export const DashboardClient: React.FC = () => {
     }, 500);
   };
 
-  if (isLoading) {
+  if (isLoadingAuth || isLoading) {
     return (
-      <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto">
+      <div className="p-4 md:p-6 space-y-6 max-w-4xl mx-auto md:max-w-full">
         <div className="flex items-center justify-between pb-2">
           <div className="space-y-2 w-1/3">
             <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />

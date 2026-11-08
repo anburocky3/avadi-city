@@ -85,6 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     logout,
     activeWard,
     authUser,
+    isLoadingAuth,
     alerts = [],
     readAlerts = [],
     dismissedAlerts = [],
@@ -170,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               />
             </div>
             <div className={`flex flex-col ${isCollapsed ? "hidden" : ""}`}>
-              <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none group-hover:text-primary transition-colors">
+              <span className="font-black text-base sm:text-lg tracking-tight text-slate-900 dark:text-white leading-none grousp-hover:text-primary transition-colors">
                 AVADI <span className="text-primary font-black">CITY</span>
               </span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-extrabold tracking-wider mt-1 uppercase">
@@ -196,25 +197,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
             setIsWardModalOpen(true);
             if (onClose) onClose();
           }}
-          title={`Ward ${activeWard.id}`}
-          aria-label={`Select Ward ${activeWard.id}`}
-          className={`w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""}`}
+          title={isLoadingAuth ? "Loading ward" : `Ward ${activeWard.id}`}
+          aria-label={
+            isLoadingAuth ? "Loading ward" : `Select Ward ${activeWard.id}`
+          }
+          className={`w-full max-w-full flex items-center justify-between p-3.5 mb-6 rounded-2xl bg-linear-to-r from-orange-500/10 via-amber-500/5 to-transparent border border-orange-500/20 hover:border-orange-500/40 text-left transition cursor-pointer shadow-sm group overflow-hidden box-border ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""}`}
         >
           <div
             className={`flex items-center space-x-3 min-w-0 flex-1 pr-2 ${isCollapsed ? "flex-none p-0" : ""}`}
           >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 font-black text-xs text-white shadow-md shadow-orange-500/20 sm:text-sm">
-              W{activeWard.id}
-            </div>
+            {isLoadingAuth ? (
+              <div className="h-10 w-10 shrink-0 animate-pulse rounded-xl bg-slate-200 dark:bg-slate-800" />
+            ) : (
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-500 font-black text-xs text-white shadow-md shadow-orange-500/20 sm:text-sm">
+                W{activeWard.id}
+              </div>
+            )}
             <div
               className={`flex flex-col min-w-0 flex-1 ${isCollapsed ? "hidden" : ""}`}
             >
-              <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug truncate">
-                Ward {activeWard.id || "Active Municipal Ward"}
-              </span>
-              <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate block w-full">
-                {activeWard.hints || "Active Municipal Ward"}
-              </span>
+              {isLoadingAuth ? (
+                <div className="space-y-1.5">
+                  <span className="block h-3 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+                  <span className="block h-2.5 w-28 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+                </div>
+              ) : (
+                <>
+                  <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-snug truncate">
+                    Ward {activeWard.id || "Active Municipal Ward"}
+                  </span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate block w-full">
+                    {activeWard.hints || "Active Municipal Ward"}
+                  </span>
+                </>
+              )}
             </div>
           </div>
 
@@ -241,7 +257,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={onClose}
                     title={item.name}
                     aria-label={item.name}
-                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center pl-8" : ""} ${
+                    className={`flex items-center space-x-3.5 px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""} ${
                       item.isSOS
                         ? isActive
                           ? "bg-rose-600 text-white shadow-lg shadow-rose-600/30"
@@ -286,7 +302,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     onClick={onClose}
                     title={item.name}
                     aria-label={item.name}
-                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center ps-8" : ""} ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-2xl text-xs sm:text-sm font-bold transition-all active:scale-95 ${isCollapsed ? "mx-auto h-12 w-12 justify-center p-0" : ""} ${
                       isActive
                         ? "bg-teal-700 text-white shadow-lg shadow-teal-700/25"
                         : "text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-900"
@@ -333,7 +349,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`flex items-center space-x-3 ${isCollapsed ? "justify-center" : ""}`}
           >
             <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-linear-to-tr from-indigo-600 via-purple-600 to-violet-600 text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 overflow-hidden ring-1 ring-black/5 dark:ring-white/10">
-              {authUser?.avatar ? (
+              {isLoadingAuth ? (
+                <span className="h-full w-full animate-pulse bg-slate-200 dark:bg-slate-800" />
+              ) : authUser?.avatar ? (
                 <img
                   src={authUser?.avatar}
                   alt={authUser?.name || "User Avatar"}
@@ -345,7 +363,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             <div className={isCollapsed ? "hidden" : "flex flex-col"}>
               <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white leading-tight">
-                {authUser?.name || "Guest"}
+                {isLoadingAuth ? (
+                  <span className="block h-3 w-20 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+                ) : (
+                  authUser?.name || "Resident"
+                )}
               </span>
               <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                 Ward {activeWard.id}
