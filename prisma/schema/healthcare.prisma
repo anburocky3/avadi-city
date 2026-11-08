@@ -1,48 +1,48 @@
 model HealthcareFacility {
   id                String   @id @default(cuid())
   name              String
-  facilityType      String   // "Hospital" | "Clinic" | "Pharmacy" | "Medical Centre" | "Diagnostic Centre" | "Pet Hospital" | "Pet Clinic"
+  facilityType      String   @map("facility_type") // "Hospital" | "Clinic" | "Pharmacy" | "Medical Centre" | "Diagnostic Centre" | "Pet Hospital" | "Pet Clinic"
   category          String   // e.g. "Hospitals", "Pharmacies", "Clinics", "Diagnostics", "Pet Hospitals", "Pet Clinics"
   description       String   @db.Text
   phone             String
-  alternatePhone    String?
+  alternatePhone    String?  @map("alternate_phone")
   email             String?
   address           String   @db.Text
-  areaLandmark      String?
+  areaLandmark      String?  @map("area_landmark")
   ward              Int
   latitude          Float?
   longitude         Float?
 
   // Timings
-  is24x7            Boolean  @default(false)
-  openingTime       String?
-  closingTime       String?
+  is24x7            Boolean  @default(false) @map("is_24x7")
+  openingTime       String?  @map("opening_time")
+  closingTime       String?  @map("closing_time")
 
   // Media
-  imageUrl          String?  @db.Text
-  additionalImages  Json?
+  imageUrl          String?  @db.Text @map("image_url")
+  additionalImages  Json?   @map("additional_images")
 
   // Services & Specializations
   services          Json?
-  emergencyAvailable Boolean  @default(false)
-  ambulanceAvailable Boolean  @default(false)
-  ambulancePhone    String?
+  emergencyAvailable Boolean  @default(false) @map("emergency_available")
+  ambulanceAvailable Boolean  @default(false) @map("ambulance_available")
+  ambulancePhone    String?  @map("ambulance_phone")
   appointments      String?
-  consultationFee   Float?
-  homeDelivery      Boolean  @default(false)
-  paymentMethods    Json?
+  consultationFee   Float?   @map("consultation_fee")
+  homeDelivery      Boolean  @default(false) @map("home_delivery")
+  paymentMethods    Json?    @map("payment_methods")
   website           String?
-  socialLink        String?
-  keyServices       Json?
-  additionalDetails String?  @db.Text
+  socialLink        String?  @map("social_link")
+  keyServices       Json?    @map("key_services")
+  additionalDetails String? @db.Text @map("additional_details")
 
   // Moderation & Ownership
   status            String   @default("PENDING") // "PENDING" | "APPROVED" | "REJECTED"
-  ownerId           String
+  ownerId           String   @map("owner_id")
   user              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([facilityType])

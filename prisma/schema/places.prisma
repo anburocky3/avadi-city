@@ -4,40 +4,40 @@ model ExplorePlace {
   category          String
   description       String   @db.Text
   address           String   @db.Text
-  areaLandmark      String?
+  areaLandmark      String?  @map("area_landmark")
   ward              Int
   latitude          Float?
   longitude         Float?
 
   // Timings & Entry
-  is24x7            Boolean  @default(false)
-  openingTime       String?
-  closingTime       String?
-  entryFeeType      String   @default("Free Entry") // "Free Entry" | "Paid Entry"
-  entryFeeAmount    Float?
+  is24x7            Boolean  @default(false) @map("is_24x7")
+  openingTime       String?  @map("opening_time")
+  closingTime       String?  @map("closing_time")
+  entryFeeType      String   @default("Free Entry") @map("entry_fee_type") // "Free Entry" | "Paid Entry"
+  entryFeeAmount    Float?   @map("entry_fee_amount")
 
   // Media
-  imageUrl          String?  @db.Text
-  additionalImages  Json?
+  imageUrl          String?  @db.Text @map("image_url")
+  additionalImages  Json?    @map("additional_images")
 
   // Details & Visitor info
   activities        Json?
-  visitorTypes      Json?
+  visitorTypes      Json?    @map("visitor_types")
   facilities        Json?
-  bestTimeToVisit   String?
+  bestTimeToVisit   String?  @map("best_time_to_visit")
   guidelines        String?  @db.Text
   phone             String?
   website           String?
-  officialUrl       String?
-  additionalDetails String?  @db.Text
+  officialUrl       String?  @map("official_url")
+  additionalDetails String?  @db.Text @map("additional_details")
 
   // Moderation & Ownership
   status          ApprovalStatus @default(PENDING)
-  ownerId           String
+  ownerId           String   @map("owner_id")
   user              User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([category])
@@ -48,12 +48,12 @@ model ExplorePlace {
 
 model PlaceReview {
   id         String   @id @default(cuid())
-  placeId    String
-  userId     String
+  placeId    String   @map("place_id")
+  userId     String   @map("user_id")
   rating     Int      // 1 to 5
-  reviewText String?  @db.Text
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  reviewText String?  @db.Text @map("review_text")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 

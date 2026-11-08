@@ -16,14 +16,14 @@ model LocalServiceProfile {
   description     String?        @db.Text
   specialty       String?
   rate            String?
-  imageUrl        String?
+  imageUrl        String?         @map("image_url")
   status          ApprovalStatus @default(PENDING)
-  submittedById   String
-  rejectionReason String?
-  reviewedById    String?
-  reviewedAt      DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  submittedById   String          @map("submitted_by_id")
+  rejectionReason String?         @map("rejection_reason")
+  reviewedById    String?         @map("reviewed_by_id")
+  reviewedAt      DateTime?       @map("reviewed_at")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([status])

@@ -1,9 +1,9 @@
 model DonationRequest {
   id                      String           @id @default(cuid())
-  displayId               String           @unique // Formatted ID e.g., AVC-DON-0001
-  userId                  String?
+  displayId               String           @unique @map("display_id") // Formatted ID e.g., AVC-DON-0001
+  userId                  String?          @map("user_id")
   user                    User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  createdByName           String?
+  createdByName           String?          @map("created_by_name")
   
   type                    String           // "Charity Need" | "Emergency Relief" | "Blood Requirement" etc.
   urgency                 String           // "Normal" | "Urgent" | "Critical"
@@ -21,23 +21,23 @@ model DonationRequest {
   // Financial target
   target                  Json?            // { amount?: number | string, upi?: string }
 
-  requiredBy              String?          // YYYY-MM-DD
+  requiredBy              String?          @map("required_by") // YYYY-MM-DD
   
   // Contact details
-  contactName             String
-  contactPhone            String
-  contactWhatsapp         String
+  contactName             String           @map("contact_name")
+  contactPhone            String           @map("contact_phone")
+  contactWhatsapp         String           @map("contact_whatsapp")
 
   images                  Json?            // string[] image URLs
   organisation            Json?            // { name?: string, regNo?: string }
-  supportingProof         String?          @db.Text
+  supportingProof         String?          @db.Text @map("supporting_proof")
   
   status                  String           @default("approved") // "pending" | "approved" | "fulfilled" | "closed" | "rejected"
 
   reports                 DonationReport[]
 
-  createdAt               DateTime         @default(now())
-  updatedAt               DateTime         @updatedAt
+  createdAt               DateTime         @default(now()) @map("created_at")
+  updatedAt               DateTime         @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([status])
@@ -50,12 +50,12 @@ model DonationRequest {
 
 model DonationReport {
   id          String          @id @default(cuid())
-  donationId  String
+  donationId  String          @map("donation_id")
   donation    DonationRequest @relation(fields: [donationId], references: [id], onDelete: Cascade)
   reason      String
   details     String?         @db.Text
-  reportedBy  String?
-  createdAt   DateTime        @default(now())
+  reportedBy  String?         @map("reported_by")
+  createdAt   DateTime        @default(now()) @map("created_at")
 
   @@index([donationId])
   @@map("donation_reports")

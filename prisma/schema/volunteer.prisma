@@ -1,9 +1,9 @@
 model Volunteer {
   id                      String      @id @default(cuid())
-  displayId               String      @unique // Formatted ID e.g., AVC-VOL-0001
-  userId                  String?
+  displayId               String      @unique @map("display_id") // Formatted ID e.g., AVC-VOL-0001
+  userId                  String?     @map("user_id")
   user                    User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
-  fullName                String
+  fullName                String      @map("full_name")
   ward                    Int
   gender                  String
   age                     Int
@@ -13,18 +13,18 @@ model Volunteer {
   mobile                  String
   whatsapp                String
   area                    String
-  showPhonePublic         Boolean     @default(true)
+  showPhonePublic         Boolean     @default(true) @map("show_phone_public")
 
   // Emergency Contact
-  emergencyName           String
-  emergencyPhone          String
-  emergencyRelationship   String
+  emergencyName           String      @map("emergency_name")
+  emergencyPhone          String      @map("emergency_phone")
+  emergencyRelationship   String      @map("emergency_relationship")
 
   // Profile details & Preferences (stored as JSON for structured data in MySQL)
   languages               Json        // string[]
   interests               Json        // string[]
   skills                  Json        // string[]
-  otherSkill              String?
+  otherSkill              String?     @map("other_skill")
   experience              String      // "Beginner" | "Intermediate" | "Experienced"
   bio                     String?     @db.Text
   vehicle                 String      // "None" | "Two-wheeler" | "Four-wheeler"
@@ -34,9 +34,9 @@ model Volunteer {
   availability            Json
 
   // Health
-  bloodGroup              String
-  willDonateBlood         Boolean     @default(false)
-  lastDonation            String?
+  bloodGroup              String      @map("blood_group")
+  willDonateBlood         Boolean     @default(false) @map("will_donate_blood")
+  lastDonation            String?     @map("last_donation")
   fitness                 String      @default("Yes") // "Yes" | "Limited"
   conditions              String?     @db.Text
 
@@ -44,14 +44,14 @@ model Volunteer {
   guardian                Json?       // { name: string, consent: boolean } | null
 
   // Consents
-  conductConsent          Boolean     @default(true)
-  directoryConsent        Boolean     @default(true)
-  truthfulConsent         Boolean     @default(true)
+  conductConsent          Boolean     @default(true) @map("conduct_consent")
+  directoryConsent        Boolean     @default(true) @map("directory_consent")
+  truthfulConsent         Boolean     @default(true) @map("truthful_consent")
 
   status                  String      @default("pending") // "pending" | "active" | "approved" | "paused" | "left"
 
-  createdAt               DateTime    @default(now())
-  updatedAt               DateTime    @updatedAt
+  createdAt               DateTime    @default(now()) @map("created_at")
+  updatedAt               DateTime    @updatedAt @map("updated_at")
 
   @@index([ward])
   @@index([status])
