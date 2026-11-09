@@ -50,7 +50,7 @@ export function parseErailDump(
 
     const trainNo = fields[0]?.trim();
     const trainName = fields[1]?.trim() || "SUBURBAN LOCAL";
-    const originName = stationName;
+    const originName = fields[2]?.trim() || stationName;
     const destCode = fields[5]?.trim().toUpperCase() || "";
     const alightingCode = fields[9]?.trim().toUpperCase() || destCode;
 

@@ -1,4 +1,4 @@
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import { Metadata } from "next";
 import { RentalsPostClient } from "@/features/rentals/components/rentals-post-client";
 

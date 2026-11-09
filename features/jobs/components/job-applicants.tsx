@@ -23,43 +23,18 @@ import {
   Loader2,
 } from "lucide-react";
 import useToast from "@/hooks/useToast";
+import { useApplicantStatus } from "@/features/jobs/hooks/useApplicantStatus";
+import type {
+  ApplicantItem,
+  ApplicationStatusType,
+  JobMeta,
+} from "@/features/jobs/types";
 
-export type ApplicationStatusType =
-  | "SUBMITTED"
-  | "UNDER_REVIEW"
-  | "SHORTLISTED"
-  | "INTERVIEW"
-  | "HIRED"
-  | "REJECTED";
-
-export interface ApplicantItem {
-  id: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  avatar?: string | null;
-  hasResume?: boolean;
-  coverLetter?: string | null;
-  qualification?: string | null;
-  experience?: string | null;
-  skills?: string | null;
-  portfolioUrl?: string | null;
-  resumeFileName?: string | null;
-  status: ApplicationStatusType;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface JobMeta {
-  id: string;
-  role: string;
-  businessName: string;
-  location?: string | null;
-  ward: number;
-  status: string;
-  jobType?: string;
-  workMode?: string;
-}
+export type {
+  ApplicantItem,
+  ApplicationStatusType,
+  JobMeta,
+} from "@/features/jobs/types";
 
 interface ApplicantsClientProps {
   job: JobMeta;
@@ -147,12 +122,12 @@ export default function ApplicantsClient({
   initialApplications,
 }: ApplicantsClientProps) {
   const toast = useToast();
+  const { updatingId, updateStatus } = useApplicantStatus(job.id);
   const [applications, setApplications] =
     useState<ApplicantItem[]>(initialApplications);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<"NEWEST" | "OLDEST">("NEWEST");
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   // Status Counts
   const counts = useMemo(() => {
@@ -221,20 +196,8 @@ export default function ApplicantsClient({
     const currentApp = applications.find((a) => a.id === applicantId);
     if (!currentApp || currentApp.status === newStatus) return;
 
-    setUpdatingId(applicantId);
-
     try {
-      const res = await fetch(`/api/jobs/${job.id}/applicants/${applicantId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: newStatus }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || "Failed to update status");
-      }
+      await updateStatus(applicantId, newStatus);
 
       // Refresh displayed status only after server confirms success
       setApplications((prev) =>
@@ -250,8 +213,6 @@ export default function ApplicantsClient({
       toast.error(
         "Could not update application status. Your changes have not been saved.",
       );
-    } finally {
-      setUpdatingId(null);
     }
   };
 

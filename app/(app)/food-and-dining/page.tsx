@@ -1,14 +1,12 @@
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { initialFoodSpots } from "@/data/foodSpots";
 import { SkeletonLoader } from "@/components/shared-components";
-import {
-  FoodClient,
-  FoodSpot,
-} from "@/features/food-and-dining/components/food-and-dining-client";
+import { FoodClient } from "@/features/food-and-dining/components/food-and-dining-client";
+import type { FoodSpot } from "@/features/food-and-dining/types";
+import { getApprovedFoodListings } from "@/features/food-and-dining/services/food.service";
 
-// Cache/revalidate interval for static generation or dynamic SSR
-export const revalidate = 3600; // 1 hour cache, or 0 for dynamic
+export const revalidate = 0;
 export const metadata: Metadata = {
   title: "Food and Dining in Avadi",
   description:
@@ -16,7 +14,18 @@ export const metadata: Metadata = {
 };
 
 export default async function FoodPage() {
-  const spots: FoodSpot[] = initialFoodSpots as FoodSpot[];
+  let approvedDbSpots: FoodSpot[] = [];
+
+  try {
+    approvedDbSpots = await getApprovedFoodListings();
+  } catch (error) {
+    console.error("Failed to load approved food listings from database:", error);
+  }
+
+  const spots: FoodSpot[] = [
+    ...approvedDbSpots,
+    ...(initialFoodSpots as FoodSpot[]),
+  ];
 
   return (
     <Suspense

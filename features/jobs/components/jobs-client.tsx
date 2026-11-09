@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
@@ -31,8 +31,17 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Shared components path mapping
 import { Modal, EmptyState } from "@/components/shared-components";
-import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
+import { useWard } from "@/features/ward";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { toggleJobFeatured } from "@/features/jobs/services/jobs.service";
+import { useJobsDashboard } from "@/features/jobs/hooks/useJobsDashboard";
+import type {
+  JobVacancy,
+  UserApplication,
+} from "@/features/jobs/types";
+
+export type { JobVacancy, UserApplication } from "@/features/jobs/types";
 
 // Dynamically import MapLocationPicker to prevent SSR issues with Leaflet
 const MapLocationPicker = dynamic(
@@ -47,67 +56,6 @@ const MapLocationPicker = dynamic(
     ),
   },
 );
-
-// --- INLINE TYPESCRIPT DEFINITIONS ---
-
-export interface JobVacancy {
-  id: string;
-  role: string;
-  businessName: string;
-  category?: string;
-  jobType?: "Full-Time" | "Part-Time" | "Contract" | string;
-  workMode?: string;
-  postedTime?: string;
-  salary: string;
-  location?: string;
-  shift?: string;
-  contact: string;
-  ward: number;
-  details: string;
-  requirements?: string[];
-  qualifications?: string;
-  status?: string;
-  featured?: boolean;
-  totalApplications?: number;
-  newApplications?: number;
-  ownerId?: string;
-  imageUrl?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-  address?: string;
-}
-
-export interface UserApplication {
-  id: string;
-  jobId: string;
-  fullName: string;
-  email: string;
-  phone: string;
-  resumeUrl: string;
-  resumeFileName?: string | null;
-  coverLetter?: string | null;
-  qualification?: string | null;
-  experience?: string | null;
-  skills?: string | null;
-  portfolioUrl?: string | null;
-  status: string;
-  createdAt: string;
-  updatedAt: string;
-  job?: {
-    id: string;
-    role: string;
-    businessName: string;
-    category?: string;
-    jobType?: string;
-    workMode?: string;
-    salary: string;
-    location?: string;
-    ward?: number;
-    imageUrl?: string | null;
-    status: string;
-    ownerId?: string;
-  } | null;
-}
 
 export const APPLICATION_STATUS_CONFIG: Record<
   string,
@@ -205,7 +153,8 @@ export const JobsClient: React.FC<JobsClientProps> = ({
 }) => {
   const router = useRouter();
   const t = useTranslations("jobs");
-  const { activeWard, userProfile, authUser, isAuthenticated } = useWard();
+  const { activeWard } = useWard();
+  const { authUser, isAuthenticated } = useAuth();
   const toast = useToast();
 
   const isAdmin = useMemo(() => {
@@ -227,6 +176,27 @@ export const JobsClient: React.FC<JobsClientProps> = ({
     null,
   );
 
+  const [activeTab, setActiveTab] = useState<
+    "explore" | "my-applications" | "my-jobs"
+  >(initialTab || "explore");
+  const {
+    myApplications,
+    appliedCompanies,
+    isLoadingApplications,
+    hasLoadedApplications,
+    fetchMyApplications,
+    myJobs,
+    setMyJobs,
+    isLoadingMyJobs,
+    hasLoadedMyJobs,
+    fetchMyJobs,
+  } = useJobsDashboard({
+    isAuthenticated,
+    activeTab,
+    initialApplications,
+    initialAppliedCompanies,
+  });
+
   const handleToggleFeatured = async (
     jobId: string,
     currentFeatured: boolean,
@@ -234,126 +204,39 @@ export const JobsClient: React.FC<JobsClientProps> = ({
     const targetFeatured = !currentFeatured;
     setTogglingFeaturedId(jobId);
     try {
-      const res = await fetch(`/api/jobs/${jobId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ featured: targetFeatured }),
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setJobList((prev) =>
-          prev.map((j) =>
-            j.id === jobId ? { ...j, featured: targetFeatured } : j,
-          ),
-        );
-        setMyJobs((prev) =>
-          prev.map((j) =>
-            j.id === jobId ? { ...j, featured: targetFeatured } : j,
-          ),
-        );
-        toast.success(
-          targetFeatured
-            ? "Job marked as Sponsored."
-            : "Sponsored status removed.",
-        );
-      } else {
-        toast.error(
-          data.message || data.error || "Failed to update sponsored status",
-        );
-      }
+      await toggleJobFeatured(jobId, targetFeatured);
+      setJobList((prev) =>
+        prev.map((job) =>
+          job.id === jobId ? { ...job, featured: targetFeatured } : job,
+        ),
+      );
+      setMyJobs((prev) =>
+        prev.map((job) =>
+          job.id === jobId ? { ...job, featured: targetFeatured } : job,
+        ),
+      );
+      toast.success(
+        targetFeatured
+          ? "Job marked as Sponsored."
+          : "Sponsored status removed.",
+      );
     } catch (err) {
       console.error("Toggle featured error:", err);
-      toast.error("Network error while updating sponsored status");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Network error while updating sponsored status",
+      );
     } finally {
       setTogglingFeaturedId(null);
     }
   };
 
-  const [activeTab, setActiveTab] = useState<
-    "explore" | "my-applications" | "my-jobs"
-  >(initialTab || "explore");
-
-  // User Applications State
-  const [myApplications, setMyApplications] = useState<UserApplication[]>(
-    initialApplications || [],
-  );
-  const [appliedCompanies, setAppliedCompanies] = useState<string[]>(
-    initialAppliedCompanies || [],
-  );
-  const [isLoadingApplications, setIsLoadingApplications] =
-    useState<boolean>(false);
-  const [hasLoadedApplications, setHasLoadedApplications] = useState<boolean>(
-    Boolean(initialApplications && initialApplications.length > 0),
-  );
   const [applicationStatusFilter, setApplicationStatusFilter] =
     useState<string>("ALL");
   const [applicationSearch, setApplicationSearch] = useState<string>("");
 
-  const fetchMyApplications = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setIsLoadingApplications(true);
-    try {
-      const res = await fetch("/api/jobs/my-applications");
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setMyApplications(json.data);
-        if (Array.isArray(json.appliedCompanies)) {
-          setAppliedCompanies(json.appliedCompanies);
-        }
-      }
-    } catch (err) {
-      console.error("Failed to load user applications:", err);
-    } finally {
-      setIsLoadingApplications(false);
-      setHasLoadedApplications(true);
-    }
-  }, [isAuthenticated]);
-
-  // Load user applications when authenticated to enforce one application per company on public cards
-  useEffect(() => {
-    if (isAuthenticated && !hasLoadedApplications) {
-      fetchMyApplications();
-    }
-  }, [isAuthenticated, hasLoadedApplications, fetchMyApplications]);
-
-  useEffect(() => {
-    if (
-      activeTab === "my-applications" &&
-      !hasLoadedApplications &&
-      isAuthenticated
-    ) {
-      fetchMyApplications();
-    }
-  }, [activeTab, hasLoadedApplications, isAuthenticated, fetchMyApplications]);
-
   // Employer Postings State
-  const [myJobs, setMyJobs] = useState<JobVacancy[]>([]);
-  const [isLoadingMyJobs, setIsLoadingMyJobs] = useState<boolean>(false);
-  const [hasLoadedMyJobs, setHasLoadedMyJobs] = useState<boolean>(false);
-
-  const fetchMyJobs = useCallback(async () => {
-    if (!isAuthenticated) return;
-    setIsLoadingMyJobs(true);
-    try {
-      const res = await fetch("/api/jobs?my=true");
-      const json = await res.json();
-      if (json.success && Array.isArray(json.data)) {
-        setMyJobs(json.data);
-      }
-    } catch (err) {
-      console.error("Failed to load user jobs:", err);
-    } finally {
-      setIsLoadingMyJobs(false);
-      setHasLoadedMyJobs(true);
-    }
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (activeTab === "my-jobs" && !hasLoadedMyJobs && isAuthenticated) {
-      fetchMyJobs();
-    }
-  }, [activeTab, hasLoadedMyJobs, isAuthenticated, fetchMyJobs]);
-
   const [jobList, setJobList] = useState<JobVacancy[]>(() => {
     const seen = new Set<string>();
     return (initialJobs || []).filter((j) => {
@@ -405,7 +288,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({
       businessName: "",
       salary: "",
       shift: "",
-      contact: userProfile?.wardNumber.toString() || "",
+      contact: authUser?.wardNumber.toString() || "",
       details: "",
     },
   });
@@ -532,10 +415,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({
         {/* 2. My Applications (Center) */}
         <button
           type="button"
-          onClick={() => {
-            setActiveTab("my-applications");
-            if (!hasLoadedApplications) fetchMyApplications();
-          }}
+          onClick={() => setActiveTab("my-applications")}
           className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer relative ${
             activeTab === "my-applications"
               ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"
@@ -554,10 +434,7 @@ export const JobsClient: React.FC<JobsClientProps> = ({
         {/* 3. My Job Postings (Right) */}
         <button
           type="button"
-          onClick={() => {
-            setActiveTab("my-jobs");
-            if (!hasLoadedMyJobs) fetchMyJobs();
-          }}
+          onClick={() => setActiveTab("my-jobs")}
           className={`flex-1 py-2.5 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer relative ${
             activeTab === "my-jobs"
               ? "bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-sm"

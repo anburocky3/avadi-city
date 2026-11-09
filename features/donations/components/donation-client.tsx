@@ -15,6 +15,7 @@ import { DonationRequest } from "@/types/donation";
 import { DonationFeed } from "@/components/donation/DonationFeed";
 import { CreateDonationModal } from "@/components/donation/CreateDonationModal";
 import { getDbDonations } from "@/lib/donation-db";
+import { useAuth } from "@/features/auth/hooks/useAuth";
 
 // Re-export for page.tsx compatibility
 export type DonationCause = DonationRequest;
@@ -22,7 +23,8 @@ export type DonationCause = DonationRequest;
 export const DonationClient = () => {
   const router = useRouter();
   const t = useTranslations("volunteers");
-  const { authUser, activeWard } = useWard();
+  const { activeWard } = useWard();
+  const { authUser } = useAuth();
 
   const [donationsList, setDonationsList] = useState<DonationRequest[]>(() => {
     return donationService.list();

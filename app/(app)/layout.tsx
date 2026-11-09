@@ -5,6 +5,7 @@ import { verifyAuthToken } from "@/lib/auth";
 import { WardProvider } from "@/context/wardContext";
 import { AppShell } from "@/components/navigation/AppShell";
 import QueryProvider from "@/providers/QueryProvider";
+import { NotificationProvider } from "@/features/notifications/context/NotificationContext";
 
 export default async function AuthLayout({
   children,
@@ -30,7 +31,9 @@ export default async function AuthLayout({
   return (
     <QueryProvider>
       <WardProvider>
-        <AppShell>{children}</AppShell>
+        <NotificationProvider>
+          <AppShell>{children}</AppShell>
+        </NotificationProvider>
       </WardProvider>
     </QueryProvider>
   );

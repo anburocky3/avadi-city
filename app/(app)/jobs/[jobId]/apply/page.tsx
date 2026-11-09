@@ -3,13 +3,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { ArrowLeft, AlertCircle, CheckCircle2, Users } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
-import { initialJobsData } from "@/data/jobSpots";
+import { JobApplyClient } from "@/features/jobs/components/job-apply";
 import {
-  JobApplyClient,
-  JobDetailSummary,
-} from "@/features/jobs/components/job-apply";
+  getExistingCompanyApplication,
+  getJobApplicationProfile,
+  getJobApplyPageData,
+} from "@/features/jobs/services/jobs.server";
+import type { JobProfile } from "@/features/jobs/types";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
@@ -28,8 +29,7 @@ export default async function JobApplyPage({ params }: PageProps) {
   // 1. Fetch authenticated user profile to auto-populate email and phone (FIX 4)
   const cookieStore = await cookies();
   const token = cookieStore.get("avadi_session")?.value;
-  let userProfile: { name?: string; email?: string; phone?: string } | null =
-    null;
+  let userProfile: JobProfile | null = null;
   let currentUserId: string | null = null;
 
   if (token) {
@@ -37,17 +37,7 @@ export default async function JobApplyPage({ params }: PageProps) {
       const session = await verifyAuthToken(token);
       if (session?.userId) {
         currentUserId = session.userId;
-        const dbUser = await prisma.user.findUnique({
-          where: { id: session.userId },
-          select: { name: true, email: true, phone: true },
-        });
-        if (dbUser) {
-          userProfile = {
-            name: dbUser.name || undefined,
-            email: dbUser.email || undefined,
-            phone: dbUser.phone || undefined,
-          };
-        }
+        userProfile = await getJobApplicationProfile(session.userId);
       }
     } catch (authErr) {
       console.warn(
@@ -57,57 +47,7 @@ export default async function JobApplyPage({ params }: PageProps) {
     }
   }
 
-  let job: JobDetailSummary | null = null;
-  let jobOwnerId: string | null = null;
-  let jobOwnerEmail: string | null = null;
-
-  try {
-    // 1. Look up in Prisma database
-    const dbJob = await prisma.jobVacancy.findUnique({
-      where: { id: jobId },
-      include: {
-        user: { select: { email: true } },
-      },
-    });
-
-    if (dbJob && dbJob.status === "APPROVED") {
-      jobOwnerId = dbJob.ownerId;
-      jobOwnerEmail = dbJob.user?.email || null;
-      job = {
-        id: dbJob.id,
-        role: dbJob.role,
-        businessName: dbJob.businessName,
-        location: dbJob.location
-          ? `${dbJob.location} (Ward ${dbJob.ward})`
-          : `Ward ${dbJob.ward}, Avadi`,
-        salary: dbJob.salary,
-        jobType: dbJob.jobType,
-        workMode: dbJob.workMode,
-        qualifications: dbJob.qualifications || undefined,
-        details: dbJob.details,
-      };
-    }
-  } catch (err) {
-    console.warn("Could not query Prisma for job vacancy:", err);
-  }
-
-  // 2. Fallback to initial seed jobs
-  if (!job) {
-    const seed = initialJobsData.find((j) => j.id === jobId);
-    if (seed) {
-      job = {
-        id: seed.id,
-        role: seed.role,
-        businessName: seed.businessName,
-        location: seed.location,
-        salary: seed.salary,
-        jobType: seed.jobType,
-        workMode: "On-site",
-        qualifications: seed.qualifications,
-        details: seed.details,
-      };
-    }
-  }
+  const { job, jobOwnerId, jobOwnerEmail } = await getJobApplyPageData(jobId);
 
   // If not found, display clear not-found message
   if (!job) {
@@ -194,33 +134,11 @@ export default async function JobApplyPage({ params }: PageProps) {
     businessName?: string;
   } | null = null;
   if (currentUserId && job?.businessName) {
-    try {
-      const dbApp = await prisma.jobApplication.findFirst({
-        where: {
-          OR: [
-            { applicantId: currentUserId },
-            ...(userProfile?.email
-              ? [{ email: userProfile.email.toLowerCase() }]
-              : []),
-          ],
-          job: {
-            businessName: { equals: job.businessName.trim() },
-          },
-        },
-        include: {
-          job: { select: { role: true, businessName: true } },
-        },
-      });
-      if (dbApp) {
-        existingCompanyApp = {
-          id: dbApp.id,
-          role: dbApp.job?.role,
-          businessName: dbApp.job?.businessName,
-        };
-      }
-    } catch {
-      // ignore
-    }
+    existingCompanyApp = await getExistingCompanyApplication(
+      currentUserId,
+      userProfile?.email,
+      job.businessName,
+    );
   }
 
   if (existingCompanyApp) {

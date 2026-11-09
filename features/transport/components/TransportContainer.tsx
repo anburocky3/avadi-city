@@ -14,9 +14,7 @@ import {
 } from "lucide-react";
 
 import { suburbanTrains, mtcBuses, fuelStations } from "@/data/transport";
-import { Card, Badge, EmptyState } from "@/components/shared-components";
 import mtcBusesData from "@/data/mtc-buses.json";
-import { MtcBusRoute } from "@/scripts/build-mtc-buses";
 import MtcBusPortal, { MtcBuses } from "./mtc-buses";
 import SuburbanTrains from "./suburban-trains";
 import FuelStations from "./fuel-stations";

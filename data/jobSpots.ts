@@ -1,4 +1,4 @@
-import { JobVacancy } from "@/features/jobs/components/jobs-client";
+import type { JobVacancy } from "@/features/jobs/types";
 
 export const initialJobsData: JobVacancy[] = [
   {

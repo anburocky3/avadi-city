@@ -16,6 +16,12 @@ import {
 } from "lucide-react";
 import { Card, Badge, EmptyState } from "@/components/shared-components";
 import { calculateArrivalTime } from "@/utils/parseErail";
+import {
+  format12Hour,
+  trainFormatChennaiTime,
+  trainFormatRelativeTime,
+} from "@/utils/helper";
+import AnalogClock from "./analog-clock";
 
 // --- TYPESCRIPT DEFINITIONS ---
 
@@ -69,23 +75,6 @@ const getDestCode = (destName: string): string => {
   return destName.substring(0, 4).toUpperCase();
 };
 
-const format12Hour = (time24: string): string => {
-  if (!time24 || !time24.includes(":")) return time24;
-  const [hoursStr, minutesStr] = time24.split(":");
-  let hours = parseInt(hoursStr, 10);
-  const ampm = hours >= 12 ? "PM" : "AM";
-  hours = hours % 12 || 12;
-  return `${hours}:${minutesStr} ${ampm}`;
-};
-
-const formatRelativeTime = (totalMins: number): string => {
-  if (totalMins <= 0) return "Departing now";
-  if (totalMins < 60) return `in ${totalMins} min${totalMins === 1 ? "" : "s"}`;
-  const hours = Math.floor(totalMins / 60);
-  const mins = totalMins % 60;
-  return mins > 0 ? `in ${hours}h ${mins}m` : `in ${hours}h`;
-};
-
 const stationTrainCache = new Map<string, SuburbanTrainSchedule[]>();
 const stationTrainRequests = new Map<
   string,
@@ -118,9 +107,9 @@ export const SuburbanTrains: React.FC = () => {
   const [originStation, setOriginStation] = useState("AVD");
 
   const [currentTimeStr, setCurrentTimeStr] = useState<string>(() => {
-    const now = new Date();
-    return `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    return trainFormatChennaiTime(new Date());
   });
+  const [clockTime, setClockTime] = useState(() => new Date());
 
   useEffect(() => {
     let isCurrentStation = true;
@@ -170,11 +159,10 @@ export const SuburbanTrains: React.FC = () => {
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      setCurrentTimeStr(
-        `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
-      );
+      setClockTime(now);
+      setCurrentTimeStr(trainFormatChennaiTime(now));
     };
-    const interval = setInterval(updateTime, 30000);
+    const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -219,7 +207,7 @@ export const SuburbanTrains: React.FC = () => {
           <div className="flex items-center gap-1.5">
             <Filter size={13} className="text-primary shrink-0" />
             <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Origin station
+              Boarding station
             </span>
           </div>
           <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200 truncate">
@@ -291,42 +279,51 @@ export const SuburbanTrains: React.FC = () => {
               {/* 2. ADAPTIVE HERO COUNTDOWN CARD */}
               {soonestTrain ? (
                 <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-orange-500 via-amber-500 to-orange-600 p-5 text-white shadow-lg shadow-orange-500/10 border border-orange-400/30 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1.5 z-10 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[9px] font-black uppercase tracking-widest bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
-                        <Sparkles
-                          size={10}
-                          className="text-amber-200 animate-spin"
-                        />
-                        SOONEST DEPARTURE
-                      </span>
-                      <span className="text-[10px] font-bold text-white/90">
-                        {soonestTrain.direction === "east"
-                          ? "➔ Eastbound"
-                          : "➔ Westbound"}
-                      </span>
-                      {soonestTrain.type === "Fast" && (
-                        <span className="bg-rose-500 text-white font-black text-[9px] uppercase px-2 py-0.5 rounded-full animate-pulse border border-rose-300">
-                          ⚡ Fast Train
+                  <div className="flex space-y-1.5 z-10 min-w-0">
+                    <AnalogClock
+                      currentTimeStr={currentTimeStr}
+                      clockTime={clockTime}
+                      className="mr-3"
+                    />
+                    <div className="flex flex-col justify-center min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[9px] font-black uppercase tracking-widest bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
+                          <Sparkles
+                            size={10}
+                            className="text-amber-200 animate-spin"
+                          />
+                          SOONEST DEPARTURE
                         </span>
-                      )}
+                        <span className="text-[10px] font-bold text-white/90">
+                          {soonestTrain.direction === "east"
+                            ? "➔ Eastbound"
+                            : "➔ Westbound"}
+                        </span>
+                        {soonestTrain.type === "Fast" && (
+                          <span className="bg-rose-500 text-white font-black text-[9px] uppercase px-2 py-0.5 rounded-full animate-pulse border border-rose-300">
+                            ⚡ Fast Train
+                          </span>
+                        )}
+                      </div>
+
+                      <h3 className="text-lg sm:text-xl font-black tracking-tight pt-0.5 truncate">
+                        To {soonestTrain.destination}
+                      </h3>
+
+                      <p className="text-xs text-white/90 font-semibold flex items-center gap-1.5 flex-wrap">
+                        <span>
+                          Train #{soonestTrain.trainNo} ({soonestTrain.type})
+                        </span>
+                        <span>·</span>
+                        <span className="bg-white/20 px-2 py-0.5 rounded font-black text-[10px]">
+                          Platform {soonestTrain.platform}
+                        </span>
+                        <span>·</span>
+                        <span>
+                          Departs at {format12Hour(soonestTrain.time)}
+                        </span>
+                      </p>
                     </div>
-
-                    <h3 className="text-lg sm:text-xl font-black tracking-tight pt-0.5 truncate">
-                      To {soonestTrain.destination}
-                    </h3>
-
-                    <p className="text-xs text-white/90 font-semibold flex items-center gap-1.5 flex-wrap">
-                      <span>
-                        Train #{soonestTrain.trainNo} ({soonestTrain.type})
-                      </span>
-                      <span>·</span>
-                      <span className="bg-white/20 px-2 py-0.5 rounded font-black text-[10px]">
-                        Platform {soonestTrain.platform}
-                      </span>
-                      <span>·</span>
-                      <span>Departs at {format12Hour(soonestTrain.time)}</span>
-                    </p>
                   </div>
 
                   {minsUntilDeparture !== null && (
@@ -491,7 +488,9 @@ export const SuburbanTrains: React.FC = () => {
                                   size={12}
                                   className="shrink-0 opacity-80"
                                 />
-                                <span>{formatRelativeTime(cardDiffMins)}</span>
+                                <span>
+                                  {trainFormatRelativeTime(cardDiffMins)}
+                                </span>
                               </span>
                             </div>
 

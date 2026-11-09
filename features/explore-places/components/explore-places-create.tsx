@@ -319,7 +319,7 @@ export default function PlaceCreateClient() {
   // Authentication Guard
   useEffect(() => {
     if (!isLoadingAuth && !isAuthenticated) {
-      router.replace("/login?redirect=/explore/create");
+      router.replace("/login?redirect=/explore-places/create");
     }
   }, [isLoadingAuth, isAuthenticated, router]);
 

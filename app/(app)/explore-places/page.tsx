@@ -1,12 +1,10 @@
 import React, { Suspense } from "react";
 import { SkeletonLoader } from "@/components/shared-components";
-import {
-  ExploreClient,
-  Place,
-} from "@/features/explore-places/components/explore-places-client";
+import { ExploreClient } from "@/features/explore-places/components/explore-places-client";
 import { prisma } from "@/lib/prisma";
 import Head from "next/head";
 import { Metadata } from "next";
+import { Place } from "@/features/explore-places/types";
 
 export const metadata: Metadata = {
   title: "Explore Places",

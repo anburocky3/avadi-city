@@ -12,10 +12,12 @@ import {
   Sparkles,
   Phone,
 } from "lucide-react";
-import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
-import { initialJobsData } from "@/data/jobSpots";
 import { Metadata } from "next";
+import {
+  getJobDetailRecord,
+  hasAppliedToCompany as checkAppliedToCompany,
+} from "@/features/jobs/services/jobs.server";
 
 export const dynamic = "force-dynamic";
 
@@ -23,55 +25,11 @@ interface PageProps {
   params: Promise<{ jobId: string }>;
 }
 
-async function getJobData(jobId: string) {
-  let job: any = null;
-  try {
-    job = await prisma.jobVacancy.findUnique({
-      where: { id: jobId },
-      include: {
-        _count: { select: { applications: true } },
-      },
-    });
-  } catch (err) {
-    console.error("Error looking up job vacancy:", err);
-  }
-
-  // Fallback to seed data
-  if (!job) {
-    const seed = initialJobsData.find((j) => j.id === jobId);
-    if (seed) {
-      job = {
-        id: seed.id,
-        role: seed.role,
-        businessName: seed.businessName,
-        category: "Retail",
-        jobType: seed.jobType || "Full-Time",
-        workMode: "On-site",
-        experience: "0–1 Years",
-        salary: seed.salary,
-        salaryType: "Per Month",
-        details: seed.details,
-        requirements: JSON.stringify(seed.requirements || []),
-        location: seed.location,
-        ward: seed.ward,
-        address: seed.location,
-        contact: seed.contact,
-        status: "APPROVED",
-        featured: Boolean(seed.featured),
-        openings: 1,
-        _count: { applications: 0 },
-      };
-    }
-  }
-
-  return job;
-}
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { jobId } = await params;
-  const job = await getJobData(jobId);
+  const job = await getJobDetailRecord(jobId);
 
   // Fallback metadata if the job doesn't exist
   if (!job) {
@@ -105,7 +63,7 @@ export default async function JobDetailPage({ params }: PageProps) {
     if (session?.userId) currentUserId = session.userId;
   }
 
-  const job = await getJobData(jobId);
+  const job = await getJobDetailRecord(jobId);
 
   if (!job) {
     return (
@@ -133,23 +91,11 @@ export default async function JobDetailPage({ params }: PageProps) {
 
   let hasAppliedToCompany = false;
   if (currentUserId && job?.businessName) {
-    try {
-      const existingApp = await prisma.jobApplication.findFirst({
-        where: {
-          applicantId: currentUserId,
-          job: {
-            OR: [
-              { businessName: { equals: job.businessName.trim() } },
-              ...(job.ownerId ? [{ ownerId: job.ownerId }] : []),
-            ],
-          },
-        },
-        select: { id: true },
-      });
-      hasAppliedToCompany = Boolean(existingApp);
-    } catch {
-      // ignore
-    }
+    hasAppliedToCompany = await checkAppliedToCompany(
+      currentUserId,
+      job.businessName,
+      job.ownerId,
+    );
   }
 
   let requirementsList: string[] = [];

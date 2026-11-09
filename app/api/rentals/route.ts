@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyAuthToken } from "@/lib/auth";
 
-import { getRentalListings } from "@/lib/rentals";
+import { getRentalListings } from "@/features/rentals/services/rental.service";
 
 // ─── GET /api/rentals ───────────────────────────────────────────────────────
 // Returns all APPROVED rental listings, newest first.
@@ -192,4 +192,3 @@ export async function DELETE(request: Request) {
     );
   }
 }
-

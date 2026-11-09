@@ -30,11 +30,14 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import useToast from "@/hooks/useToast";
 
-import { useWard, Feed as FeedData } from "@/context/wardContext";
 import { Card, Modal, EmptyState } from "@/components/shared-components";
 import ComplaintFeedCard from "@/features/complaints/components/complaint-feed-card";
 import { Feed } from "@/features/feeds/types";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useWard } from "@/features/ward";
+import { useFeeds } from "../hooks/useFeeds";
+import { useComplaints } from "@/features/complaints/hooks/useComplaints";
 
 export interface Complaint {
   id: number | string;
@@ -136,22 +139,37 @@ const validateAndCompressImage = async (
   });
 };
 
-export const FeedPage: React.FC = () => {
+export const FeedList: React.FC = () => {
   const router = useRouter();
+  // const {
+  //   authUser,
+  //   isAuthenticated,
+  //   isLoadingAuth,
+  //   activeWard,
+  //   feeds,
+  //   isLoadingFeeds,
+  //   addFeed,
+  //   likeFeed,
+  //   addCommentToFeed,
+  //   complaints,
+  //   upvoteComplaint,
+  //   refreshFeeds,
+  // } = useWard();
+  const { activeWard } = useWard();
+
+  const { authUser, isAuthenticated, isLoadingAuth } = useAuth();
+
   const {
-    authUser,
-    isAuthenticated,
-    isLoadingAuth,
-    activeWard,
     feeds,
-    isLoadingFeeds,
     addFeed,
-    likeFeed,
     addCommentToFeed,
-    complaints,
-    upvoteComplaint,
+    isLoadingFeeds,
+    likeFeed,
     refreshFeeds,
-  } = useWard();
+  } = useFeeds(authUser, isAuthenticated);
+
+  const { addComplaint, complaints, isLoadingComplaints, upvoteComplaint } =
+    useComplaints();
 
   const toast = useToast();
 
@@ -265,11 +283,11 @@ export const FeedPage: React.FC = () => {
   };
 
   // --- FILTERING ---
-  const filteredFeeds = useMemo<FeedData[]>(() => {
-    let list = feeds as FeedData[];
+  const filteredFeeds = useMemo<Feed[]>(() => {
+    let list = feeds as Feed[];
 
     // Defensive deduplication: ensure each complaint-linked post and feed ID is represented only once
-    const complaintFeedMap = new Map<string, FeedData>();
+    const complaintFeedMap = new Map<string, Feed>();
     for (const f of list) {
       const compId =
         f.complaintId ||
@@ -290,7 +308,7 @@ export const FeedPage: React.FC = () => {
 
     const seenFeedIds = new Set<string>();
     const seenComplaintIds = new Set<string>();
-    const deduplicatedList: FeedData[] = [];
+    const deduplicatedList: Feed[] = [];
 
     for (const f of list) {
       const feedIdStr = String(f.id);
@@ -359,17 +377,6 @@ export const FeedPage: React.FC = () => {
     () => filteredFeeds.slice(0, visibleCount),
     [filteredFeeds, visibleCount],
   );
-
-  // --- HANDLERS ---
-  const openCreateModal = () => {
-    setEditingFeed(null);
-    setFeedText("");
-    setFeedCategory("General");
-    setFeedVisibility("entire-avadi");
-    setFeedImagePreview(null);
-    setUploadError(null);
-    setIsFeedModalOpen(true);
-  };
 
   const openEditModal = (feed: Feed) => {
     setEditingFeed(feed);
@@ -568,7 +575,7 @@ export const FeedPage: React.FC = () => {
   };
 
   // Helper to parse and render feed body with high-contrast readable styling & rich emojis
-  const renderFeedBody = (feed: FeedData, isBloodRequest: boolean) => {
+  const renderFeedBody = (feed: Feed, isBloodRequest: boolean) => {
     const text = feed.text || "";
 
     // 1. BLOOD REQUEST SOS CARD
@@ -1265,7 +1272,7 @@ export const FeedPage: React.FC = () => {
                   >
                     {/* Emergency Badge (Highlighted for Blood Requests) */}
                     {isBloodRequest && (
-                      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-600 via-rose-600 to-red-600 text-white font-black text-xs uppercase tracking-wider mb-3.5 shadow-xs">
+                      <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-linear-to-r from-rose-600 via-rose-600 to-red-600 text-white font-black text-xs uppercase tracking-wider mb-3.5 shadow-xs">
                         <div className="flex items-center space-x-2">
                           <span className="relative flex h-2.5 w-2.5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-90"></span>
@@ -2006,4 +2013,4 @@ export const FeedPage: React.FC = () => {
   );
 };
 
-export default FeedPage;
+export default FeedList;
