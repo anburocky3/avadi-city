@@ -3,8 +3,10 @@ import type { Metadata } from "next";
 import { SkeletonLoader } from "@/components/shared-components";
 
 import { ServicesClient } from "@/features/local-services/components/local-services-client";
+import { getApprovedLocalServiceProfiles } from "@/features/local-services/services/local-service.server";
+import type { ServiceProvider } from "@/features/local-services/types";
 
-export const revalidate = 3600; // Cache for 1 hour or set 0 for dynamic SSR
+export const revalidate = 0;
 export const metadata: Metadata = {
   title: "Local Services in Avadi",
   description:
@@ -12,6 +14,16 @@ export const metadata: Metadata = {
 };
 
 export default async function ServicesPage() {
+  let initialProviders: ServiceProvider[] = [];
+  let hasLoadError = false;
+
+  try {
+    initialProviders = await getApprovedLocalServiceProfiles();
+  } catch (error) {
+    hasLoadError = true;
+    console.error("Failed to load approved local service profiles:", error);
+  }
+
   return (
     <Suspense
       fallback={
@@ -21,7 +33,10 @@ export default async function ServicesPage() {
         </div>
       }
     >
-      <ServicesClient />
+      <ServicesClient
+        initialProviders={initialProviders}
+        hasLoadError={hasLoadError}
+      />
     </Suspense>
   );
 }

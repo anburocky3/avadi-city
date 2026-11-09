@@ -1,4 +1,4 @@
-import { AuthUser } from "@/types/auth";
+import { AuthUser } from "@/features/auth/types";
 import { toast } from "@/utils/toast";
 
 export interface UpdateProfilePayload {

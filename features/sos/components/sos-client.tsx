@@ -35,7 +35,6 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Path mapped to shared-components
 import { Modal } from "@/components/shared-components";
-import { useWard } from "@/context/wardContext";
 import { avadiPoliceStationsData } from "@/data/sosContacts";
 import {
   trackEvent,
@@ -43,6 +42,7 @@ import {
   trackBloodBroadcast,
   AnalyticsEvents,
 } from "@/lib/analytics";
+import { useBloodRequests } from "../hooks/useBloodRequests";
 
 // --- TYPESCRIPT DEFINITIONS ---
 
@@ -100,7 +100,7 @@ type BloodFormData = zod.infer<typeof bloodRequestSchema>;
 
 export const SosClient: React.FC<SosClientProps> = ({ initialContacts }) => {
   const t = useTranslations("sos");
-  const { addBloodRequest } = useWard();
+  const { addBloodRequest } = useBloodRequests();
 
   const [activeTab, setActiveTab] = useState<"helplines" | "stations">(
     "helplines",

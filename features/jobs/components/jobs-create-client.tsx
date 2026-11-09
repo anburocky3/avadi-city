@@ -135,7 +135,7 @@ const APPLICATION_METHODS = ["Phone", "Email", "Walk-in", "Website"];
 
 // Note: AVADI_WARD_COORDINATES and getAvadiStreetCoordinates are imported from @/lib/wards
 
-export default function PostJobVacancyPage() {
+export default function JobCreateClient() {
   const router = useRouter();
   const toast = useToast();
   const { activeWard, isAuthenticated, isLoadingAuth, authUser } = useWard();

@@ -13,7 +13,7 @@ export const useWardStore = create<WardState>()(
       setOverrideWardId: (id) => set({ overrideWardId: id }),
     }),
     {
-      name: "active-ward-storage", // Auto-saves to localStorage
+      name: "active-ward-storage",
     },
   ),
 );

@@ -22,11 +22,7 @@ import {
   Bus,
   Clock,
   Moon,
-  CloudSun,
   RefreshCw,
-  Sun,
-  CloudRain,
-  CloudFog,
   PackageSearch,
   LucideIcon,
 } from "lucide-react";
@@ -42,21 +38,22 @@ import {
   NonVegSymbol,
   IceCreamSymbol,
 } from "@/components/food-icons";
-import { useWard } from "@/context/wardContext";
 import { trackEvent } from "@/lib/analytics";
-import { Feed } from "@/features/feeds/types";
 import { Route } from "next";
-
-// --- TYPESCRIPT DEFINITIONS ---
-
-export interface Alert {
-  id: string | number;
-  title: string;
-  description: string;
-  category: string;
-  severity: "urgent" | "warning" | "info" | "danger";
-  affectedWards: "All" | number[];
-}
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import type { Alert } from "@/features/notifications/types";
+import { useNotification } from "@/features/notifications/context/NotificationContext";
+import { useWard } from "@/features/ward";
+import WeatherOverlay from "./weather-overlay";
+import { useWeather } from "@/features/dashboard/hooks/useWeather";
+import {
+  BUS_TIMINGS,
+  HERITAGE_MILESTONES,
+  PLACE_SLIDES,
+  QUICK_SHORTCUTS,
+  TRAIN_TIMINGS,
+  WARD_SERVICES,
+} from "../constants/dashboard.data";
 
 export interface Post {
   id: string | number;
@@ -81,308 +78,14 @@ export interface Ward {
   name: string;
 }
 
-interface PlaceSlide {
-  id: number;
-  title: string;
-  subtitle: string;
-  badge: string;
-  image: string;
-}
-
-interface WardContextType {
-  userProfile: UserProfile;
-  activeWard: Ward;
-  posts: Feed[];
-  alerts: Alert[];
-  complaints: Complaint[];
-  dismissedAlerts: (string | number)[];
-  dismissAlert: (id: string | number) => void;
-  markAlertAsRead: (id: string | number) => void;
-  isLoadingAuth: boolean;
-}
-
-interface HourlyForecast {
-  time: string;
-  rawHour: number;
-  temp: string;
-  desc: string;
-  chanceOfRain: string;
-  code: string;
-}
-
-interface WeatherData {
-  temp: string;
-  desc: string;
-  isHumid: boolean;
-  code: string;
-  hourly: HourlyForecast[];
-  willRainToday: boolean;
-  upcomingRain?: {
-    time: string;
-    chanceOfRain: string;
-    desc: string;
-  } | null;
-}
-
-// --- STATIC DATA CONFIGURATIONS ---
-
-const PLACE_SLIDES: PlaceSlide[] = [
-  {
-    id: 1,
-    title: "Paruthipattu Eco-Park & Lake",
-    subtitle:
-      "3km walking track, boating facilities & scenic landscaping around Paruthipattu Lake.",
-    badge: "Paruthipattu Lake",
-    image: "/img/paruthipattu_eco_park.png",
-  },
-  {
-    id: 2,
-    title: "Vijayanta Tank Memorial Park",
-    subtitle:
-      "Honoring Avadi's proud defense legacy & Heavy Vehicles Factory (HVF) history.",
-    badge: "HVF Estate",
-    image: "/img/vijayanta-tank-memorial.png",
-  },
-  {
-    id: 3,
-    title: "1955 Historic Congress Grounds",
-    subtitle:
-      "Monumental site of the 60th Indian National Congress session held in Avadi.",
-    badge: "Avadi Heritage",
-    image: "/img/congress-1955.png",
-  },
-];
-
-const QUICK_SHORTCUTS = [
-  {
-    name: "Report Issue",
-    path: "/complaints",
-    icon: PlusCircle,
-    desc: "Civic complaints & fixes",
-    badgeBg: "from-orange-500 to-amber-500 shadow-orange-500/25",
-    borderHover: "hover:border-orange-500/50",
-  },
-  {
-    name: "Ward Feed",
-    path: "/feed",
-    icon: MessageSquare,
-    desc: "Community updates",
-    badgeBg: "from-teal-500 to-emerald-600 shadow-teal-500/25",
-    borderHover: "hover:border-teal-500/50",
-  },
-  {
-    name: "Explore Spots",
-    path: "/explore-places",
-    icon: Compass,
-    desc: "Avadi landmarks & parks",
-    badgeBg: "from-blue-500 to-indigo-600 shadow-blue-500/25",
-    borderHover: "hover:border-blue-500/50",
-  },
-  {
-    name: "Rent & Properties",
-    path: "/rentals",
-    icon: Building2,
-    desc: "Residential & commercial",
-    badgeBg: "from-purple-600 to-indigo-600 shadow-purple-500/25",
-    borderHover: "hover:border-purple-500/50",
-  },
-];
-
-interface WardServiceData {
-  name: string;
-  path: Route;
-  icon: LucideIcon;
-  bg: string;
-}
-
-const WARD_SERVICES: WardServiceData[] = [
-  {
-    name: "Food & Dining",
-    path: "/food-and-dining",
-    icon: ChefHat,
-    bg: "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
-  },
-  {
-    name: "Local Services",
-    path: "/local-services",
-    icon: Wrench,
-    bg: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    name: "Local Jobs",
-    path: "/jobs",
-    icon: Briefcase,
-    bg: "bg-teal-50 dark:bg-teal-950/30 text-teal-600 dark:text-teal-400",
-  },
-  {
-    name: "Transport",
-    path: "/transport",
-    icon: Train,
-    bg: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
-  },
-  {
-    name: "Donations",
-    path: "/donations",
-    icon: Gift,
-    bg: "bg-indigo-50 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400",
-  },
-  // {
-  //   name: "Local Alerts",
-  //   path: "/notifications",
-  //   icon: Bell,
-  //   bg: "bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400",
-  // },
-  {
-    name: "Lost & Found",
-    path: "/lost-and-found",
-    icon: PackageSearch,
-    bg: "bg-violet-50 dark:bg-violet-950/30 text-violet-600 dark:text-violet-400",
-  },
-];
-
-const BUS_TIMINGS = [
-  {
-    code: "70H",
-    dest: "Koyambedu / Anna Nagar",
-    info: "Every 15 mins",
-    time: "08:15 AM",
-    status: "On Time",
-  },
-  {
-    code: "71H",
-    dest: "Broadway / Central",
-    info: "Every 20 mins",
-    time: "08:20 AM",
-    status: "On Time",
-  },
-  {
-    code: "62",
-    dest: "Red Hills / Poonamallee",
-    info: "Every 25 mins",
-    time: "08:30 AM",
-    status: "On Time",
-  },
-  {
-    code: "77",
-    dest: "Vadapalani / Koyambedu",
-    info: "Every 30 mins",
-    time: "08:40 AM",
-    status: "On Time",
-  },
-];
-
-const TRAIN_TIMINGS = [
-  {
-    code: "MSB2",
-    dest: "Beach / Central Local",
-    info: "Platform: PF 2",
-    time: "08:22 AM",
-    status: "On Time",
-  },
-  {
-    code: "AJJ4",
-    dest: "Thiruvallur / Arakkonam",
-    info: "Platform: PF 3",
-    time: "08:30 AM",
-    status: "On Time",
-  },
-  {
-    code: "VEL2",
-    dest: "Velachery Direct EMU",
-    info: "Platform: PF 1",
-    time: "08:45 AM",
-    status: "On Time",
-  },
-  {
-    code: "MSB4",
-    dest: "Chennai Central Fast",
-    info: "Platform: PF 2",
-    time: "09:05 AM",
-    status: "On Time",
-  },
-];
-
-const HERITAGE_MILESTONES = [
-  {
-    year: "1856",
-    title: "Railway Station Established",
-    desc: "One of the earliest rail lines in Madras Presidency, predating heavy industries by a century.",
-  },
-  {
-    year: "1955",
-    title: "Historic Avadi Resolution",
-    desc: "Prime Minister Jawaharlal Nehru adopts the Socialistic Pattern of Society during the 60th INC Plenary Session.",
-  },
-  {
-    year: "1961-65",
-    title: "HVF Founded & Vijayanta Tank",
-    desc: "Heavy Vehicles Factory established, manufacturing India's first indigenous battle tank, the Vijayanta.",
-  },
-  {
-    year: "Modern",
-    title: "Municipal Corporation Status",
-    desc: "Avadi evolves from a pastoral outpost into a bustling municipal corporation and defense sanctuary.",
-  },
-];
-
-// Helper to convert military time (e.g. "1500") to 12-hour format ("3:00 PM")
-const formatMilitaryTime = (timeStr: string) => {
-  if (timeStr === "0") return "12:00 AM";
-  const num = parseInt(timeStr);
-  const hour = num / 100;
-  const ampm = hour >= 12 ? "PM" : "AM";
-  const formattedHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-  return `${formattedHour}:00 ${ampm}`;
-};
-
-// Daily weather advisory dismissal helpers (shown only once per day)
-const getTodayDateKey = () => {
-  const d = new Date();
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
-
-const isWeatherAlertDismissedToday = () => {
-  if (typeof window === "undefined") return false;
-  try {
-    const dismissedDate = localStorage.getItem(
-      "avadi_weather_alert_dismissed_date",
-    );
-    return dismissedDate === getTodayDateKey();
-  } catch {
-    return false;
-  }
-};
-
-const markWeatherAlertDismissed = () => {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.setItem(
-      "avadi_weather_alert_dismissed_date",
-      getTodayDateKey(),
-    );
-  } catch (e) {
-    console.warn("Failed to save weather dismissal:", e);
-  }
-};
-
 export const DashboardClient: React.FC = () => {
   const t = useTranslations();
   const locale = useLocale();
 
-  // Type-Safe Hook Unwrapping
-  const {
-    userProfile = {},
-    activeWard = { id: 1, name: "Avadi Central" },
-    alerts = [],
-    complaints = [],
-    dismissedAlerts = [],
-    dismissAlert = () => {},
-    markAlertAsRead = () => {},
-    isLoadingAuth = true,
-  } = (useWard() as unknown as WardContextType) || {};
+  const { activeWard, complaints } = useWard();
+  const { alerts, dismissedAlerts, dismissAlert, markAlertAsRead } =
+    useNotification();
+  const { isLoadingAuth, authUser } = useAuth();
 
   // Component States
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -391,281 +94,9 @@ export const DashboardClient: React.FC = () => {
   const [isHeritageModalOpen, setIsHeritageModalOpen] =
     useState<boolean>(false);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
-
-  // Weather States
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [isWeatherDetailsOpen, setIsWeatherDetailsOpen] =
-    useState<boolean>(false);
-  const [isRainAlertOpen, setIsRainAlertOpen] = useState<boolean>(false);
-  const [showPastHours, setShowPastHours] = useState<boolean>(false);
-
-  const handleDismissRainAlert = () => {
-    setIsRainAlertOpen(false);
-    markWeatherAlertDismissed();
-  };
-
-  // Weather API Fetcher (wttr.in) with Hourly JSON extraction
-  const fetchWeather = async (forceUpdate: boolean = false) => {
-    const cacheKey = "avadi_weather_data";
-    const cacheExpiry = 24 * 60 * 60 * 1000; // 24 hours
-    const now = new Date().getTime();
-    const currentHour = new Date().getHours();
-
-    try {
-      if (!forceUpdate) {
-        const cachedStr = localStorage.getItem(cacheKey);
-        if (cachedStr) {
-          const cached = JSON.parse(cachedStr);
-          if (now - cached.timestamp < cacheExpiry) {
-            setWeather(cached.data);
-            // ONLY check upcoming/future hours (not earlier past hours)
-            const upcomingRainIntervals = cached.data.hourly?.filter(
-              (h: HourlyForecast) =>
-                h.rawHour + 3 > currentHour && parseInt(h.chanceOfRain) >= 40,
-            );
-            if (
-              upcomingRainIntervals &&
-              upcomingRainIntervals.length > 0 &&
-              !isWeatherAlertDismissedToday()
-            ) {
-              setIsRainAlertOpen(true);
-            }
-            return;
-          }
-        }
-      }
-
-      const res = await fetch("https://wttr.in/Avadi?format=j1");
-      if (!res.ok) throw new Error("Rate limited or network error");
-
-      const data = await res.json();
-      const current = data.current_condition[0];
-      const todayHourly = data.weather[0].hourly;
-
-      // Parse 3-hour interval blocks
-      const hourlyData: HourlyForecast[] = todayHourly.map((h: any) => ({
-        time: formatMilitaryTime(h.time),
-        rawHour: parseInt(h.time) / 100,
-        temp: h.tempC,
-        desc: h.weatherDesc[0].value,
-        chanceOfRain: h.chanceofrain,
-        code: h.weatherCode,
-      }));
-
-      // High Rain Alert Condition: ONLY upcoming hours (rawHour + 3 > currentHour), not earlier past hours
-      const upcomingRainIntervals = hourlyData.filter(
-        (h) => h.rawHour + 3 > currentHour && parseInt(h.chanceOfRain) >= 40,
-      );
-      const hasUpcomingRain = upcomingRainIntervals.length > 0;
-      const firstUpcomingRain = upcomingRainIntervals[0] || null;
-
-      const willRainToday = todayHourly.some(
-        (h: any) => parseInt(h.chanceofrain) >= 40,
-      );
-
-      const newWeather: WeatherData = {
-        temp: current.temp_C,
-        desc: current.weatherDesc[0].value.toUpperCase(),
-        isHumid: parseInt(current.humidity) > 60,
-        code: current.weatherCode,
-        hourly: hourlyData,
-        willRainToday: willRainToday,
-        upcomingRain: firstUpcomingRain
-          ? {
-              time: firstUpcomingRain.time,
-              chanceOfRain: firstUpcomingRain.chanceOfRain,
-              desc: firstUpcomingRain.desc,
-            }
-          : null,
-      };
-
-      localStorage.setItem(
-        cacheKey,
-        JSON.stringify({
-          timestamp: now,
-          data: newWeather,
-        }),
-      );
-
-      setWeather(newWeather);
-      if (hasUpcomingRain && !isWeatherAlertDismissedToday()) {
-        setIsRainAlertOpen(true);
-      }
-    } catch (error) {
-      console.warn("Weather fetch fallback:", error);
-      // Fallback state if API fails or rate-limits
-      const fallbackHourly: HourlyForecast[] = [
-        {
-          time: "9:00 AM",
-          rawHour: 9,
-          temp: "30",
-          desc: "Cloudy",
-          chanceOfRain: "10",
-          code: "119",
-        },
-        {
-          time: "12:00 PM",
-          rawHour: 12,
-          temp: "33",
-          desc: "Sunny",
-          chanceOfRain: "10",
-          code: "113",
-        },
-        {
-          time: "3:00 PM",
-          rawHour: 15,
-          temp: "34",
-          desc: "Scattered Thunderstorms",
-          chanceOfRain: "50",
-          code: "389",
-        },
-        {
-          time: "6:00 PM",
-          rawHour: 18,
-          temp: "31",
-          desc: "Rain",
-          chanceOfRain: "80",
-          code: "356",
-        },
-      ];
-
-      const upcomingFallbackRain = fallbackHourly.filter(
-        (h) => h.rawHour + 3 > currentHour && parseInt(h.chanceOfRain) >= 40,
-      );
-      const hasUpcomingFallbackRain = upcomingFallbackRain.length > 0;
-
-      setWeather({
-        temp: "32",
-        desc: "CLOUDY",
-        isHumid: true,
-        code: "119",
-        willRainToday: hasUpcomingFallbackRain,
-        hourly: fallbackHourly,
-        upcomingRain: upcomingFallbackRain[0]
-          ? {
-              time: upcomingFallbackRain[0].time,
-              chanceOfRain: upcomingFallbackRain[0].chanceOfRain,
-              desc: upcomingFallbackRain[0].desc,
-            }
-          : null,
-      });
-
-      if (hasUpcomingFallbackRain && !isWeatherAlertDismissedToday()) {
-        setIsRainAlertOpen(true);
-      }
-    }
-  };
-
-  useEffect(() => {
-    fetchWeather();
-  }, []);
-
-  // Weather Dynamic Overlay Animation Renderer
-  const renderWeatherOverlay = () => {
-    if (!weather) return null;
-    const code = parseInt(weather.code);
-
-    // 1. Clear / Sunny (Sun flare effect)
-    if (code === 113) {
-      return (
-        <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none opacity-60">
-          <motion.div
-            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
-            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-            className="absolute -top-10 -right-10 w-48 h-48 bg-amber-400/30 rounded-full blur-3xl"
-          />
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 25, ease: "linear" }}
-            className="absolute -top-4 -right-4 w-32 h-32 bg-yellow-300/20 rounded-full blur-2xl"
-          />
-        </div>
-      );
-    }
-
-    // 2. Rain / Drizzle (Slanted falling particles)
-    if ([266, 296, 302, 308, 353, 356, 359, 389].includes(code)) {
-      return (
-        <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none overflow-hidden">
-          <div className="absolute inset-0 bg-linear-to-bl from-blue-900/10 to-transparent blur-md" />
-          {[...Array(12)].map((_, i) => (
-            <motion.div
-              key={i}
-              initial={{ y: -50, x: i * 15, opacity: 0 }}
-              animate={{ y: 200, opacity: [0, 0.8, 0] }}
-              transition={{
-                repeat: Infinity,
-                duration: 0.7,
-                delay: (i % 5) * 0.15,
-                ease: "linear",
-              }}
-              className="absolute top-0 w-0.5 h-8 bg-blue-400/40 dark:bg-blue-300/30 rotate-12"
-              style={{ right: `${10 + i * 8}%` }}
-            />
-          ))}
-        </div>
-      );
-    }
-
-    // 3. Fog / Mist (Slow drifting blurred blobs)
-    if ([143, 248, 260].includes(code)) {
-      return (
-        <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none">
-          <motion.div
-            animate={{ x: [-20, 20, -20] }}
-            transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-            className="absolute top-0 right-0 w-full h-full bg-slate-300/30 dark:bg-slate-500/20 blur-2xl"
-          />
-          <motion.div
-            animate={{ x: [20, -20, 20] }}
-            transition={{ repeat: Infinity, duration: 12, ease: "easeInOut" }}
-            className="absolute bottom-0 right-10 w-3/4 h-3/4 bg-slate-200/20 dark:bg-slate-600/20 blur-3xl"
-          />
-        </div>
-      );
-    }
-
-    // 4. Default / Cloudy (Soft floating horizontal shapes)
-    return (
-      <div className="absolute top-0 right-0 w-1/2 h-full pointer-events-none overflow-hidden">
-        <motion.div
-          animate={{ x: [-15, 15, -15] }}
-          transition={{ repeat: Infinity, duration: 10, ease: "easeInOut" }}
-          className="absolute -top-4 right-10 w-40 h-24 bg-slate-300/20 dark:bg-slate-600/20 rounded-full blur-2xl"
-        />
-        <motion.div
-          animate={{ x: [15, -15, 15] }}
-          transition={{ repeat: Infinity, duration: 14, ease: "easeInOut" }}
-          className="absolute top-10 -right-5 w-48 h-20 bg-slate-200/20 dark:bg-slate-700/20 rounded-full blur-2xl"
-        />
-      </div>
-    );
-  };
-
-  // Icon Helper for Hourly Forecast Items
-  const renderHourlyIcon = (codeStr: string) => {
-    const code = parseInt(codeStr);
-    if (code === 113) {
-      return <Sun size={18} className="text-amber-400 shrink-0" />;
-    }
-    if ([266, 296, 302, 308, 353, 356, 359, 389].includes(code)) {
-      return (
-        <CloudRain
-          size={18}
-          className="text-blue-400 dark:text-blue-300 shrink-0"
-        />
-      );
-    }
-    if ([143, 248, 260].includes(code)) {
-      return <CloudFog size={18} className="text-slate-400 shrink-0" />;
-    }
-    return (
-      <CloudSun
-        size={18}
-        className="text-amber-400 dark:text-amber-300 shrink-0"
-      />
-    );
-  };
+  const [isWeatherDetailsOpen, setIsWeatherDetailsOpen] = useState(false);
+  const { weather, refreshWeather, isRainAlertOpen, dismissRainAlert } =
+    useWeather();
 
   // Auto-advance carousel
   useEffect(() => {
@@ -679,26 +110,26 @@ export const DashboardClient: React.FC = () => {
     const isWardsMatch =
       alert.affectedWards === "All" ||
       (Array.isArray(alert.affectedWards) &&
-        alert.affectedWards.includes(activeWard.id));
+        alert.affectedWards.some((wardId) => Number(wardId) === activeWard.id));
     const isNotDismissed = !dismissedAlerts.includes(alert.id);
     return isWardsMatch && isNotDismissed && alert.severity === "urgent";
   });
 
   const openComplaintsCount = complaints.filter(
-    (c) => parseInt(c.ward) === activeWard.id && c.status !== "Resolved",
+    (c) => Number(c.ward) === activeWard.id && c.status !== "Resolved",
   ).length;
 
   const totalAlertsCount = alerts.filter((alert) => {
     const isWardsMatch =
       alert.affectedWards === "All" ||
       (Array.isArray(alert.affectedWards) &&
-        alert.affectedWards.includes(activeWard.id));
+        alert.affectedWards.some((wardId) => Number(wardId) === activeWard.id));
     return isWardsMatch && !dismissedAlerts.includes(alert.id);
   }).length;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchWeather(true);
+    await refreshWeather(true);
     setTimeout(() => {
       setIsRefreshing(false);
     }, 500);
@@ -733,7 +164,13 @@ export const DashboardClient: React.FC = () => {
       {/* 1. Greeting Hero Card with Integrated Civic Status, Refresh & Weather Overlay */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 border-l-4 border-l-orange-500 bg-linear-to-r from-orange-500/5 via-teal-500/5 to-transparent p-4 sm:p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition-all">
         {/* Animated Background Overlay */}
-        {renderWeatherOverlay()}
+        <WeatherOverlay
+          weather={weather}
+          isWeatherDetailsOpen={isWeatherDetailsOpen}
+          onWeatherDetailsClose={() => setIsWeatherDetailsOpen(false)}
+          isRainAlertOpen={isRainAlertOpen}
+          onRainAlertClose={dismissRainAlert}
+        />
 
         {/* Foreground Content */}
         <div className="relative z-10 space-y-2 flex-1">
@@ -761,7 +198,7 @@ export const DashboardClient: React.FC = () => {
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
             <span>
               {locale === "ta" ? "வணக்கம், " : "Hello, "}
-              {userProfile.name ||
+              {authUser?.name ||
                 (locale === "ta" ? "ஆவடி குடியிருப்பாளர்" : "Resident")}
             </span>
             <span
@@ -1242,154 +679,6 @@ export const DashboardClient: React.FC = () => {
           </Card>
         </div>
       </div>
-
-      {/* Weather Forecast Details Modal */}
-      <Modal
-        isOpen={isWeatherDetailsOpen}
-        onClose={() => setIsWeatherDetailsOpen(false)}
-        title="Today's Hourly Forecast"
-      >
-        <div className="space-y-3">
-          {weather?.hourly && weather.hourly.length > 0 ? (
-            (() => {
-              const currentHour = new Date().getHours();
-              const hasPastHours = weather.hourly.some(
-                (h) => h.rawHour + 3 <= currentHour,
-              );
-              const displayHourly = weather.hourly.filter(
-                (h) => showPastHours || h.rawHour + 3 > currentHour,
-              );
-
-              return (
-                <>
-                  {hasPastHours && (
-                    <div className="flex justify-end pb-1">
-                      <button
-                        type="button"
-                        onClick={() => setShowPastHours(!showPastHours)}
-                        className="text-xs font-extrabold text-orange-600 dark:text-orange-400 hover:underline cursor-pointer"
-                      >
-                        {showPastHours
-                          ? "Hide past hours"
-                          : "Show earlier hours today"}
-                      </button>
-                    </div>
-                  )}
-
-                  {displayHourly.length > 0 ? (
-                    displayHourly.map((h, i) => {
-                      const highChance = parseInt(h.chanceOfRain) >= 40;
-                      return (
-                        <div
-                          key={i}
-                          className="flex justify-between items-center p-3.5 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-2xl transition shadow-xs"
-                        >
-                          <div className="flex items-center gap-3 w-28 shrink-0">
-                            <Clock size={14} className="text-slate-400" />
-                            <span className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-slate-200">
-                              {h.time}
-                            </span>
-                          </div>
-
-                          <div className="flex-1 flex flex-col pl-2 text-xs sm:text-sm truncate">
-                            <span className="font-bold text-slate-700 dark:text-slate-300 truncate">
-                              {h.desc}
-                            </span>
-                            {parseInt(h.chanceOfRain) > 20 && (
-                              <span
-                                className={`text-[11px] font-black mt-0.5 ${highChance ? "text-blue-600 dark:text-blue-400" : "text-blue-400 dark:text-blue-300/80"}`}
-                              >
-                                ☔ {h.chanceOfRain}% Chance of Rain
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex items-center justify-end gap-1.5 shrink-0 pl-2">
-                            {renderHourlyIcon(h.code)}
-                            <span className="font-black text-base sm:text-lg text-slate-900 dark:text-white">
-                              {h.temp}°C
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="p-4 text-center text-xs font-bold text-slate-500">
-                      No remaining forecast hours for today.
-                    </div>
-                  )}
-                </>
-              );
-            })()
-          ) : (
-            <div className="p-4 text-center text-sm font-bold text-slate-500">
-              Loading forecast...
-            </div>
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setIsWeatherDetailsOpen(false)}
-          className="w-full mt-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-white rounded-xl font-bold transition text-xs cursor-pointer shadow-sm"
-        >
-          Close Forecast
-        </button>
-      </Modal>
-
-      {/* Rain & Umbrella Alert Modal */}
-      <Modal
-        isOpen={isRainAlertOpen}
-        onClose={handleDismissRainAlert}
-        title="Weather Advisory"
-      >
-        <div className="space-y-4 text-center pb-2">
-          <div className="flex justify-center mb-2">
-            <div className="w-16 h-16 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 animate-pulse shadow-inner border border-blue-500/20">
-              <CloudRain size={32} />
-            </div>
-          </div>
-
-          <Badge
-            variant="info"
-            className="uppercase font-black tracking-widest text-[10px]"
-          >
-            Rain Forecasted Ahead
-          </Badge>
-
-          <h3 className="font-black text-xl text-slate-800 dark:text-white leading-tight">
-            Scattered Showers Expected
-          </h3>
-
-          <p className="text-sm text-slate-500 dark:text-slate-400 font-medium leading-relaxed max-w-sm mx-auto">
-            {weather?.upcomingRain ? (
-              <>
-                Showers are forecasted around{" "}
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {weather.upcomingRain.time}
-                </span>{" "}
-                ({weather.upcomingRain.chanceOfRain}% chance) in Avadi. Please
-                remember to carry an umbrella or a raincoat if you are stepping
-                out.
-              </>
-            ) : (
-              <>
-                Upcoming showers are forecasted for Avadi later today. Please
-                remember to carry an umbrella or a raincoat if you are stepping
-                out.
-              </>
-            )}
-          </p>
-
-          <button
-            type="button"
-            onClick={handleDismissRainAlert}
-            className="w-full mt-4 py-3.5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl font-bold transition text-xs cursor-pointer shadow-md hover:shadow-lg flex items-center justify-center gap-2"
-          >
-            <span>Okay, thanks!</span>
-          </button>
-        </div>
-      </Modal>
 
       {/* Alert Details Modal */}
       {selectedAlert && (

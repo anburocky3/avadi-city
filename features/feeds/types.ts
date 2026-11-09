@@ -12,8 +12,10 @@ export interface Feed {
   likes: number;
   likedByMe: boolean;
   comments: Comment[];
+  complaintId?: string | null;
 
   complaint?: {
+    id?: string;
     issueId: string;
     title: string;
     description: string;

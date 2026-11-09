@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
@@ -7,18 +6,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
   MapPin,
-  Landmark,
-  Trees,
   Clock,
-  Map,
-  GraduationCap,
-  Compass,
   HelpCircle,
   Navigation,
   Phone,
   ShieldAlert,
   Star,
-  LucideIcon,
   X,
   Plus,
   Sparkles,
@@ -31,7 +24,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
 import {
   Card,
@@ -42,93 +34,24 @@ import {
 } from "@/components/shared-components";
 import { useTranslations } from "next-intl";
 import { timeAgo } from "@/utils/helper";
-
-export interface Place {
-  id: number | string;
-  name: string;
-  category: string;
-  description: string;
-  address: string;
-  imageUrl: string;
-  timings: string;
-  ward?: number;
-  rating?: number;
-  is24x7?: boolean;
-  phone?: string;
-  activities?: string[];
-  entryFeeType?: string;
-  entryFeeAmount?: number;
-  facilities?: string[];
-  guidelines?: string;
-  website?: string;
-  officialUrl?: string;
-  bestTimeToVisit?: string;
-  latitude?: number;
-  longitude?: number;
-}
-
-export interface ReviewStats {
-  averageRating: number | null;
-  reviewCount: number;
-}
-
-export interface ReviewItem {
-  id: string;
-  placeId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string | null;
-  rating: number;
-  reviewText?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  isOwn?: boolean;
-}
-
-export interface Category {
-  id: string;
-  name: string;
-  icon: LucideIcon;
-  isHighlighted?: boolean;
-  color?: string;
-}
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import {
+  DEFAULT_REVIEW_STATS,
+  Place,
+  PlaceReviewItem,
+  PlaceReviewStats,
+} from "../types";
+import {
+  ACCESSIBILITY_FACILITIES,
+  placeCategories,
+  RATING_INTERPRETATIONS,
+} from "../constants/explore-places.data";
 
 export interface ExploreClientProps {
   initialPlaces: Place[];
-  initialReviewStats?: Record<string, ReviewStats>;
+  initialReviewStats?: Record<string, PlaceReviewStats>;
   hasError?: boolean;
 }
-
-const ACCESSIBILITY_FACILITIES = new Set([
-  "Wheelchair Access",
-  "Accessible Restrooms",
-  "Accessible Parking",
-]);
-
-const RATING_INTERPRETATIONS: Record<number, string> = {
-  1: "Poor",
-  2: "Fair",
-  3: "Good",
-  4: "Very Good",
-  5: "Excellent",
-};
-
-const categories: Category[] = [
-  { id: "All", name: "All Spots", icon: Compass },
-  { id: "Parks & Gardens", name: "Parks & Gardens", icon: Trees },
-  { id: "Historical Places", name: "Historical Places", icon: Landmark },
-  { id: "Lakes & Nature", name: "Lakes & Nature", icon: MapPin },
-  { id: "Cultural & Heritage Places", name: "Heritage", icon: Landmark },
-  { id: "Sports & Recreation", name: "Sports", icon: Navigation },
-  { id: "Tourist Attractions", name: "Attractions", icon: Star },
-  { id: "Public Landmarks", name: "Landmarks", icon: Map },
-  { id: "Schools & Colleges", name: "Colleges", icon: GraduationCap },
-  { id: "Famous Spots", name: "Famous Spots", icon: Landmark },
-  { id: "Temples/Places of Worship", name: "Worship", icon: MapPin },
-  { id: "Government Offices", name: "Govt Offices", icon: Map },
-];
-
-const DEFAULT_REVIEW_STATS: Record<string, ReviewStats> = {};
 
 export const ExploreClient: React.FC<ExploreClientProps> = ({
   initialPlaces,
@@ -138,7 +61,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
   const t = useTranslations();
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { isAuthenticated } = useWard();
+  const { isAuthenticated } = useAuth();
   const toast = useToast();
 
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -161,7 +84,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
         ? window.location.origin
         : "";
     const shareUrl = `${origin}/explore-places/card/${place.id}`;
-    const shareTitle = `${place.name} | Avadi Explore`;
+    const shareTitle = `${place.name} | Avadi City`;
     const shareText = place.description
       ? place.description.length > 120
         ? `${place.description.substring(0, 117)}...`
@@ -201,6 +124,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
+
         const successful = document.execCommand("copy");
         document.body.removeChild(textArea);
         if (successful) {
@@ -216,11 +140,11 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
 
   // Feature 7: Ratings & Reviews state
   const [reviewStatsMap, setReviewStatsMap] =
-    useState<Record<string, ReviewStats>>(initialReviewStats);
+    useState<Record<string, PlaceReviewStats>>(initialReviewStats);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
-  const [placeReviews, setPlaceReviews] = useState<ReviewItem[]>([]);
+  const [placeReviews, setPlaceReviews] = useState<PlaceReviewItem[]>([]);
   const [userExistingReview, setUserExistingReview] =
-    useState<ReviewItem | null>(null);
+    useState<PlaceReviewItem | null>(null);
   const [inputRating, setInputRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [inputReviewText, setInputReviewText] = useState<string>("");
@@ -275,7 +199,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
 
     if (!isAuthenticated) {
       toast.error("Please log in before submitting a review.");
-      router.push(`/login?redirect=/explore`);
+      router.push(`/login?redirect=/explore-places`);
       return;
     }
 
@@ -326,7 +250,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
     if (cat) {
       if (cat === "Hospitals" || cat === "Hospitals & Healthcare") {
         setSelectedCategory("Hospitals & Healthcare");
-      } else if (categories.some((c) => c.id === cat)) {
+      } else if (placeCategories.some((c) => c.id === cat)) {
         setSelectedCategory(cat);
       }
     }
@@ -464,7 +388,7 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
           </div>
 
           <div className="overflow-x-auto -mx-4 px-4 pb-2 scrollbar-none flex space-x-2">
-            {categories.map((cat) => {
+            {placeCategories.map((cat) => {
               const Icon = cat.icon;
               const isSelected = selectedCategory === cat.id;
               return (
@@ -1031,7 +955,9 @@ export const ExploreClient: React.FC<ExploreClientProps> = ({
                   </span>
                   <button
                     type="button"
-                    onClick={() => router.push(`/login?redirect=/explore`)}
+                    onClick={() =>
+                      router.push(`/login?redirect=/explore-places`)
+                    }
                     className="px-3.5 py-1.5 bg-primary text-white rounded-xl font-bold hover:bg-orange-600 transition cursor-pointer"
                   >
                     Sign In

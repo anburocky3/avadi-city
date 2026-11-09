@@ -210,7 +210,7 @@ interface AvadiWardItem {
   streets?: Array<{ value?: string; text?: string } | string>;
 }
 
-export default function NewListingWizardPage() {
+export default function FoodNewListingWizardPage() {
   const router = useRouter();
   const toast = useToast();
   const { activeWard, isAuthenticated, isLoadingAuth } = useWard();
@@ -792,7 +792,7 @@ export default function NewListingWizardPage() {
       {/* 1. Back to Food & Dining Button */}
       <div>
         <Link
-          href="/foods"
+          href="/food-and-dining"
           className="inline-flex items-center space-x-2 text-xs sm:text-sm font-black text-slate-600 dark:text-slate-300 hover:text-primary dark:hover:text-primary transition py-1 px-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/60"
         >
           <ArrowLeft size={16} />
@@ -1898,7 +1898,7 @@ export default function NewListingWizardPage() {
             <div className="pt-2">
               <button
                 type="button"
-                onClick={() => router.push("/foods")}
+                onClick={() => router.push("/food-and-dining")}
                 className="w-full py-3.5 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black text-xs sm:text-sm shadow-sm transition cursor-pointer active:scale-98"
               >
                 Back to Food &amp; Dining

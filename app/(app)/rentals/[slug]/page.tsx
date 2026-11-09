@@ -1,7 +1,8 @@
 import React, { Suspense } from "react";
 import { Metadata } from "next";
 import { SkeletonLoader } from "@/components/shared-components";
-import { getRentalListings, parsePropertySlug } from "@/lib/rentals";
+import { getRentalListings } from "@/features/rentals/services/rental.service";
+import { parsePropertySlug } from "@/lib/rental-slugs";
 import { RentalsClient } from "@/features/rentals/components/rental-client";
 
 export const dynamic = "force-dynamic";

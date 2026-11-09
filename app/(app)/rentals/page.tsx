@@ -1,16 +1,15 @@
-import React, { Suspense } from "react";
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { SkeletonLoader } from "@/components/shared-components";
-import { getRentalListings } from "@/lib/rentals";
+import { getRentalListings } from "@/features/rentals/services/rental.service";
 import { RentalsClient } from "@/features/rentals/components/rental-client";
 
-// Always fetch fresh data on request
-export const dynamic = "force-dynamic";
+export const revalidate = 0;
 export const metadata: Metadata = {
-  title: "Rentals in Avadi",
+  title: "Residential & Commercial Properties in Avadi",
   description:
-    "Browse current rental homes and properties available across Avadi.",
+    "Find the best residential and commercial properties for rent or sale in Avadi. Explore a wide range of apartments, houses, and commercial spaces to suit your needs. Discover your ideal property today!",
 };
 
 export default async function RentalsPage() {

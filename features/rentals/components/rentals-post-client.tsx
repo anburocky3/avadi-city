@@ -2273,7 +2273,7 @@ export function RentalsPostClient() {
           <div className="space-y-5 text-xs animate-in fade-in">
             {/* Property Locality / Street Area Input with Autocomplete */}
             <div className="relative">
-              <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5 flex items-center gap-2">
+              <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm mb-1.5 items-center gap-2">
                 <span className="p-1 rounded-md bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400">
                   <MapPin size={14} />
                 </span>
@@ -2443,7 +2443,7 @@ export function RentalsPostClient() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                   </span>
-                  <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate max-w-[200px] sm:max-w-xs">
+                  <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 truncate max-w-50 sm:max-w-xs">
                     📍{" "}
                     {streetName?.trim()
                       ? streetName.trim()
@@ -2842,7 +2842,7 @@ export function RentalsPostClient() {
 
             {/* Estimated Total Move-In / Purchase Cost Summary Box - Generates only when details are filled */}
             {monthlyRent.trim() !== "" && parseFloat(monthlyRent) > 0 && (
-              <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-orange-500/10 via-primary/5 to-amber-500/10 border border-primary/25 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="p-4 sm:p-5 rounded-2xl bg-linear-to-r from-orange-500/10 via-primary/5 to-amber-500/10 border border-primary/25 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-center justify-between">
                   <div>
                     <span className="text-[10px] font-extrabold uppercase tracking-wider text-primary">
@@ -2940,7 +2940,7 @@ export function RentalsPostClient() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm flex items-center gap-1.5">
+                  <label className="block text-slate-800 dark:text-slate-200 font-extrabold text-xs sm:text-sm items-center gap-1.5">
                     <span>Property Photos ({images.length}/3)</span>
                     <span className="text-rose-500">*</span>
                     <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400">
@@ -3212,7 +3212,7 @@ export function RentalsPostClient() {
               type="button"
               onClick={handleSubmitListing}
               disabled={isSubmitting || !declarationAgreed}
-              className="px-6 py-2.5 bg-gradient-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 bg-linear-to-r from-primary to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-xl font-extrabold text-xs transition shadow-md hover:shadow-lg cursor-pointer flex items-center gap-1.5 ml-auto disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <Loader2 size={16} className="animate-spin" />

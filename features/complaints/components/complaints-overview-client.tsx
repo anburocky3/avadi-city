@@ -20,11 +20,11 @@ import {
   Plus,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { useWard } from "@/context/wardContext";
 import { Modal } from "@/components/shared-components";
 import { useWardAdminProfile } from "@/hooks/useWardAdminProfile";
 import { OfficialAdminData, OFFICIALS_DIRECTORY } from "@/data/officialsData";
 import { ComplaintGuideSteps } from "@/features/complaints/components/complaint-guide-steps";
+import { useWard } from "@/features/ward";
 
 export default function ComplaintsOverviewClient() {
   const router = useRouter();

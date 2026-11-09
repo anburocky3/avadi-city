@@ -28,36 +28,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Shared components path mapping
 import { Card, Badge, Modal, EmptyState } from "@/components/shared-components";
-import { useWard } from "@/context/wardContext";
-
-// --- INLINE TYPESCRIPT DEFINITIONS ---
-
-export interface ServiceProvider {
-  id: string | number;
-  name: string;
-  category:
-    | "Plumbers"
-    | "Electricians"
-    | "Carpenters"
-    | "AC Repair"
-    | "Painters"
-    | "Mechanics"
-    | "Appliance Repair"
-    | string;
-  phone: string;
-  ward: number;
-  experience?: string;
-  hours?: string;
-  specialty?: string;
-  rate?: string;
-  serviceCharge?: string;
-  description?: string;
-  imageUrl?: string;
-  rating?: number;
-  verified?: boolean;
-  address?: string;
-  skills?: { name: string; price: number }[];
-}
+import type { ServiceProvider } from "@/features/local-services/types";
 
 export interface ServiceCategory {
   id: string;
@@ -205,21 +176,19 @@ const getCategorySpecialty = (
   }
 };
 
-export const ServicesClient: React.FC<{}> = () => {
+interface ServicesClientProps {
+  initialProviders: ServiceProvider[];
+  hasLoadError?: boolean;
+}
+
+export const ServicesClient: React.FC<ServicesClientProps> = ({
+  initialProviders,
+  hasLoadError = false,
+}) => {
   const t = useTranslations("services");
   const locale = useLocale();
   const router = useRouter();
   const searchParams = useSearchParams();
-
-  const [localServiceProfiles, setLocalServiceProfiles] = useState<
-    ServiceProvider[]
-  >([]);
-
-  const { getLocalServiceProfile } = useWard(); // Custom hook to access ward context
-
-  getLocalServiceProfile().then((profiles) =>
-    setLocalServiceProfiles(profiles),
-  );
 
   // Local state initialized with server props
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -233,13 +202,13 @@ export const ServicesClient: React.FC<{}> = () => {
     if (searchParams.get("registered") === "true") {
       setToastMessage(t("registrationToast"));
       const timer = setTimeout(() => setToastMessage(null), 7000);
-      router.replace("/services");
+      router.replace("/local-services");
       return () => clearTimeout(timer);
     }
   }, [searchParams, router, t]);
 
   const filteredProviders = useMemo(() => {
-    let list = localServiceProfiles || [];
+    let list = initialProviders;
 
     if (selectedCategory !== "All") {
       list = list.filter((p) => p.category === selectedCategory);
@@ -256,7 +225,7 @@ export const ServicesClient: React.FC<{}> = () => {
     }
 
     return list;
-  }, [localServiceProfiles, selectedCategory, searchQuery]);
+  }, [initialProviders, selectedCategory, searchQuery]);
 
   const handleCallProvider = (
     provider: ServiceProvider,
@@ -358,6 +327,14 @@ export const ServicesClient: React.FC<{}> = () => {
 
       {/* Providers Listings Grid */}
       <div className="space-y-3.5 pt-2">
+        {hasLoadError && (
+          <p
+            role="status"
+            className="text-xs text-amber-700 dark:text-amber-300"
+          >
+            Could not load local service providers. Please try again later.
+          </p>
+        )}
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 flex items-center">
             <span>

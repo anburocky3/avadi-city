@@ -87,7 +87,9 @@ export async function GET(request: Request) {
         if (feed.complaintId) {
           if (seenComplaintIds.has(feed.complaintId)) continue;
           seenComplaintIds.add(feed.complaintId);
-          deduplicatedFeeds.push(complaintFeedMap.get(feed.complaintId) || feed);
+          deduplicatedFeeds.push(
+            complaintFeedMap.get(feed.complaintId) || feed,
+          );
         } else {
           deduplicatedFeeds.push(feed);
         }
@@ -98,54 +100,57 @@ export async function GET(request: Request) {
         const effectiveWard =
           feed.ward >= 1 && feed.ward <= 48
             ? feed.ward
-            : feed.author?.wardNumber && feed.author.wardNumber >= 1 && feed.author.wardNumber <= 48
-            ? feed.author.wardNumber
-            : 1;
+            : feed.author?.wardNumber &&
+                feed.author.wardNumber >= 1 &&
+                feed.author.wardNumber <= 48
+              ? feed.author.wardNumber
+              : 1;
 
         return {
           ...feed,
           ward: effectiveWard,
           authorName: feed.author?.name || "Avadi Resident",
-        authorAvatar: feed.author?.avatar || "/default-avatar.png",
-        authorWard: feed.author?.wardNumber,
-        authorStreet: feed.author?.streetName,
-        isAuthorVerified: feed.author?.isVerified || false,
-        likes: feed.likesCount,
-        // If feed.likes returned an array with at least 1 item, YOU liked this post!
-        likedByMe: Array.isArray(feed.likes) && feed.likes.length > 0,
-        complaint: feed.complaint
-          ? {
-              ...feed.complaint,
-              address:
-                feed.complaint.address &&
-                feed.complaint.address.trim() !== "" &&
-                feed.complaint.address !== "Selected Location"
-                  ? feed.complaint.address
-                  : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`,
-              description: feed.complaint.description
-                ? feed.complaint.description.replace(
-                    /Location:\s*Selected Location\.?/gi,
-                    `Location: ${feed.complaint.address && feed.complaint.address !== "Selected Location" ? feed.complaint.address : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`}.`,
-                  )
-                : feed.complaint.description,
-              title: feed.complaint.title
-                ? feed.complaint.title.replace(
-                    /Selected Location/g,
-                    feed.complaint.address &&
-                      feed.complaint.address !== "Selected Location"
-                      ? feed.complaint.address
-                      : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`,
-                  )
-                : feed.complaint.title,
-            }
-          : null,
-        comments: feed.comments.map((c: any) => ({
-          ...c,
-          author: c.user?.name || c.author || "Resident",
-          authorAvatar: c.user?.avatar || c.authorAvatar || "/default-avatar.png",
-        })),
-      };
-    });
+          authorAvatar: feed.author?.avatar || "/default-avatar.png",
+          authorWard: feed.author?.wardNumber,
+          authorStreet: feed.author?.streetName,
+          isAuthorVerified: feed.author?.isVerified || false,
+          likes: feed.likesCount,
+          // If feed.likes returned an array with at least 1 item, YOU liked this post!
+          likedByMe: Array.isArray(feed.likes) && feed.likes.length > 0,
+          complaint: feed.complaint
+            ? {
+                ...feed.complaint,
+                address:
+                  feed.complaint.address &&
+                  feed.complaint.address.trim() !== "" &&
+                  feed.complaint.address !== "Selected Location"
+                    ? feed.complaint.address
+                    : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`,
+                description: feed.complaint.description
+                  ? feed.complaint.description.replace(
+                      /Location:\s*Selected Location\.?/gi,
+                      `Location: ${feed.complaint.address && feed.complaint.address !== "Selected Location" ? feed.complaint.address : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`}.`,
+                    )
+                  : feed.complaint.description,
+                title: feed.complaint.title
+                  ? feed.complaint.title.replace(
+                      /Selected Location/g,
+                      feed.complaint.address &&
+                        feed.complaint.address !== "Selected Location"
+                        ? feed.complaint.address
+                        : `Ward ${feed.complaint.incidentWard || feed.ward}, Avadi`,
+                    )
+                  : feed.complaint.title,
+              }
+            : null,
+          comments: feed.comments.map((c: any) => ({
+            ...c,
+            author: c.user?.name || c.author || "Resident",
+            authorAvatar:
+              c.user?.avatar || c.authorAvatar || "/default-avatar.png",
+          })),
+        };
+      });
 
       return NextResponse.json(formattedFeeds, { status: 200 });
     }
@@ -199,7 +204,14 @@ export async function POST(request: Request) {
 
     const body = await request.json();
 
-    const { text, title, category, ward, isEmergency, imageUrl: base64Image } = body;
+    const {
+      text,
+      title,
+      category,
+      ward,
+      isEmergency,
+      imageUrl: base64Image,
+    } = body;
 
     let finalContent = text?.trim() || "";
     if (title?.trim()) {
@@ -221,7 +233,9 @@ export async function POST(request: Request) {
     if (base64Image && base64Image.startsWith("data:image/")) {
       try {
         if (BUCKET_NAME && process.env.CLOUDFLARE_R2_ACCESS_KEY_ID) {
-          const matches = base64Image.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+          const matches = base64Image.match(
+            /^data:([A-Za-z-+\/]+);base64,(.+)$/,
+          );
           if (matches && matches.length === 3) {
             const contentType = matches[1];
             const buffer = Buffer.from(matches[2], "base64");

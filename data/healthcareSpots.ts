@@ -1,4 +1,4 @@
-import { HealthcareFacility } from "@/features/healthcare/components/healthcare-client";
+import type { HealthcareFacility } from "@/features/healthcare/types";
 
 export const initialHealthcareSpots: HealthcareFacility[] = [
   {

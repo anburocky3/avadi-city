@@ -26,56 +26,11 @@ import {
 import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
 import { timeAgo } from "@/utils/helper";
-
-export interface PlaceDetails {
-  id: string;
-  name: string;
-  category: string;
-  description: string;
-  address: string;
-  areaLandmark?: string | null;
-  ward: number;
-  imageUrl?: string | null;
-  additionalImages?: string[] | null;
-  timings?: string;
-  is24x7?: boolean;
-  openingTime?: string | null;
-  closingTime?: string | null;
-  entryFeeType?: string | null;
-  entryFeeAmount?: number | null;
-  activities?: string[] | null;
-  visitorTypes?: string[] | null;
-  facilities?: string[] | null;
-  bestTimeToVisit?: string | null;
-  guidelines?: string | null;
-  phone?: string | null;
-  website?: string | null;
-  officialUrl?: string | null;
-  latitude?: number | null;
-  longitude?: number | null;
-}
-
-export interface ReviewStats {
-  averageRating: number | null;
-  reviewCount: number;
-}
-
-export interface ReviewItem {
-  id: string;
-  placeId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string | null;
-  rating: number;
-  reviewText?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  isOwn?: boolean;
-}
+import { PlaceDetail, PlaceReviewItem, PlaceReviewStats } from "../types";
 
 interface PlaceCardDetailsClientProps {
-  place: PlaceDetails;
-  initialReviewStats?: ReviewStats;
+  place: PlaceDetail;
+  initialReviewStats?: PlaceReviewStats;
 }
 
 const ACCESSIBILITY_FACILITIES = new Set([
@@ -107,16 +62,16 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
   const [isImageLoading, setIsImageLoading] = useState(true);
 
   // Reviews state
-  const [reviewStats, setReviewStats] = useState<ReviewStats>(
+  const [reviewStats, setReviewStats] = useState<PlaceReviewStats>(
     initialReviewStats || {
       averageRating: null,
       reviewCount: 0,
     },
   );
-  const [placeReviews, setPlaceReviews] = useState<ReviewItem[]>([]);
+  const [placeReviews, setPlaceReviews] = useState<PlaceReviewItem[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(true);
   const [userExistingReview, setUserExistingReview] =
-    useState<ReviewItem | null>(null);
+    useState<PlaceReviewItem | null>(null);
   const [inputRating, setInputRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [inputReviewText, setInputReviewText] = useState<string>("");
@@ -162,7 +117,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
     }
 
     const origin = typeof window !== "undefined" ? window.location.origin : "";
-    const shareUrl = `${origin}/explore/card/${place.id}`;
+    const shareUrl = `${origin}/explore-places/card/${place.id}`;
     const shareTitle = `${place.name} | Avadi Explore`;
     const shareText = place.description
       ? place.description.length > 120
@@ -253,7 +208,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
 
     if (!isAuthenticated) {
       toast.error("Please log in before submitting a review.");
-      router.push(`/login?redirect=/explore/card/${place.id}`);
+      router.push(`/login?redirect=/explore-places/card/${place.id}`);
       return;
     }
 
@@ -689,7 +644,7 @@ export const PlaceCardDetailsClient: React.FC<PlaceCardDetailsClientProps> = ({
             <button
               type="button"
               onClick={() =>
-                router.push(`/login?redirect=/explore/card/${place.id}`)
+                router.push(`/login?redirect=/explore-places/card/${place.id}`)
               }
               className="px-4 py-2 bg-primary text-white rounded-xl font-bold hover:bg-orange-600 transition cursor-pointer"
             >

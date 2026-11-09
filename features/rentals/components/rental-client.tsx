@@ -28,7 +28,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { useWard } from "@/context/wardContext";
 import { Card, Modal, EmptyState } from "@/components/shared-components";
 import { RentalProperty, TransactionType } from "@/types/rental";
 import {
@@ -36,6 +35,7 @@ import {
   getPropertySharePath,
   parsePropertySlug,
 } from "@/lib/rental-slugs";
+import { useWard } from "@/features/ward";
 
 export type { RentalProperty } from "@/types/rental";
 
@@ -79,7 +79,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
   // Temporary toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Load newly posted user properties from localStorage on mount and sync with API
+  // Load locally saved posts and merge only listings not present in the server data.
   useEffect(() => {
     let localSaved: RentalProperty[] = [];
     let deletedIds = new Set<string>();
@@ -109,52 +109,15 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
       console.error("Failed to load user rentals from localStorage:", e);
     }
 
-    // Filter out any locally deleted listings from initial state
-    if (deletedIds.size > 0) {
-      setRentalList((prev) => prev.filter((r) => !deletedIds.has(r.id)));
-    }
-
-    // Always fetch fresh listings from /api/rentals on client
-    async function syncRentals() {
-      try {
-        const res = await fetch("/api/rentals", { cache: "no-store" });
-        if (res.ok) {
-          const json = await res.json();
-          if (
-            json.success &&
-            Array.isArray(json.data) &&
-            json.data.length > 0
-          ) {
-            setRentalList((prev) => {
-              const validApiList = json.data.filter(
-                (r: RentalProperty) => !deletedIds.has(r.id),
-              );
-              const apiIds = new Set(
-                validApiList.map((r: RentalProperty) => r.id),
-              );
-              // Keep any purely local items that might not have reached API yet
-              const unsyncedLocal = localSaved.filter(
-                (p) => !apiIds.has(p.id) && !deletedIds.has(p.id),
-              );
-              const combined = [...unsyncedLocal, ...validApiList];
-              const targetId = getTargetPropertyId();
-              if (targetId && !deletedIds.has(targetId)) {
-                const match = combined.find((p) => p.id === targetId);
-                if (match) {
-                  setSelectedProperty(match);
-                }
-              }
-              return combined;
-            });
-          }
-        }
-      } catch (err) {
-        console.warn("[RentalsClient] Error fetching /api/rentals:", err);
-      }
-    }
-
-    syncRentals();
-  }, []);
+    const serverIds = new Set(initialRentals.map((rental) => rental.id));
+    const unsyncedLocal = localSaved.filter(
+      (property) => !serverIds.has(property.id) && !deletedIds.has(property.id),
+    );
+    setRentalList([
+      ...unsyncedLocal,
+      ...initialRentals.filter((rental) => !deletedIds.has(rental.id)),
+    ]);
+  }, [initialRentals]);
 
   // Helper to extract target property ID from initial prop, pathname (/rental/[slug] or /rentals/[slug]), or search params
   const getTargetPropertyId = (): string | null => {
@@ -650,7 +613,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                         className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                     ) : (
-                      <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
+                      <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-2 text-slate-400 bg-linear-to-br from-slate-100 to-slate-50 dark:from-slate-900 dark:to-slate-950">
                         <Home size={36} className="opacity-30" />
                         <span className="text-xs font-semibold opacity-60">
                           No Image Available
@@ -813,7 +776,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                   </div>
 
                   {/* Property Content */}
-                  <div className="md:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-gradient-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80 md:min-h-[250px]">
+                  <div className="md:col-span-7 p-4 sm:p-5 flex flex-col justify-between space-y-3 bg-linear-to-br from-white to-slate-50/50 dark:from-slate-900 dark:to-slate-900/80 md:min-h-62.5">
                     <div>
                       {/* Ward & Street */}
                       <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 font-semibold mb-1">
@@ -930,7 +893,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                             Listed by {rental.owner?.type || "Owner"}
                           </span>
-                          <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-[150px]">
+                          <span className="font-extrabold text-xs text-slate-800 dark:text-slate-200 truncate max-w-37.5">
                             {rental.owner?.name ||
                               rental.ownerName ||
                               "Avadi Citizen"}
@@ -1735,7 +1698,7 @@ export const RentalsClient: React.FC<RentalsClientProps> = ({
                       >
                         <Check
                           size={13}
-                          className="text-emerald-500 stroke-[3]"
+                          className="text-emerald-500 stroke-3"
                         />
                         <span>{amenity}</span>
                       </span>

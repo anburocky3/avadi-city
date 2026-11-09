@@ -19,24 +19,17 @@ import {
   Globe,
   Plus,
 } from "lucide-react";
-import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useJobApplication } from "@/features/jobs/hooks/useJobApplication";
+import { JobServiceError } from "@/features/jobs/services/jobs.service";
+import type { JobDetailSummary, JobProfile } from "@/features/jobs/types";
 
-export interface JobDetailSummary {
-  id: string;
-  role: string;
-  businessName: string;
-  location?: string;
-  salary?: string;
-  jobType?: string;
-  workMode?: string;
-  qualifications?: string;
-  details?: string;
-}
+export type { JobDetailSummary } from "@/features/jobs/types";
 
 interface JobApplyClientProps {
   job: JobDetailSummary;
-  initialProfile?: { name?: string; email?: string; phone?: string } | null;
+  initialProfile?: JobProfile | null;
 }
 
 const QUALIFICATION_CHOICES = [
@@ -57,14 +50,15 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({
 }) => {
   const router = useRouter();
   const toast = useToast();
-  const { authUser, userProfile } = useWard();
+  const { authUser } = useAuth();
+  const { isSubmitting, submitApplication } = useJobApplication(job.id);
 
   const resumeInputRef = useRef<HTMLInputElement>(null);
   const formTopRef = useRef<HTMLDivElement>(null);
 
   // Form State (Auto-populated from authenticated profile if available - FIX 4)
   const [fullName, setFullName] = useState(
-    initialProfile?.name || authUser?.name || userProfile?.name || "",
+    initialProfile?.name || authUser?.name || "",
   );
   const [email, setEmail] = useState(
     initialProfile?.email || authUser?.email || "",
@@ -83,7 +77,6 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({
   const [skillInput, setSkillInput] = useState("");
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmittedSuccess, setIsSubmittedSuccess] = useState(false);
   const [submittedApplicationId, setSubmittedApplicationId] = useState<
     string | null
@@ -264,8 +257,6 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({
     }
 
     try {
-      setIsSubmitting(true);
-
       const formData = new FormData();
       formData.append("fullName", fullName.trim());
       formData.append("email", email.trim());
@@ -281,45 +272,38 @@ export const JobApplyClient: React.FC<JobApplyClientProps> = ({
       if (portfolioUrl.trim())
         formData.append("portfolioUrl", portfolioUrl.trim());
 
-      const res = await fetch(`/api/jobs/${job.id}/apply`, {
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        if (res.status === 409 || data.alreadyApplied) {
+      const result = await submitApplication(formData);
+      setIsSubmittedSuccess(true);
+      setSubmittedApplicationId(result.applicationId || null);
+      toast.success("Application submitted successfully!");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      if (error instanceof JobServiceError) {
+        const responseData = error.data;
+        if (error.status === 409 || responseData.alreadyApplied) {
           setAlreadyAppliedMessage(
-            data.message ||
+            error.message ||
               "You have already applied to a vacancy at this company. You can track your existing application under My Applications.",
           );
           toast.error(
-            data.message ||
+            error.message ||
               "You have already applied to a vacancy at this company.",
           );
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
-        toast.error(data.message || "Failed to submit application.");
-        if (data.errors) {
-          setFieldErrors((prev) => ({ ...prev, ...data.errors }));
-          const firstErrKey = Object.keys(data.errors)[0];
+        toast.error(error.message || "Failed to submit application.");
+        const errors = responseData.errors;
+        if (errors && typeof errors === "object") {
+          const fieldErrors = errors as Record<string, string>;
+          setFieldErrors((prev) => ({ ...prev, ...fieldErrors }));
+          const firstErrKey = Object.keys(fieldErrors)[0];
           if (firstErrKey) scrollToFirstError([firstErrKey]);
         }
-        return;
+      } else {
+        console.error(error);
+        toast.error("Network error. Please check your internet connection.");
       }
-
-      // Success Confirmation
-      setIsSubmittedSuccess(true);
-      setSubmittedApplicationId(data.applicationId || null);
-      toast.success("Application submitted successfully!");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (err) {
-      console.error(err);
-      toast.error("Network error. Please check your internet connection.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 

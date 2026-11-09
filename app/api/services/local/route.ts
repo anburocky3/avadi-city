@@ -123,7 +123,7 @@ export async function POST(request: Request) {
         rate: rate,
         description: fullDescription || undefined,
         imageUrl: finalImageUrl,
-        status: "APPROVED",
+        status: "PENDING",
         submittedById: userId,
       },
     });
@@ -144,7 +144,9 @@ export async function GET(request: Request) {
     const ward = searchParams.get("ward");
     const category = searchParams.get("category");
 
-    const where: any = {};
+    const where: { status: "APPROVED"; ward?: number; category?: string } = {
+      status: "APPROVED",
+    };
     if (ward && ward !== "all") {
       where.ward = Number(ward);
     }
@@ -160,6 +162,9 @@ export async function GET(request: Request) {
     return NextResponse.json(workers, { status: 200 });
   } catch (error: any) {
     console.error("Error fetching service workers:", error);
-    return NextResponse.json([], { status: 200 });
+    return NextResponse.json(
+      { error: "Failed to fetch service workers." },
+      { status: 500 },
+    );
   }
 }

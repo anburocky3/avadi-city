@@ -26,202 +26,48 @@ import {
   Send,
   Clock,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-
 import { useWard } from "@/context/wardContext";
+import type { Alert } from "@/features/notifications/types";
 import { Card, Badge, Modal, EmptyState } from "@/components/shared-components";
+import { useNotification } from "../context/NotificationContext";
 
 // --- TYPESCRIPT DEFINITIONS ---
-
-export interface AlertItem {
-  id: string | number;
-  title: string;
-  description: string;
-  category: string;
-  severity: "urgent" | "maintenance" | "info" | string;
-  affectedWards: "All" | number[] | string[];
-  date: string | number | Date;
-  [key: string]: any;
-}
 
 interface Category {
   id: string;
   name: string;
 }
 
-interface WardContextType {
-  activeWard: {
-    id: number;
-    name: string;
-    [key: string]: any;
-  };
-  alerts: AlertItem[];
-  dismissedAlerts: (string | number)[];
-  readAlerts: (string | number)[];
-  dismissAlert: (id: string | number) => void;
-  markAlertAsRead: (id: string | number) => void;
-  isAuthenticated: boolean;
-  authUser: any;
-}
-
-// Incoming claim (owner's view): someone claiming my item
-interface IncomingClaimNotification {
-  id: string;
-  lostFoundItemId: string;
-  message: string;
-  imageUrl?: string | null;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  createdAt: string;
-  updatedAt: string;
-  requester: { id: string; name: string };
-  owner: { id: string; name: string };
-  item: {
-    id: string;
-    itemId: string;
-    title: string;
-    type: "lost" | "found";
-    category: string;
-    imageUrl?: string | null;
-    status: string;
-  };
-}
-
-// Outgoing claim (requester/finder's view): claim I sent and its current status
-interface OutgoingClaimNotification {
-  id: string;
-  lostFoundItemId: string;
-  message: string;
-  imageUrl?: string | null;
-  status: "PENDING" | "ACCEPTED" | "REJECTED";
-  createdAt: string;
-  updatedAt: string;
-  requester: { id: string; name: string };
-  owner: { id: string; name: string };
-  item: {
-    id: string;
-    itemId: string;
-    title: string;
-    type: "lost" | "found";
-    category: string;
-    imageUrl?: string | null;
-    status: string;
-  };
-}
-
-export const Notification: React.FC = () => {
+export const NotificationClient: React.FC = () => {
   const router = useRouter();
-  const queryClient = useQueryClient();
-
-  // Unwrap Ward Context with strict typing
+  const { activeWard, isAuthenticated } = useWard();
   const {
-    activeWard = { id: 14, name: "Avadi Central" },
-    alerts = [],
-    dismissedAlerts = [],
-    readAlerts = [],
-    dismissAlert = () => {},
-    markAlertAsRead = () => {},
-    isAuthenticated = false,
-  } = useWard() as unknown as WardContextType;
+    alerts,
+    dismissedAlerts,
+    readAlerts,
+    dismissAlert,
+    markAlertAsRead,
+    subscribeMyWard,
+    setSubscribeMyWard,
+    incomingClaims,
+    outgoingClaims,
+    pendingIncoming,
+    acceptedOutgoing,
+    isLoadingIncoming,
+    isLoadingOutgoing,
+    actioningClaimId,
+    revealedPhones,
+    handleClaimAction,
+  } = useNotification();
 
   const [activeCategory, setActiveCategory] = useState<string>("All");
-  const [subscribeMyWard, setSubscribeMyWard] = useState<boolean>(false);
-  const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null);
+  const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null);
 
   // Expanded proof photo preview modal
   const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
 
   // Track actioning state per claim
-  const [actioningClaimId, setActioningClaimId] = useState<string | null>(null);
-  // Revealed phones after Accept (keyed by claimId)
-  const [revealedPhones, setRevealedPhones] = useState<
-    Record<string, { name: string; phone: string }>
-  >({});
-
-  // ── OWNER: Fetch incoming claims where I am the item owner ──
-  const {
-    data: incomingClaims = [],
-    isLoading: isLoadingIncoming,
-    refetch: refetchIncoming,
-  } = useQuery<IncomingClaimNotification[]>({
-    queryKey: ["lost-found-claims-owner-notifications"],
-    queryFn: async () => {
-      const res = await fetch("/api/lost-found/claims?role=owner", {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: isAuthenticated,
-    refetchInterval: 15000,
-  });
-
-  // ── REQUESTER: Fetch claims I sent to others ──
-  const {
-    data: outgoingClaims = [],
-    isLoading: isLoadingOutgoing,
-    refetch: refetchOutgoing,
-  } = useQuery<OutgoingClaimNotification[]>({
-    queryKey: ["lost-found-claims-requester-notifications"],
-    queryFn: async () => {
-      const res = await fetch("/api/lost-found/claims?role=requester", {
-        credentials: "include",
-      });
-      if (!res.ok) return [];
-      return res.json();
-    },
-    enabled: isAuthenticated,
-    refetchInterval: 15000,
-  });
-
-  const pendingIncoming = useMemo(
-    () => incomingClaims.filter((c) => c.status === "PENDING"),
-    [incomingClaims],
-  );
-
-  const acceptedOutgoing = useMemo(
-    () => outgoingClaims.filter((c) => c.status === "ACCEPTED"),
-    [outgoingClaims],
-  );
-
   const totalClaimActivity = incomingClaims.length + outgoingClaims.length;
-
-  // Handle Accept / Deny from notification (owner action)
-  const handleClaimAction = async (
-    claimId: string,
-    action: "ACCEPTED" | "REJECTED",
-  ) => {
-    setActioningClaimId(claimId);
-    try {
-      const res = await fetch(`/api/lost-found/claims/${claimId}`, {
-        method: "PATCH",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message);
-
-      if (action === "ACCEPTED") {
-        setRevealedPhones((prev) => ({
-          ...prev,
-          [claimId]: { name: data.requesterName, phone: data.requesterPhone },
-        }));
-      }
-
-      await queryClient.invalidateQueries({
-        queryKey: ["lost-found-claims-owner-notifications"],
-      });
-      await queryClient.invalidateQueries({
-        queryKey: ["lost-found-claims-badge"],
-      });
-      refetchIncoming();
-      refetchOutgoing();
-    } catch (err: any) {
-      alert(err.message || "Failed to update claim");
-    } finally {
-      setActioningClaimId(null);
-    }
-  };
 
   // Categories list with dynamic Claims counter
   const categories: Category[] = useMemo(() => {
@@ -300,7 +146,7 @@ export const Notification: React.FC = () => {
     return <Bell size={14} className="text-primary" />;
   };
 
-  const handleOpenAlert = (alert: AlertItem): void => {
+  const handleOpenAlert = (alert: Alert): void => {
     markAlertAsRead(alert.id);
     setSelectedAlert(alert);
   };
@@ -380,7 +226,7 @@ export const Notification: React.FC = () => {
               Incoming Item Contact Requests ({incomingClaims.length})
             </h2>
             <button
-              onClick={() => router.push("/lost-found?tab=my")}
+              onClick={() => router.push("/lost-and-found?tab=my")}
               className="text-[11px] font-bold text-orange-600 hover:underline flex items-center gap-1"
             >
               <span>Manage My Reports</span>
@@ -421,7 +267,7 @@ export const Notification: React.FC = () => {
                         ? "🔴 Lost Item"
                         : "🟢 Found Item"}
                     </span>
-                    <span className="text-xs font-black text-slate-800 dark:text-white truncate max-w-[200px] sm:max-w-xs">
+                    <span className="text-xs font-black text-slate-800 dark:text-white truncate max-w-50 sm:max-w-xs">
                       {claim.item.title}
                     </span>
                   </div>
@@ -679,7 +525,7 @@ export const Notification: React.FC = () => {
                             e.preventDefault();
                             // Phone fetched from GET /api/lost-found/claims/[claimId]
                             // Navigate to item detail to see full contact
-                            router.push("/lost-found");
+                            router.push("/lost-and-found");
                           }}
                           className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline"
                         >
@@ -688,7 +534,7 @@ export const Notification: React.FC = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => router.push("/lost-found")}
+                        onClick={() => router.push("/lost-and-found")}
                         className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-[11px] font-black transition shrink-0"
                       >
                         Go →
@@ -834,7 +680,7 @@ export const Notification: React.FC = () => {
       {/* PROOF PHOTO EXPANDED MODAL */}
       {previewPhoto && (
         <div
-          className="fixed inset-0 z-[250] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+          className="fixed inset-0 z-250 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
           onClick={() => setPreviewPhoto(null)}
         >
           <div

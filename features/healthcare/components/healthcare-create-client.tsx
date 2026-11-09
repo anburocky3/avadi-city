@@ -284,7 +284,7 @@ const AVADI_WARD_COORDINATES: Record<number, { lat: number; lng: number }> = {
   48: { lat: 13.1315, lng: 80.1495 },
 };
 
-export default function CreateFacilityPage() {
+export default function HealthCareCreateListing() {
   const router = useRouter();
   const toast = useToast();
   const { activeWard, isAuthenticated, isLoadingAuth } = useWard();
@@ -1210,7 +1210,7 @@ export default function CreateFacilityPage() {
                 <button
                   type="button"
                   onClick={handleContinueStep1}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white cursor-pointer active:scale-98"
+                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-black text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white cursor-pointer active:scale-98"
                 >
                   <span>Continue to Facility Information</span>
                   <ArrowRight size={16} />

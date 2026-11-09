@@ -1,17 +1,10 @@
 import React, { Suspense } from "react";
 import { cookies } from "next/headers";
-import { initialJobsData } from "@/data/jobSpots";
 import { SkeletonLoader } from "@/components/shared-components";
-import {
-  JobsClient,
-  JobVacancy,
-  UserApplication,
-} from "@/features/jobs/components/jobs-client";
-import { prisma } from "@/lib/prisma";
+import { JobsClient } from "@/features/jobs/components/jobs-client";
 import { verifyAuthToken } from "@/lib/auth";
 import { Metadata } from "next";
-
-export const dynamic = "force-dynamic";
+import { getJobsPageData } from "@/features/jobs/services/jobs.server";
 
 export const metadata: Metadata = {
   title: "Jobs in Avadi - Avadi City Community Portal",
@@ -35,130 +28,21 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   // Pre-load authenticated user application info if logged in
   const cookieStore = await cookies();
   const token = cookieStore.get("avadi_session")?.value;
-  let appliedCompanies: string[] = [];
-  let userApplications: UserApplication[] = [];
+  let user: { id: string; email?: string | null } | null = null;
 
   if (token) {
     try {
       const session = await verifyAuthToken(token);
       if (session?.userId) {
-        const apps = await prisma.jobApplication.findMany({
-          where: {
-            OR: [
-              { applicantId: session.userId },
-              ...(session.email
-                ? [{ email: session.email.trim().toLowerCase() }]
-                : []),
-            ],
-          },
-          include: {
-            job: {
-              select: {
-                id: true,
-                role: true,
-                businessName: true,
-                category: true,
-                jobType: true,
-                workMode: true,
-                salary: true,
-                location: true,
-                ward: true,
-                imageUrl: true,
-                status: true,
-                ownerId: true,
-              },
-            },
-          },
-          orderBy: { createdAt: "desc" },
-        });
-
-        userApplications = apps.map((a) => ({
-          ...a,
-          createdAt: a.createdAt.toISOString(),
-          updatedAt: a.updatedAt.toISOString(),
-        }));
-
-        const set = new Set<string>();
-        apps.forEach((a) => {
-          if (a.job?.businessName) {
-            set.add(a.job.businessName.trim().toLowerCase());
-          }
-        });
-        appliedCompanies = Array.from(set);
+        user = { id: session.userId, email: session.email };
       }
-    } catch {
-      // ignore
+    } catch (error) {
+      console.error("Failed to verify session for job dashboard:", error);
     }
   }
 
-  let jobs: JobVacancy[] = (initialJobsData || []) as JobVacancy[];
-
-  try {
-    const dbJobs = await prisma.jobVacancy.findMany({
-      where: { status: "APPROVED" },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (dbJobs && dbJobs.length > 0) {
-      const mappedDbJobs: JobVacancy[] = dbJobs.map((j) => {
-        let reqs: string[] | undefined = undefined;
-        if (j.requirements) {
-          try {
-            reqs = JSON.parse(j.requirements);
-          } catch {
-            reqs = j.requirements
-              .split(",")
-              .map((s) => s.trim())
-              .filter(Boolean);
-          }
-        }
-        return {
-          id: j.id,
-          role: j.role,
-          businessName: j.businessName,
-          category: j.category,
-          jobType: j.jobType,
-          postedTime: "Recently",
-          salary: j.salary,
-          location: j.location
-            ? `${j.location} (Ward ${j.ward})`
-            : `Ward ${j.ward}, Avadi`,
-          shift: j.shift || undefined,
-          contact: j.contact,
-          ward: j.ward,
-          details: j.details,
-          requirements: reqs,
-          qualifications: j.qualifications || undefined,
-          imageUrl: j.imageUrl || null,
-          featured: Boolean(j.featured),
-          latitude: j.latitude ?? null,
-          longitude: j.longitude ?? null,
-          address: j.address || undefined,
-          ownerId: j.ownerId,
-        };
-      });
-
-      const dbJobIds = new Set(mappedDbJobs.map((j) => j.id));
-      const remainingInitial = ((initialJobsData || []) as JobVacancy[]).filter(
-        (ij) => !dbJobIds.has(ij.id),
-      );
-
-      jobs = [...mappedDbJobs, ...remainingInitial];
-    }
-  } catch (error: unknown) {
-    const err = error as { code?: string; message?: string };
-    if (err?.code === "P2021" || err?.message?.includes("does not exist")) {
-      console.warn(
-        "Notice: Table `job_vacancies` not yet initialized in database. Displaying default Avadi job vacancies.",
-      );
-    } else {
-      console.warn(
-        "Notice: Database unavailable for jobs query. Falling back to default job vacancies.",
-        err?.message || error,
-      );
-    }
-    jobs = (initialJobsData || []) as JobVacancy[];
-  }
+  const { jobs, userApplications, appliedCompanies } =
+    await getJobsPageData(user);
 
   return (
     <Suspense

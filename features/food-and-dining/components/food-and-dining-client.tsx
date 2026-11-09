@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { useWard } from "@/context/wardContext";
 import useToast from "@/hooks/useToast";
 import {
   Card,
@@ -33,99 +32,16 @@ import {
 import { useTranslations } from "next-intl";
 import { isShopOpenNow, getSearchMatchScore } from "@/lib/food-discovery";
 import { wards as allWardsData } from "@/data/wards";
-
-export interface MenuItem {
-  name: string;
-  price: number;
-  isVeg?: boolean;
-}
-
-export interface FoodSpot {
-  id: string | number;
-  name: string;
-  specialty: string;
-  description: string;
-  imageUrl: string;
-  rating?: number | null;
-  reviewCount?: number;
-  ward: number;
-  foodType: "Veg" | "Non-Veg" | "Ice Cream" | string;
-  isVeg?: boolean;
-  isLateNight?: boolean;
-  timing?: string;
-  openingTime?: string | null;
-  closingTime?: string | null;
-  lateNightStartTime?: string | null;
-  lateNightEndTime?: string | null;
-  address?: string;
-  phone?: string;
-  category?: string;
-  status?: string;
-  menu?: MenuItem[];
-  popularItems?: string[];
-  cuisines?: string;
-}
-
-export interface ReviewItem {
-  id: string;
-  shopId: string;
-  userId: string;
-  userName: string;
-  userAvatar?: string | null;
-  rating: number;
-  reviewText?: string | null;
-  createdAt: string;
-  updatedAt: string;
-  isOwn?: boolean;
-}
-
-export interface FilterCategory {
-  id: string;
-  name: string;
-  renderIcon: () => React.ReactNode;
-}
+import { useAuth } from "@/features/auth/hooks/useAuth";
+import { useWard } from "@/features/ward";
+import { FilterFoodCategory, FoodReviewItem, FoodSpot } from "../types";
+import { IceCreamSymbol, NonVegSymbol, VegSymbol } from "./food-icons";
 
 export interface FoodClientProps {
   initialSpots: FoodSpot[];
 }
 
-// Authentic Indian Standard (FSSAI) Veg Symbol
-export const VegSymbol: React.FC<{ className?: string }> = ({
-  className = "w-4 h-4",
-}) => (
-  <span
-    className={`inline-flex items-center justify-center border-2 border-emerald-600 dark:border-emerald-500 bg-white dark:bg-slate-900 rounded-[3px] p-0.5 shrink-0 ${className}`}
-    title="Pure Vegetarian (FSSAI Verified)"
-  >
-    <span className="w-2 h-2 rounded-full bg-emerald-600 dark:bg-emerald-500" />
-  </span>
-);
-
-// Authentic Indian Standard (FSSAI) Non-Veg Symbol
-export const NonVegSymbol: React.FC<{ className?: string }> = ({
-  className = "w-4 h-4",
-}) => (
-  <span
-    className={`inline-flex items-center justify-center border-2 border-rose-600 dark:border-rose-500 bg-white dark:bg-slate-900 rounded-[3px] p-0.5 shrink-0 ${className}`}
-    title="Non-Vegetarian (FSSAI Verified)"
-  >
-    <span className="w-2 h-2 rounded-full bg-rose-600 dark:rose-500" />
-  </span>
-);
-
-// Professional Dessert / Ice Cream Icon Badge
-export const IceCreamSymbol: React.FC<{ className?: string }> = ({
-  className = "w-4 h-4",
-}) => (
-  <span
-    className={`inline-flex items-center justify-center border-2 border-purple-500 dark:border-purple-400 bg-purple-50 dark:bg-purple-950/60 rounded-[3px] text-purple-600 dark:text-purple-300 p-px shrink-0 ${className}`}
-    title="Desserts & Ice Creams"
-  >
-    <IceCream size={10} />
-  </span>
-);
-
-const filterCategories: FilterCategory[] = [
+const filterCategories: FilterFoodCategory[] = [
   {
     id: "All",
     name: "All Eateries",
@@ -159,7 +75,8 @@ const filterCategories: FilterCategory[] = [
 ];
 
 export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
-  const { activeWard, isAuthenticated } = useWard();
+  const { activeWard } = useWard();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const t = useTranslations();
   const toast = useToast();
@@ -174,9 +91,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   // Data & Modal States
   const [selectedSpot, setSelectedSpot] = useState<FoodSpot | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [dynamicSpots, setDynamicSpots] = useState<FoodSpot[]>([]);
 
-  // Feature 2: Review Statistics Map: shopId -> { rating, count }
   const [reviewStatsMap, setReviewStatsMap] = useState<
     Record<string, { rating: number | null; count: number }>
   >({});
@@ -191,64 +106,13 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
 
   // Modal Review States
   const [reviewsLoading, setReviewsLoading] = useState<boolean>(false);
-  const [spotReviews, setSpotReviews] = useState<ReviewItem[]>([]);
+  const [spotReviews, setSpotReviews] = useState<FoodReviewItem[]>([]);
   const [userExistingReview, setUserExistingReview] =
-    useState<ReviewItem | null>(null);
+    useState<FoodReviewItem | null>(null);
   const [inputRating, setInputRating] = useState<number>(5);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [inputReviewText, setInputReviewText] = useState<string>("");
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
-
-  // 1. Fetch Dynamic Spots & Review Stats from Server
-  const fetchDynamicSpots = async () => {
-    try {
-      const res = await fetch("/api/food-and-dining", {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && Array.isArray(json.data)) {
-          const mapped: FoodSpot[] = json.data.map((item: any) => ({
-            id: item.id,
-            name: item.name,
-            specialty: item.category,
-            description: item.description,
-            imageUrl:
-              item.imageUrl ||
-              "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600&auto=format&fit=crop&q=60",
-            rating: item.rating,
-            reviewCount: item.reviewCount,
-            ward: item.ward,
-            foodType: item.foodType || "Both Veg & Non-Veg",
-            isVeg:
-              item.foodType === "Pure Veg" || item.category === "Vegetarian",
-            isLateNight: item.isLateNight ?? false,
-            openingTime: item.openingTime || null,
-            closingTime: item.closingTime || null,
-            lateNightStartTime: item.lateNightStartTime || null,
-            lateNightEndTime: item.lateNightEndTime || null,
-            timing:
-              [item.openingTime, item.closingTime]
-                .filter(Boolean)
-                .join(" – ") || "Open Today",
-            address: item.address,
-            phone: item.phone,
-            category: item.category,
-            status: item.status,
-            popularItems: item.popularItems || [],
-            cuisines: item.cuisines || null,
-          }));
-          setDynamicSpots(mapped);
-        }
-
-        if (json.reviewStats && typeof json.reviewStats === "object") {
-          setReviewStatsMap(json.reviewStats);
-        }
-      }
-    } catch {
-      // Non-blocking
-    }
-  };
 
   // 2. Fetch User Favorites
   const fetchFavorites = async () => {
@@ -306,15 +170,13 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
   };
 
   useEffect(() => {
-    fetchDynamicSpots();
     fetchFavorites();
     fetchRecentlyViewed();
   }, [isAuthenticated]);
 
   // Combine initial spots and dynamic spots, applying authoritative review statistics
   const allSpots = useMemo(() => {
-    const combined = [...dynamicSpots, ...initialSpots];
-    return combined.map((spot) => {
+    return initialSpots.map((spot) => {
       const stringId = String(spot.id);
       const stat = reviewStatsMap[stringId];
       if (stat) {
@@ -326,7 +188,7 @@ export const FoodClient: React.FC<FoodClientProps> = ({ initialSpots }) => {
       }
       return spot;
     });
-  }, [dynamicSpots, initialSpots, reviewStatsMap]);
+  }, [initialSpots, reviewStatsMap]);
 
   // Record Recently Viewed
   const recordRecentlyViewed = useCallback(
