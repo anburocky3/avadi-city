@@ -1,3 +1,4 @@
+import React from "react";
 import { Heart } from "lucide-react";
 import Link from "next/link";
 
@@ -13,6 +14,20 @@ export function GuestFooter() {
           <span className="text-slate-300 dark:text-slate-700">•</span>
           <Link href="/contact" className="hover:text-orange-500 transition">
             Contact & Support
+          </Link>
+          <span className="text-slate-300 dark:text-slate-700">•</span>
+          <Link
+            href="/terms-and-conditions"
+            className="hover:text-primary transition"
+          >
+            Terms
+          </Link>
+          <span className="text-slate-300 dark:text-slate-700">•</span>
+          <Link
+            href="/privacy-policy"
+            className="hover:text-primary transition"
+          >
+            Privacy
           </Link>
         </div>
 

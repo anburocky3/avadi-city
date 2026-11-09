@@ -25,7 +25,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 
 // --- INLINE DATA ARRAYS (Easy to edit) ---
 
-const contributors = [
+export const contributors = [
   {
     name: "Mr. Anbu Selvan",
     role: "Founder/CEO",

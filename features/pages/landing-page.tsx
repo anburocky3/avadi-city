@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useState } from "react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import {
@@ -307,6 +308,24 @@ export default function LandingPage() {
             <span className="text-[10px] sm:text-xs uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500">
               © {new Date().getFullYear()} Avadi City - All Rights Reserved
             </span>
+            <nav
+              aria-label="Legal"
+              className="flex items-center gap-3 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase my-3 tracking-wider"
+            >
+              <Link
+                href="/terms-and-conditions"
+                className="hover:text-primary hover:underline"
+              >
+                Terms &amp; Conditions
+              </Link>
+              <span aria-hidden="true">·</span>
+              <Link
+                href="/privacy-policy"
+                className="hover:text-primary hover:underline"
+              >
+                Privacy Policy
+              </Link>
+            </nav>
             <span className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 justify-center">
               <span>Developed with</span>
               <Heart size={12} className="text-rose-500 fill-rose-500 inline" />

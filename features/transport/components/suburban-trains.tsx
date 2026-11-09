@@ -285,7 +285,7 @@ export const SuburbanTrains: React.FC = () => {
                       clockTime={clockTime}
                       className="mr-3"
                     />
-                    <div className="flex flex-col justify-center min-w-0">
+                    <div className="flex flex-col justify-center min-w-0 space-y-1.5">
                       <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[9px] font-black uppercase tracking-widest bg-white/20 px-2.5 py-0.5 rounded-full backdrop-blur-xs flex items-center gap-1">
                           <Sparkles

@@ -21,27 +21,32 @@ import {
   HeartHandshake,
   Clock,
   User,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 
 // Context & Component imports matching your project structure
 import { useWard, APP_VERSION } from "@/context/wardContext";
 import { Card, Modal } from "@/components/shared-components";
-import imageCompression from "browser-image-compression";
-import volunteerService from "@/services/volunteerService";
-import { Volunteer } from "@/types/volunteer";
-import toast from "@/utils/toast";
+import { useProfile } from "@/features/profile/hooks/useProfile";
+import Image from "next/image";
+import { contributors } from "@/features/pages/credits-page";
 
-export const Profile: React.FC = () => {
+export const MyProfileClient: React.FC = () => {
   // --- Contexts & Hooks ---
+  const { authUser, activeWard, complaints = [], updateProfile } = useWard();
   const {
-    authUser,
-    activeWard,
-    volunteers = [],
-    complaints = [],
-    updateProfile,
-  } = useWard();
+    formData,
+    setField,
+    resetForm,
+    previewUrl,
+    isCompressing,
+    isSubmitting,
+    isVolunteer,
+    isPendingVolunteer,
+    handleAvatarChange,
+    saveProfile,
+  } = useProfile({ authUser, updateProfile });
 
   const [mounted, setMounted] = useState(false);
   const { setTheme, resolvedTheme } = useTheme();
@@ -52,143 +57,19 @@ export const Profile: React.FC = () => {
   // --- Modal States ---
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isAboutModalOpen, setIsAboutModalOpen] = useState<boolean>(false);
-  const [isTermsModalOpen, setIsTermsModalOpen] = useState<boolean>(false);
-  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState<boolean>(false);
 
   // --- Share Widget State ---
   const [copied, setCopied] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  // --- Edit Form State (Powered by authUser) ---
-  const [editName, setEditName] = useState<string>(authUser?.name || "");
-  const [editDob, setEditDob] = useState<string>(
-    authUser?.dob
-      ? new Date(authUser.dob).toISOString().split("T")[0]
-      : "2000-01-01",
-  );
-  const [editBloodGroup, setEditBloodGroup] = useState<string>(
-    authUser?.bloodGroup || "O+",
-  );
-  const [editGender, setEditGender] = useState<string>(
-    authUser?.gender || "Male",
-  );
-  const [editPhone, setEditPhone] = useState<string>(authUser?.phone || "");
-  const [editEmail, setEditEmail] = useState<string>(authUser?.email || "");
-
-  const [selectedAvatarFile, setSelectedAvatarFile] = useState<File | null>(
-    null,
-  );
-  // Support both naming styles (avatarUrl or avatar) from your R2 implementation
-  const [previewUrl, setPreviewUrl] = useState<string | null>(
-    authUser?.avatar || authUser?.avatar || null,
-  );
-  const [isCompressing, setIsCompressing] = useState<boolean>(false);
-
-  // --- Volunteer Record & Derived Metrics ---
-  const [volunteerRecord, setVolunteerRecord] = useState<Volunteer | null>(
-    null,
-  );
-
-  useEffect(() => {
-    const fetchVolunteer = async () => {
-      if (!authUser) {
-        setVolunteerRecord(null);
-        return;
-      }
-      try {
-        const found = volunteerService.getMyVolunteer(
-          authUser.id,
-          authUser.phone,
-          authUser.name,
-        );
-        setVolunteerRecord(found);
-
-        await volunteerService.syncWithDb();
-        const syncedFound = volunteerService.getMyVolunteer(
-          authUser.id,
-          authUser.phone,
-          authUser.name,
-        );
-        setVolunteerRecord(syncedFound);
-      } catch (err) {
-        console.error("Failed to load volunteer record in profile:", err);
-      }
-    };
-
-    fetchVolunteer();
-
-    const handleFocus = () => {
-      fetchVolunteer();
-    };
-    window.addEventListener("focus", handleFocus);
-    return () => window.removeEventListener("focus", handleFocus);
-  }, [authUser]);
-
-  const isVolunteer = Boolean(
-    volunteerRecord &&
-    ((volunteerRecord.status || "").trim().toLowerCase() === "active" ||
-      (volunteerRecord.status || "").trim().toLowerCase() === "approved"),
-  );
-  const isPendingVolunteer = Boolean(
-    volunteerRecord &&
-    (volunteerRecord.status || "").trim().toLowerCase() === "pending",
-  );
   const myComplaintsCount = complaints.filter(
     (c) => c.author === (authUser?.name || "Avadi Resident"),
   ).length;
 
   useEffect(() => setMounted(true), []);
 
-  // Compress image before setting preview & state
-  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setIsCompressing(true);
-    try {
-      const options = {
-        maxSizeMB: 0.25, // Keep under 250KB
-        maxWidthOrHeight: 400,
-        useWebWorker: true,
-        fileType: "image/webp", // Convert to lightweight WebP
-      };
-
-      const compressedFile = await imageCompression(file, options);
-      setSelectedAvatarFile(compressedFile);
-      setPreviewUrl(URL.createObjectURL(compressedFile));
-    } catch (error) {
-      console.error("Compression failed:", error);
-      alert("Could not process image. Please try a different photo.");
-    } finally {
-      setIsCompressing(false);
-    }
-  };
-
   // --- Handlers ---
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      if (updateProfile) {
-        await updateProfile(
-          {
-            name: editName,
-            dob: editDob,
-            bloodGroup: editBloodGroup as any,
-            gender: editGender as any,
-            phone: editPhone,
-            email: editEmail,
-          },
-          selectedAvatarFile, // 👈 Passes the compressed avatar file to the context
-        );
-      }
-      setIsEditModalOpen(false);
-    } catch (err) {
-      console.error("Failed to update profile", err);
-      alert("Failed to update profile. Please try again.");
-    } finally {
-      setIsSubmitting(false);
-    }
+    if (await saveProfile()) setIsEditModalOpen(false);
   };
 
   // --- Share Widget Handler ---
@@ -274,19 +155,7 @@ export const Profile: React.FC = () => {
 
         <button
           onClick={() => {
-            setEditName(authUser?.name || "");
-            setEditDob(
-              authUser?.dob
-                ? new Date(authUser.dob).toISOString().split("T")[0]
-                : "2000-01-01",
-            );
-            setEditBloodGroup(authUser?.bloodGroup || "O+");
-            setEditGender(authUser?.gender || "Male");
-            setEditPhone(authUser?.phone || "");
-            setEditEmail(authUser?.email || "");
-            // 👇 Resets avatar preview state to match latest user data when opening
-            setPreviewUrl(authUser?.avatar || authUser?.avatar || null);
-            setSelectedAvatarFile(null);
+            resetForm();
             setIsEditModalOpen(true);
           }}
           className="px-4 py-2 border-2 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-xs font-black rounded-xl transition cursor-pointer text-center sm:w-auto"
@@ -488,8 +357,8 @@ export const Profile: React.FC = () => {
           </div>
 
           {/* Terms & Conditions */}
-          <div
-            onClick={() => setIsTermsModalOpen(true)}
+          <Link
+            href="/terms-and-conditions"
             className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
@@ -497,11 +366,11 @@ export const Profile: React.FC = () => {
               <span>Terms &amp; Conditions</span>
             </div>
             <ChevronRight size={16} className="text-slate-400" />
-          </div>
+          </Link>
 
           {/* Privacy & Citizen Protection Policy */}
-          <div
-            onClick={() => setIsPrivacyModalOpen(true)}
+          <Link
+            href="/privacy-policy"
             className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer transition"
           >
             <div className="flex items-center space-x-3 text-xs font-black text-slate-800 dark:text-slate-200">
@@ -509,7 +378,7 @@ export const Profile: React.FC = () => {
               <span>Privacy &amp; Data Safety Policy</span>
             </div>
             <ChevronRight size={16} className="text-slate-400" />
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -533,7 +402,7 @@ export const Profile: React.FC = () => {
             </a>
           </div>
 
-          <div className="flex items-center justify-between text-xs font-black text-slate-800 dark:text-slate-200 pt-1 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between text-xs font-black text-slate-800 dark:text-slate-200 pt-3 border-t border-slate-100 dark:border-slate-800">
             <div className="flex items-center space-x-2.5">
               <Phone size={17} className="text-emerald-500" />
               <span>Civic Toll-Free Number</span>
@@ -556,25 +425,42 @@ export const Profile: React.FC = () => {
       >
         <div className="space-y-4 text-xs">
           <div className="flex items-center space-x-3 p-3 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-900/60 rounded-2xl">
-            <div className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-black text-lg shrink-0">
-              A
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Avadi City App Logo"
+              width={64}
+              height={64}
+              className="shrink-0"
+            />
             <div>
               <h4 className="font-black text-slate-900 dark:text-white text-sm">
                 Avadi City App
               </h4>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                {APP_VERSION} Civic Release · Built for 48 Wards
+              <p className="mt-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                {APP_VERSION} Civic Release
               </p>
             </div>
+            <button
+              onClick={handleShareApp}
+              className="px-3 py-2 border dark:border-slate-600 hover:bg-orange-800 text-white text-xs font-black rounded-xl transition shadow-sm active:scale-95 shrink-0 flex items-center gap-1.5 cursor-pointer"
+            >
+              {copied ? (
+                <>
+                  <Check size={14} />
+                  <span>Copied!</span>
+                </>
+              ) : (
+                <>
+                  <Share2 size={14} />
+                </>
+              )}
+            </button>
           </div>
-
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
             Avadi City Portal is the official digital civic platform connecting
             residents across all 48 wards with the Avadi City Municipal
             Corporation administration.
           </p>
-
           <div className="space-y-2">
             <h5 className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider text-[10px]">
               Key Modules:
@@ -604,104 +490,55 @@ export const Profile: React.FC = () => {
               </li>
             </ul>
           </div>
+          <hr className="border-slate-200 dark:border-slate-800" />
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                <Users size={16} className="text-orange-500" />
+                <span>Core Team & Contributors</span>
+              </h3>
+              <span className="text-[11px] font-bold text-slate-500">
+                The People Behind The Code
+              </span>
+            </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
+              {contributors.map((person, idx) => (
+                <div
+                  key={idx}
+                  className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/80 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-0 group"
+                >
+                  {/* Avatar & Badge */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex flex-s items-center space-x-3 space-y-2 text-center">
+                      <div className="w-14 h-14 rounded-2xl p-0.5 bg-linear-to-tr from-orange-500 via-amber-500 to-primary group-hover:scale-105 transition-transform duration-200">
+                        <img
+                          src={person.avatarUrl}
+                          alt={person.name}
+                          className="w-full h-full object-cover rounded-[14px] bg-slate-100 dark:bg-slate-800"
+                        />
+                      </div>
+                      <div className="space-y-2 items-start">
+                        <h4 className="font-black text-sm text-slate-900 dark:text-white leading-tight">
+                          {person.name}
+                        </h4>
+                        <span className="px-2 py-0.5 rounded-lg bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 font-black text-[9px] border border-orange-200/60 dark:border-orange-900/60 uppercase tracking-wider">
+                          {person.badge}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-1"></div>
+                </div>
+              ))}
+            </div>
+          </div>
           <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center font-semibold pt-2 border-t border-slate-100 dark:border-slate-800">
-            © 2026 Avadi Municipal Corporation. All Rights Reserved.
+            © {new Date().getFullYear()} Avadi Municipal Corporation. All Rights
+            Reserved.
           </p>
-        </div>
-      </Modal>
-
-      {/* MODAL 2: TERMS & CONDITIONS */}
-      <Modal
-        isOpen={isTermsModalOpen}
-        onClose={() => setIsTermsModalOpen(false)}
-        title="Terms & Conditions"
-      >
-        <div className="space-y-3.5 text-xs text-slate-600 dark:text-slate-300 max-h-[60vh] overflow-y-auto pr-1">
-          <p className="font-bold text-slate-800 dark:text-slate-200">
-            Please read these civic platform usage terms before submitting
-            reports or listings.
-          </p>
-
-          <div className="space-y-2">
-            <h5 className="font-black text-slate-900 dark:text-white">
-              1. Authentic Grievance Submission
-            </h5>
-            <p className="leading-relaxed font-medium">
-              Residents must ensure all reported civic complaints (water
-              leakage, road damage, street lights) are genuine and located
-              within Avadi Corporation boundaries. False emergency reports are
-              strictly prohibited.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h5 className="font-black text-slate-900 dark:text-white">
-              2. Local Property &amp; Job Listings
-            </h5>
-            <p className="leading-relaxed font-medium">
-              Building rental listings and job vacancies posted by residents
-              must contain verified mobile numbers and property photos. Spam or
-              fraudulent financial demands will result in instant removal.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h5 className="font-black text-slate-900 dark:text-white">
-              3. Emergency SOS Responsible Usage
-            </h5>
-            <p className="leading-relaxed font-medium">
-              The 1-Tap SOS button alerts nearby volunteers and emergency
-              services. Misuse of the emergency SOS feature for non-emergency
-              testing is punishable under municipal regulations.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <h5 className="font-black text-slate-900 dark:text-white">
-              4. Community Conduct
-            </h5>
-            <p className="leading-relaxed font-medium">
-              Be respectful to fellow Ward residents and Municipal Officers in
-              discussions and volunteer networks.
-            </p>
-          </div>
-        </div>
-      </Modal>
-
-      {/* MODAL 3: PRIVACY & DATA SAFETY */}
-      <Modal
-        isOpen={isPrivacyModalOpen}
-        onClose={() => setIsPrivacyModalOpen(false)}
-        title="Privacy & Data Protection Policy"
-      >
-        <div className="space-y-3.5 text-xs text-slate-600 dark:text-slate-300">
-          <div className="p-3 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/60 rounded-2xl flex items-center space-x-2 text-purple-700 dark:text-purple-300 font-bold">
-            <Lock size={16} className="shrink-0" />
-            <span>
-              Your personal data and phone numbers are encrypted locally.
-            </span>
-          </div>
-
-          <div className="space-y-2 font-medium">
-            <h5 className="font-black text-slate-900 dark:text-white">
-              Data Protection Principles:
-            </h5>
-            <ul className="space-y-1.5 list-disc pl-4">
-              <li>
-                Your contact mobile number is only shared when you choose to
-                apply for rental listings or jobs.
-              </li>
-              <li>
-                Location coordinates are exclusively used for geo-tagging
-                municipal complaints.
-              </li>
-              <li>
-                No personal information is sold or shared with third-party
-                advertising companies.
-              </li>
-            </ul>
-          </div>
         </div>
       </Modal>
 
@@ -739,7 +576,9 @@ export const Profile: React.FC = () => {
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={handleAvatarChange}
+                  onChange={(event) =>
+                    void handleAvatarChange(event.target.files?.[0])
+                  }
                   className="sr-only"
                 />
               </label>
@@ -758,8 +597,8 @@ export const Profile: React.FC = () => {
             <input
               type="text"
               required
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
+              value={formData.name}
+              onChange={(e) => setField("name", e.target.value)}
               className="w-full px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none"
             />
           </div>
@@ -773,8 +612,8 @@ export const Profile: React.FC = () => {
                 type="date"
                 required
                 max={new Date().toISOString().split("T")[0]}
-                value={editDob}
-                onChange={(e) => setEditDob(e.target.value)}
+                value={formData.dob}
+                onChange={(e) => setField("dob", e.target.value)}
                 className="w-full px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
               />
             </div>
@@ -784,8 +623,8 @@ export const Profile: React.FC = () => {
                 Blood Group
               </label>
               <select
-                value={editBloodGroup}
-                onChange={(e) => setEditBloodGroup(e.target.value)}
+                value={formData.bloodGroup}
+                onChange={(e) => setField("bloodGroup", e.target.value)}
                 className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
               >
                 {["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"].map(
@@ -804,8 +643,8 @@ export const Profile: React.FC = () => {
               Gender
             </label>
             <select
-              value={editGender}
-              onChange={(e) => setEditGender(e.target.value)}
+              value={formData.gender}
+              onChange={(e) => setField("gender", e.target.value)}
               className="w-full px-3 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none cursor-pointer"
             >
               <option value="Male">Male</option>
@@ -821,8 +660,8 @@ export const Profile: React.FC = () => {
               </label>
               <input
                 type="tel"
-                value={editPhone}
-                onChange={(e) => setEditPhone(e.target.value)}
+                value={formData.phone}
+                onChange={(e) => setField("phone", e.target.value)}
                 className="w-full px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none"
               />
             </div>
@@ -832,8 +671,8 @@ export const Profile: React.FC = () => {
               </label>
               <input
                 type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
+                value={formData.email}
+                onChange={(e) => setField("email", e.target.value)}
                 className="w-full px-3.5 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-primary focus:outline-none"
               />
             </div>
@@ -856,4 +695,4 @@ export const Profile: React.FC = () => {
   );
 };
 
-export default Profile;
+export default MyProfileClient;
